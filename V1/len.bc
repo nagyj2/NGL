@@ -1,0 +1,10 @@
+//len.bc
+_len:
+//var arg1::str 'Jason is Cool';
+var result::int 0;
+var i::int 0;
+-> try cmp arg1[i]::bool =>;
+<- set i i+1;
+goto <-;
+<= set result i;
+end:

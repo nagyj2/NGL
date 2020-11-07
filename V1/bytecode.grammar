@@ -1,0 +1,58 @@
+# NGL Bytecode Grammar
+
+Collections:
+- list<type>
+- array<type>
+
+Features
+- Jumps
+- Labels
+- Arrow skips
+- Type conversion
+
+PROGRAM       ::= {['<-' | '->'] ['<=' | '=>'] [IDENT ':'] LINE}
+
+LINE          ::= STMT ';'
+                | '\n'
+
+STMT          ::= var IDENT CAST EXPR
+                | set IDENT EXPR
+                | goto LABEL
+                | if EXPR LABEL
+                | cmp EXPR
+                | print EXPR
+                | read IDENT CAST
+                | del IDENT
+                | try STMT LABEL
+
+LABEL         ::= IDENTIFIER
+                | '->' | '=>' | '<-' | '<='
+
+CAST          ::= '::' PRIMATIVE {'::' PRIMATIVE}
+
+PRIMATIVE     ::= 'int' | 'float' | 'bool' | 'str' | 'array' | 'list'
+
+EXPR          ::= ['!'] COMPARE {('&' | '|') COMPARE}
+
+COMPARE       ::= MATHEMATICAL {('=' | '<>' | '<' | '>' | '<=' | '>=') MATHEMTICAL}
+
+MATHEMATICAL  ::= ['+' | '-'] TERM {('+' | '-') TERM}
+
+TERM          ::= FACTOR {('*' | '/' | '%') FACTOR}
+
+FACTOR        ::= FUNC [^ FUNC]
+
+FUNC          ::= [CMD '#'] RESOL {'#' RESOL}
+
+RESOL         ::= ATOM {CAST}
+
+ATOM          ::= NUMBER
+                | IDENT {SPEC}
+                | STRING
+                | ['~'] BOOL
+                | '(' EXPR ')'
+                | MSET
+
+SPEC          ::= '[' EXPR ']'
+
+MSET          ::= '{' '::' PRIMATIVE ':' EXPR ({',' EXPR} | ':' EXPR) '}'

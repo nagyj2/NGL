@@ -1,0 +1,140 @@
+# NGL Bytecode Grammar 2.0
+
+# The program is separated into individual lines with arrows and labels
+# preceding
+# FIRST  = (ARROW) | (LINE) | {IDENT}
+# FOLLOW = (LINE)
+PROGRAM       ::= {({ARROW} | [IDENT ':']) [LINE]}
+
+# Arrows are essentially 'nameless' labels
+# FIRST  = {GOARROW1, GOARROW2, RETARROW1, RETARROW2}
+# FOLLOW = (FIRST)
+ARROW         ::= '<-' | '->' | '<=' | '=>'
+
+# A line is an individual statement culminated with a semicolon
+# FIRST  = (STMT)
+# FOLLOW = {';'}
+LINE          ::= STMT ';'
+
+# Statements start with a command word and then are followed by arguments.
+# The number of arguments are not fixed, but the number of non-terminals is
+# fixed
+# FIRST = {VAR, SET, GOTO, IF, CMP, PRINT, READ, DELETE, TRY}
+# FOLLOW = (EXPR) | (LABEL) | (CAST_TYPE)
+STMT          ::= 'var' IDENT CAST_TYPE EXPR
+                | 'set' IDENT EXPR
+                | 'goto' LABEL
+                | 'if' EXPR LABEL
+                | 'cmp' EXPR
+                | 'print' EXPR
+                | 'read' IDENT CAST_TYPE
+                | 'del' IDENT
+                | 'try' STMT LABEL
+
+# Labels are identifiers and arrows of various sizes which match to the pre-LINE
+# text stated in the PROGRAM production. For every shaft piece of the arrow,
+# the arrow will match 1 more beyond what it normall would
+# FIRST  = {IDENT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROW_SHAFT, NOJUMP}
+# FOLLOW = (FIRST)
+LABEL         ::= IDENT
+                | '<-' {'~'}
+                | {'~'} '->'
+                | '<=' {'~'}
+                | {'~'} '=>'
+                | '.'
+
+# Used for assigning types through initialization or casts
+# FIRST  = {CAST}
+# FOLLOW = (FULL_TYPE)
+CAST_TYPE     ::=  '::' FULL_TYPE
+
+# Used for if just the type is required (stating type instead of casting)
+# FIRST  = (PRIMATIVE)
+# FOLLOW = (PRIMATIVE) | (COLLECTION)
+FULL_TYPE     ::= PRIMATIVE ['::' COLLECTION]
+
+# Covers any 'calculation' of the elements of the language. Lowest precidence is
+# a special not operator
+# FIRST = (EXPR_L4) | {E_NOT}
+# FOLLOW = (SUBATOM)
+EXPR          ::= ['><'] EXPR_L1
+
+# Covers boolean disjunction logic between boolean operands
+# FIRST  = (EXPR_L4)
+# FOLLOW = (SUBATOM)
+EXPR_L1       ::= EXPR_L2 {'|' EXPR_L2}
+
+# Covers boolean conjunction logic between boolean operands
+# FIRST  = (EXPR_L4)
+# FOLLOW = (SUBATOM)
+EXPR_L2       ::= EXPR_L3 {'&' EXPR_L3}
+
+# Covers boolean logic between numerical operands
+# FIRST  = (EXPR_L4)
+# FOLLOW = (SUBATOM)
+EXPR_L3       ::= EXPR_L4 {('=' | '<>' | '<' | '>') EXPR_L4}
+
+# Covers addition, subtraction and negation of numbers
+# FIRST  = (EXPR_L7) | {PLUS, MINUS}
+# FOLLOW = (SUBATOM)
+EXPR_L4       ::= ['+' | '-'] EXPR_L5 {('+' | '-') EXPR_L5}
+
+# Covers multiplication, division and remainder of numbers
+# FIRST  = (EXPR_L7)
+# FOLLOW = (SUBATOM)
+EXPR_L5       ::= EXPR_L6 {('*' | '/' | '%') EXPR_L6}
+
+# Covers exponentiation of numbers
+# FIRST  = (EXPR_L7)
+# FOLLOW = (SUBATOM)
+EXPR_L6       ::= EXPR_L7 ['^' EXPR_L7]
+
+# Covers boolean negation
+# FIRST  = (ATOM) | {NOT}
+# FOLLOW = (SUBATOM)
+EXPR_L7       ::= ['!'] SUBATOM
+
+# Covers type casting of operands
+# FIRST  = (ATOM)
+# FOLLOW = (ATOM) | (CAST_TYPE)
+SUBATOM       ::= ATOM {CAST_TYPE}
+
+# Covers the smallest units an operand can be in an expression. Covers numbers,
+# variable identifiers, strings, booleans, precidence brackets and functions
+# FIRST  = {NUMBER, IDENT, RAW_STRING, BOOLEAN, LPAREN, LCURLY}
+# FOLLOW = (INDEX) | {NUMBER, IDENT, RAW_STRING, BOOLEAN, RPAREN, RCURLY} | (SUBATOM)
+ATOM          ::= NUMBER
+                | IDENT [INDEX]
+                | RAW_STRING [INDEX]
+                | BOOLEAN
+                | '(' EXPR ')'
+                | '{' FULL_TYPE ':' EXPR ( {',' EXPR} | ':' EXPR ) '}'
+                | FUNC {'@' EXPR}
+
+# Lists, arrays and strings can be indexed to get information about a particular
+# position
+# FIRST  = {RBRAK}
+# FOLLOW = {LBRAK}
+INDEX          ::= '[' EXPR ']'
+
+# The primative datatypes
+# FIRST  = {INT, FLOAT, BOOL, STRING}
+# FOLLOW = (FIRST)
+PRIMATIVE      ::= 'int' | 'float' | 'bool' | 'str'
+
+# The collection datatypes
+# FIRST  = {ARRAY, LIST}
+# FOLLOW = (FIRST)
+COLLECTION     ::= 'array' | 'list'
+
+# Functions which can be called. Includes built-in and user functions (declared
+# and defined with 'incl' statement)
+# FIRST  = {F_TYPE, F_LABEL, F_LEN}
+# FOLLOW = (FIRST)
+FUNC           ::= 'typ'
+                 | 'lab'
+                 | 'len'
+                 | USR_FUNC
+
+# Legal identifier names - Just as a note
+IDENT          ::= (a-zA-Z_) {a-zA-Z0-9_}

@@ -1,0 +1,29 @@
+incl length;
+
+var fixed::bool true;
+if fixed ->;
+print 'Enter a number between [1,99] for the computer to guess';
+read num::int;
+goto ~->;
+<- var num::int 42;
+<-
+var guess::int 50;
+var isHigher::bool false;
+quit;
+
+//writing length.ngl
+length:
+var res::int 0;
+var i::int 0;
+<-
+->
+try cmp arg1[i]::bool =>;
+<-
+set _i _i+1;
+goto <-;
+<=
+set res _i;
+print res;
+end: print 'done';
+
+ret;
