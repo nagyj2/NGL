@@ -7,7 +7,7 @@ import bc2_1_pp as PP
 import bc2_1_e as E
 from bc2_1_e import Variable, Collection, SYMBOL
 from bc2_1_sk import FIRSTPRIMATIVE, FOLLOWPRIMATIVE, FIRSTCOLLECTION, FOLLOWCOLLECTION, FIRSTARROW, FOLLOWARROW, FIRSTLABEL, FOLLOWLABEL, FIRSTINDEX, FOLLOWINDEX, USRFUNC, FIRSTFUNC, FOLLOWFUNC, FIRSTFULL_TYPE, FOLLOWFULL_TYPE, FIRSTCAST_TYPE, FOLLOWCAST_TYPE, FIRSTATOM, FOLLOWATOM, FIRSTSUBATOM, FOLLOWSUBATOM, FIRSTEXPR_L7, FOLLOWEXPR_L7, FIRSTEXPR_L6, FOLLOWEXPR_L6, FIRSTEXPR_L5, FOLLOWEXPR_L5, FIRSTEXPR_L4, FOLLOWEXPR_L4, FIRSTEXPR_L3, FOLLOWEXPR_L3, FIRSTEXPR_L2, FOLLOWEXPR_L2, FIRSTEXPR_L1, FOLLOWEXPR_L1, FIRSTEXPR, FOLLOWEXPR, FIRSTSTMT, FOLLOWSTMT, FIRSTLINE, FOLLOWLINE, FIRSTPROGRAM, FOLLOWPROGRAM
-# import bc2_lib as LIB
+import bc2_1_lib as LIB
 
 # calls = 0
 # def call(func):
@@ -485,7 +485,7 @@ def atom():
         getSym()
 
     else: # SC.sym in FIRSTFUNC | {IDENT}:
-        if SC.val in ST.usrTab[-1]:
+        if SC.val in ST.usrTab[-1] or SC.sym in FIRSTFUNC:
 
             # func() -> don't need
             fun = SC.sym # Function symbol
@@ -502,16 +502,16 @@ def atom():
 
             # src_line = findJump(RETURN,SC.line)
             if fun == LABEL:
-                raise Exception('not implemented')
-                # value = LIB.func_label(param)
+                # raise Exception('not implemented')
+                value = LIB.func_label(param)
 
             elif fun == LEN:
-                raise Exception('not implemented')
-                # value = LIB.func_len(param)
+                # raise Exception('not implemented')
+                value = LIB.func_len(param)
 
             elif fun == TYPE:
-                raise Exception('not implemented')
-                # value = LIB.func_type(param)
+                # raise Exception('not implemented')
+                value = LIB.func_type(param)
 
             elif fun == IDENT and val in ST.usrTab[-1]: # Function is user defined
                 PP.func(val, args = param) # debug = True
