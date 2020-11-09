@@ -165,6 +165,7 @@ def number():
         val = 10 * val + int(ch)
         getChar()
     if ch == '.':
+        getChar()
         while '0' <= ch <= '9':
             value =  value + int(ch) / div
             getChar(); div /= 10
