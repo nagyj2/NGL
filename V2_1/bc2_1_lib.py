@@ -6,32 +6,44 @@ from bc2_1_sc import PLUS, MINUS, MULT, DIV, MOD, EXP, AND, OR, NOT, E_NOT, EQ, 
 import bc2_1_st as ST
 from bc2_1_e import Variable, Collection
 
-def func_label(param : Collection) -> Variable:
+def func_label(param : list) -> Variable:
     if type(param) != list:
         raise Exception('param list expected')
 
     if len(param) == 1:
         arg1 = param[0]
-        if not (arg1.typ == STRING): mark('1-argument label function requires 1 string argument')
-        ret_val = Variable(INT,ST.getJmp(arg1.value))
+        if not (arg1.typ == STRING): mark('label function requires 1 string argument')
+        line = ST.getJmp(arg1.value)
+        if type(line) != int:
+            mark('unknown jump label')
+            line = SC.line
 
-    elif len(param) == 2:
-        arg1,arg2 = param[0],param[1]
-        if not (arg1.typ == STRING and arg2.typ == INT):
-            mark('2-argument label function requires 1 string and int argument')
-            ret_val = SC.line
-        elif arg1.value not in {'->', '<-', '=>', '<='}:
-            mark('2-argument label funciton arg1 must be jump arrow')
-            ret_val = SC.line
-        else:
-            ret_val = Variable(INT,ST.getJmp(arg1.value)[arg2.value])
+        ret_val = Variable(INT,line)
 
-    else: ret_val = -1
+    # elif len(param) == 2:
+    #     arg1,arg2 = param[0],param[1]
+    #     if not (arg1.typ == STRING and arg2.typ == INT):
+    #         mark('2-argument label function requires 1 string and int argument')
+    #         ret_val = SC.line
+    #     elif arg1.value not in {'->', '<-', '=>', '<='}:
+    #         mark('2-argument label funciton arg1 must be jump arrow')
+    #         ret_val = SC.line
+    #     else:
+    #         line = ST.getSpc(arg1.value)[arg2.value]
+    #
+    #     if type(line) != int:
+    #         mark('unknown arrow jump location')
+    #         line = SC.line
+    #
+    #     ret_val = Variable(INT,line)
 
-    return Variable(INT,ret_val)
+    else:
+        mark('unkown usage of label function')
+        ret_val = Variable(INT,-1)
 
+    return ret_val
 
-def func_len(param : Collection) -> Variable:
+def func_len(param : list) -> Variable:
     if type(param) != list:
         raise Exception('param list expected')
 
@@ -50,7 +62,7 @@ def func_len(param : Collection) -> Variable:
 
     return Variable(INT,ret_val)
 
-def func_type(param : Collection) -> Variable:
+def func_type(param : list) -> Variable:
     if type(param) != list:
         raise Exception('param list expected')
 

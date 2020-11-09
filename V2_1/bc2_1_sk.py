@@ -31,7 +31,7 @@ FOLLOWLABEL = FIRSTLABEL
 FIRSTINDEX  = {LBRAK}
 FOLLOWINDEX = {RBRAK}
 
-FIRSTFUNC  = {TYPE, LABEL, LEN, IDENT}
+FIRSTFUNC  = {TYPE, LABEL, LEN}
 FOLLOWFUNC = FIRSTFUNC
 
 FIRSTFULL_TYPE  = FIRSTPRIMATIVE
@@ -497,7 +497,7 @@ def atom():
     #         index()
 
     elif SC.sym in FIRSTFUNC | {IDENT}:
-        if SC.val in ST.usrTab[-1]:
+        if SC.val in ST.usrTab[-1] or SC.sym in FIRSTFUNC:
             # Function
             func()
 
@@ -524,10 +524,12 @@ def atom():
             getSym()
             if SC.sym in FIRSTINDEX:
                 index()
-            elif SC.sym == PARAM:
-                mark('function not defined')
-                while SC.sym not in FOLLOWLINE:
-                    getSym()
+
+            # Error Handling - Ensure param isnt accidentally used - Requires lookbehind
+            # elif SC.sym == PARAM:
+            #     mark('function not defined')
+            #     while SC.sym not in FOLLOWLINE:
+            #         getSym()
 
 
     else: mark('invalid switch symbol: atom')
