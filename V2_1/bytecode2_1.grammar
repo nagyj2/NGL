@@ -35,6 +35,7 @@ STMT          ::= 'var' IDENT CAST_TYPE EXPR
                 | 'del' IDENT
                 | 'try' STMT LABEL
                 | 'incl' IDENT
+                | 'quit'
 
 # Labels are identifiers and arrows of various sizes which match to the pre-LINE
 # text stated in the PROGRAM production. For every shaft piece of the arrow,
