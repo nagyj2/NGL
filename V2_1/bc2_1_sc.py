@@ -180,7 +180,7 @@ def number():
     if ch == '.':
         getChar()
         while '0' <= ch <= '9':
-            value =  value + int(ch) / div
+            val =  val + int(ch) / div
             getChar(); div /= 10
 
     if val >= 2**31:
