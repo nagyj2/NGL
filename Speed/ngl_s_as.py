@@ -15,6 +15,8 @@ import ngl_s_t as TS
 # TODO: Way to determine type from calculations
 # TODO: Automatic casting of output type if it isnt proper? -> or delete old val?
 # TODO: special function which will just find identifiers
+# TODO: Footer assembler must be able to handle changes in size of `additional`
+# TODO: Footer assembly should be performed inline instead of at the end
 
 def assemble_init(ast):
     global vars, additional, add_i
@@ -205,8 +207,13 @@ def createIfLine(node):
     if node.stmt_false != None:
         line += stmt_false
 
+    if node.stmt_false != None:
+        line += 'goto back'+str(loc_i)+';\ntrue'+str(loc_i) +':\n'
+        line += stmt_true
+
     line += 'back'+str(loc_i)+':'
-    additional[loc_i] = [node.stmt_true];
+
+    # additional[loc_i] = [node.stmt_true];
     return line
 
 def createPrintLine(node):
