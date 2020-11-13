@@ -1,0 +1,37 @@
+# NGL Speed v1.0
+
+# NGL started out as a very crude and hard to read language before it changed
+# course and became an assembly-like language. This grammar is an experiment to
+# compile the old grammar into the new NGL v2.1 language.
+
+TOFIX = Compound statements
+      = Quit
+
+PROGRAM       ::= {LINES}
+
+LINES         ::= STMT ';'
+
+STMT          ::= IDENT {',' IDENT} ['+' | '-' | '*' | '/' | '='] EXPR {',' EXPR}
+                | '?' EXPR STMT ['~?' STMT]
+                | '!' EXPR
+                | '$' EXPR ':' STMT ':' STMT ':' STMT
+                | '\'
+                | '{' {LINES} '}'
+
+EXPR          ::= EXPR_L1 {('&' | '|') EXPR_L1}
+
+EXPR_L1       ::= EXPR_L2 {('=' | '>' | '<') EXPR_L2}
+
+EXPR_L2       ::= ['+' | '-'] EXPR_L3 {('+' | '-') EXPR_L3}
+
+EXPR_L3       ::= EXPR_L4 {('*' | '/') EXPR_L4}
+
+EXPR_L4       ::= ['~'] SUBATOM
+
+SUBATOM       ::= ['#' | '%' | '@' | '^'] ATOM
+
+ATOM          ::= IDENT
+                | '_'
+                | RAW_STRING
+                | '(' EXPR ')'
+                | '.'
