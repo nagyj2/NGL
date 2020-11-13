@@ -13,6 +13,7 @@ import ngl_s_t as TS
 # TODO: Ability to stop midway through assembly for special logic (input)
 # TODO: special function for declaring and deleting old type vars as needed
 # TODO: Way to determine type from calculations
+# TODO: Automatic casting of output type if it isnt proper? -> or delete old val?
 
 def assemble_init(ast):
     global vars, additional, add_i
