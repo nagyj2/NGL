@@ -227,21 +227,30 @@ def createLoopLine(node):
         if node.loop_end != None:
             end = assemble([node.loop_end]) + '\n'
 
-    line += start
+    if start != None:
+        line += start
     line += 'loop'+str(loc_i)+':\n'
     line += 'if' +' >< '+ str(node.cond) +'::bool '+ 'finish'+str(loc_i) +';\n'
-    line += body
-    line += end
+    if body != None:
+        line += body
+    if end != None:
+        line += end
     line += 'goto' +' '+ 'loop'+str(loc_i)+';\n'
 
     line += 'finish'+str(loc_i)+':'
     return line
 
+def convert(fname):
+    lst = TS.translate(fname) # Get AST
+    src = assemble_init(lst) # Get NGL source code
+    return src
+
+def error():
+    return TS.SC.error
+
 if __name__ == '__main__':
     fname = 'usr'
-    lst = TS.translate(fname)
-
-    print(init(lst))
+    print(convert(fname))
     print('=====')
 
     # for stmt in lst:
