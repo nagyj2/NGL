@@ -118,7 +118,6 @@ def getSym():
     elif ch == '-': getChar(); sym = MINUS
     elif ch == '*': getChar(); sym = MULT
     elif ch == '/': getChar(); sym = DIV
-    elif ch == '^': getChar(); sym = EXP
     elif ch == '~':
         getChar()
         if ch == '?': getChar(); sym = ELSE
@@ -184,6 +183,6 @@ def getSym():
 
 
 # a,b+1,5;?a>b{!a;u=a;l=b;}~??b>a{!b;{u=b;l=a;}}~?!'=';?l&u$l<u::l=l+1:;!l;
-# f_;?fn42+4~?n#.;?n<1\~??n>99\;!'begin';$~(g=n):g50:?g>ng-g/2~?g+g/2:!g;!'end';
-# t10;$_:::{nt/3;?n>0t-n~?t-1;!n;i#.;$i<1&i>2:::{i#.;};?t=0{!'WIN';\;};};
-# a,b5,5;$i<a:i0:i+1:$j<b:j0:j+1:!@i*' '+@j;
+# n,e42+4,#(100/2);?n<1\~??n>99\;!'begin';$~(g=n):ge:?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);}:{!g;?e=0e1;};!@g;!'end';
+# t10;$_:::{n#(t/3);?n>0t-#n~?t-1;!n;!t;in;$i>3|i<0:::{?i>3i-1~??i<0i+1~?!'N';!'i'+@i+''+@((i<3&i>0));};?t<0{!'WIN';\;};};
+# a,b5,5;$i<a:i0:i+1:$j<b:j0:j+1:!i*' '+@j;
