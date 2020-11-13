@@ -14,6 +14,7 @@ import ngl_s_t as TS
 # TODO: special function for declaring and deleting old type vars as needed
 # TODO: Way to determine type from calculations
 # TODO: Automatic casting of output type if it isnt proper? -> or delete old val?
+# TODO: special function which will just find identifiers
 
 def assemble_init(ast):
     global vars, additional, add_i
@@ -27,7 +28,6 @@ def assemble_init(ast):
     src  = assemble(ast) + '\nquit;'
     back = footer()
     return src + back
-
 
 def assemble(ast):
     # Takes in a list of commands or a BlockNode and converts all nodes to NGL code
@@ -162,13 +162,50 @@ def createIfLine(node):
     global vars, additional, add_i
     loc_i = add_i # Save in event of nested ifs
     add_i += 1
+    line = ''
 
-    line = 'if' +' '+ str(node.cond) +'::bool '+ 'true'+str(loc_i) +';\n'
+    old_vars = dict(vars) # Need to detect new variables inside the loop to avoid multiple declarations
+    if node.stmt_true != None:
+        stmt_true = assemble([node.stmt_true]) + '\n'
     if node.stmt_false != None:
-        line += assemble([node.stmt_false]) + '\n'
+        stmt_false = assemble([node.stmt_false]) + '\n'
+    # Find all new vars
+    new_vars = { k : vars[k] for k in set(vars) - set(old_vars) }
+    # Roll back
+    if len(new_vars) > 0:
+        for new_var in new_vars:
+            n_typ = new_vars[new_var]
+            if n_typ == INT:
+                typ = 'int'
+            elif n_typ == FLOAT:
+                typ = 'float'
+            elif n_typ == STRING:
+                typ = 'str'
+            elif n_typ == BOOL:
+                typ = 'bool'
+            else:
+                mark('unknown token type 2')
+
+            if n_typ == INT:
+                line += 'var' +' '+ new_var +'::'+ typ +' '+ str(0) + ';\n'
+            elif n_typ == FLOAT:
+                line += 'var' +' '+ new_var +'::'+ typ +' '+ str(0.0) + ';\n'
+            elif n_typ == STRING:
+                line += 'var' +' '+ new_var +'::'+ typ +' '+ '\'\'' + ';\n'
+            elif n_typ == BOOLEAN:
+                line += 'var' +' '+ new_var +'::'+ typ +' '+ 'false' + ';\n'
+
+        # Regenerate lines
+        if node.stmt_true != None:
+            stmt_true = assemble([node.stmt_true]) + '\n'
+        if node.stmt_false != None:
+            stmt_false = assemble([node.stmt_false]) + '\n'
+
+    line += 'if' +' '+ str(node.cond) +'::bool '+ 'true'+str(loc_i) +';\n'
+    if node.stmt_false != None:
+        line += stmt_false
 
     line += 'back'+str(loc_i)+':'
-
     additional[loc_i] = [node.stmt_true];
     return line
 
