@@ -64,7 +64,6 @@ class Variable:
 			elif self.typ == other.typ == STRING:
 				return Variable._resolve(self, PLUS, other)
 			else:
-				print('>',self,self.typ,other,other.typ) 
 				raise Exception('not implemented: +')
 		else: # Collection
 			other_copy = deepcopy(other)
@@ -95,16 +94,19 @@ class Variable:
 				return other_copy
 	def __mul__(self, other):
 		if type(other) == Variable:
-			if other.typ == self.typ or other.typ == {INT,FLOAT} and self.typ in {INT,FLOAT}:
+			if other.typ == self.typ or other.typ in {INT,FLOAT} and self.typ in {INT,FLOAT}:
 				return Variable._resolve(self,MULT,other)
-			else: raise Exception('not implemented: *')
+			elif self.typ == INT and other.typ == STRING or self.typ == STRING and other.typ == INT:
+				return Variable._resolve(self,MULT,other)
+			else:
+				raise Exception('not implemented: *')
 		else: # Collection
 			raise Exception('cannot multiply variable by collection')
 	def __rmul__(self, other):
 		return self * other
 	def __truediv__(self, other):
 		if type(other) == Variable:
-			if other.typ == self.typ or other.typ == {INT,FLOAT} and self.typ in {INT,FLOAT}:
+			if other.typ == self.typ or other.typ in {INT,FLOAT} and self.typ in {INT,FLOAT}:
 				return Variable._resolve(self,DIV,other)
 			else: raise Exception('not implemented: /')
 		else: # Collection
@@ -113,7 +115,7 @@ class Variable:
 		return Variable._resolve(self,'inv') * other
 	def __mod__(self, other):
 		if type(other) == Variable:
-			if other.typ == self.typ or other.typ == {INT,FLOAT} and self.typ in {INT,FLOAT}:
+			if other.typ == self.typ or other.typ in {INT,FLOAT} and self.typ in {INT,FLOAT}:
 				return Variable._resolve(self,MOD,other)
 			else: raise Exception('not implemented: %')
 		else: # Collection
@@ -122,7 +124,7 @@ class Variable:
 		raise Exception('not implemented: r%')
 	def __pow__(self, other):
 		if type(other) == Variable:
-			if other.typ == self.typ or other.typ == {INT,FLOAT} and self.typ in {INT,FLOAT}:
+			if other.typ == self.typ or other.typ in {INT,FLOAT} and self.typ in {INT,FLOAT}:
 				return Variable._resolve(self,EXP,other)
 			else: raise Exception('not implemented: ^')
 		else: # Collection
@@ -160,20 +162,22 @@ class Variable:
 			return Variable(BOOL,True)
 	def __lt__(self, other):
 		if type(other) == Variable:
-			if other.typ == self.typ or other.typ == {INT,FLOAT} and self.typ in {INT,FLOAT}:
+			if other.typ == self.typ or other.typ in {INT,FLOAT} and self.typ in {INT,FLOAT}:
 				return Variable._resolve(self,LT,other)
 			elif other.typ == self.typ == STRING:
 				return Variable._resolve(self,LT,other)
-			else: raise Exception('not implemented for types')
+			else:
+				raise Exception('not implemented for types')
 		else: # Collection
 			raise Exception('cannot use order comparison on variable and collection')
 	def __gt__(self, other):
 		if type(other) == Variable:
-			if other.typ == self.typ or other.typ == {INT,FLOAT} and self.typ in {INT,FLOAT}:
+			if other.typ == self.typ or other.typ in {INT,FLOAT} and self.typ in {INT,FLOAT}:
 				return Variable._resolve(self,GT,other)
 			elif other.typ == self.typ == STRING:
 				return Variable._resolve(self,GT,other)
-			else: raise Exception('not implemented for types')
+			else:
+				raise Exception('not implemented for types')
 		else: # Collection
 			raise Exception('cannot use order comparison on variable and collection')
 
