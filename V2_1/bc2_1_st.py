@@ -160,7 +160,7 @@ def setSym(name, value, index = -1, burrow = False, level = -1):
     elif name not in symTab[level]:
         error = True
         if abs(level) == size: mark('variable does not exist'); return
-    elif type(value) != type(symTab[level][name] and index < 0):
+    elif type(value) != type(symTab[level][name]) and index < 0:
         mark('variables cannot change type'); return
     elif value.typ != symTab[level][name].typ:
         mark('variables cannot change primative type'); return
