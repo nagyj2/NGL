@@ -8,45 +8,45 @@ MULT = 3; # *
 DIV = 4; # /
 MOD = 5; # %
 EXP = 6; # ^
-AND = 6; # &
-OR = 7; # |
-NOT = 8; # !
-E_NOT = 9; # ><
-EQ = 10; # =
-NE = 11; # <>
-LT = 12; # <
-GT = 13; # >
-GOARROW1 = 14; # ->
-GOARROW2 = 15; # =>
-RETARROW1 = 16; # <-
-RETARROW2 = 17; # <=
-ARROW_SHAFT = 18; # ~
-NOJUMP = 19; # .
-COMMA = 20; # ,
-COLON = 21; # :
-CAST = 22; # ::
-SEMICOLON = 23; # ;
-PARAM = 24; # @
-LPAREN = 25; # (
-RPAREN = 26; # )
-LBRAK = 27; # [
-RBRAK = 28; # ]
-LCURLY = 29; # {
-RCURLY = 30; # }
+AND = 7; # &
+OR = 8; # |
+NOT = 9; # !
+E_NOT = 10; # ><
+EQ = 11; # =
+NE = 12; # <>
+LT = 13; # <
+GT = 14; # >
+GOARROW1 = 15; # ->
+GOARROW2 = 16; # =>
+RETARROW1 = 17; # <-
+RETARROW2 = 18; # <=
+ARROW_SHAFT = 19; # ~
+NOJUMP = 20; # .
+COMMA = 21; # ,
+COLON = 22; # :
+CAST = 23; # ::
+SEMICOLON = 24; # ;
+PARAM = 25; # @
+LPAREN = 26; # (
+RPAREN = 27; # )
+LBRAK = 28; # [
+RBRAK = 29; # ]
+LCURLY = 30; # {
+RCURLY = 31; # }
 
-INT = 31; # int
-FLOAT = 32; # float
-BOOL = 33; # bool
-STRING = 34; # str
-ARRAY = 35; # array
-LIST = 36; # list
-NULL = 37; # null
+INT = 32; # int
+FLOAT = 33; # float
+BOOL = 34; # bool
+STRING = 35; # str
+ARRAY = 36; # array
+LIST = 37; # list
+NULL = 38; # null
 
-NUMBER = 38; # `val` holds corresponding number
-RAW_STRING = 39; # `val` holds string contents
-BOOLEAN = 40; # `val` holds true or false
-IDENT = 41; # `val` holds string identifier
-ARG = 42; # `val` holds the exact argument
+NUMBER = 39; # `val` holds corresponding number
+RAW_STRING = 40; # `val` holds string contents
+BOOLEAN = 41; # `val` holds true or false
+IDENT = 42; # `val` holds string identifier
+ARG = 43; # `val` holds the exact argument
 
 VAR = 50; # var
 SET = 51; # set
