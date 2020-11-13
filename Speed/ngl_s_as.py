@@ -14,7 +14,7 @@ import ngl_s_t as TS
 # TODO: special function for declaring and deleting old type vars as needed
 # TODO: Way to determine type from calculations
 
-def init(ast):
+def assemble_init(ast):
     global vars, additional, add_i
     vars = {} # Declared variables
     additional = {} # Jump labels as indexes and the ast to place at the jump
