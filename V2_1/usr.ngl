@@ -1,12 +1,37 @@
+var n::int (73);
+var e::int ((100/2))::int;
+if (n<1)::bool true0;
+if (n>99)::bool true1;
+back1:
+back0:
+print 'begin';
+var g::int e;
+loop2:
+if >< !(g=n)::bool finish2;
+print g;
+if (e=0)::bool true3;
+back3:
+if (g>n)::bool true4;
+set g g + ((e/2))::int;
+set e ((e/2))::int;
+back4:
+goto loop2;
+finish2:
+print (g)::str;
+print 'end';
+quit;
 
-print 'Load a library';
-incl add1;
-incl add2;
-
-print add1@1;
-print add2@1;
-
-
-//read word::str;
-//print 'Length: '+(length@word)::str;
-//print 'Done';
+true0:
+quit;
+goto back0;
+true1:
+quit;
+goto back1;
+true2:
+true3:
+set e 1;
+goto back3;
+true4:
+set g g - ((e/2))::int;
+set e ((e/2))::int;
+goto back4;
