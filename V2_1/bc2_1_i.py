@@ -208,8 +208,6 @@ def stmt():
 
     else: # SC.sym == QUIT
         getSym()
-
-        print('quit prematurely')
         exit()
 
 #@call
