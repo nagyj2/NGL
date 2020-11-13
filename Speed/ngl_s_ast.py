@@ -47,17 +47,17 @@ binop = { PLUS: [[INT, FLOAT, None ,None, INT],
                  [BOOL, BOOL, BOOL, BOOL, BOOL],
                  [BOOL, BOOL, BOOL, BOOL, BOOL]],
 
-          LT: [[BOOL, BOOL, BOOL ,None, INT],
-                 [BOOL, BOOL, None ,None, FLOAT],
+          LT: [[BOOL, BOOL, BOOL ,None, IDENT],
+                 [BOOL, BOOL, None ,None, IDENT],
                  [BOOL, None, BOOL ,None, IDENT],
                  [None, None, None, None, None],
-                 [INT, FLOAT, IDENT, None, IDENT]],
+                 [IDENT, IDENT, IDENT, None, IDENT]],
 
-          GT: [[BOOL, BOOL, BOOL ,None, INT],
-                 [BOOL, BOOL, None ,None, FLOAT],
+          GT: [[BOOL, BOOL, BOOL ,None, IDENT],
+                 [BOOL, BOOL, None ,None, IDENT],
                  [BOOL, None, BOOL ,None, IDENT],
                  [None, None, None, None, None],
-                 [INT, FLOAT, IDENT, None, IDENT]]
+                 [IDENT, IDENT, IDENT, None, IDENT]]
 }
 
 class Node:
@@ -139,9 +139,9 @@ class BinOp:
         elif self.op == GT:
             toRet += '>'
         elif self.op == OR:
-            toRet += ' or '
+            toRet += '|'
         elif self.op == AND:
-            toRet += ' and '
+            toRet += '&'
         else:
             mark('unknown binary operation')
 
