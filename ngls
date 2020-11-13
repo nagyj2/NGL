@@ -1,0 +1,22 @@
+#!/usr/bin/python3
+
+import sys, os
+
+sys.path.insert(1, './V2_1/')
+import bc2_1_i as I
+sys.path.insert(1, './Speed/')
+import ngl_s_as as AS
+
+def _writefile(fname,src):
+    with open(fname+'.ngl','w') as writer:
+        writer.write(src)
+
+fname = sys.argv[1] # File which has NGL Speed code
+wfile = 'work' # File to store NGL code
+
+code = AS.convert(fname) # Convert file of NGL Speed to NGL Assembly
+if not AS.error():
+    _writefile(wfile,code) # Write NGL Assembly to a file
+    I.execute_init(wfile) # Execute NGL Assembly code
+else:
+    print('error in ngls code')
