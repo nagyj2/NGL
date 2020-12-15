@@ -8,7 +8,7 @@ sys.path.insert(1, './Speed/')
 import ngl_s_as as AS
 
 def _writefile(fname,src):
-    with open(fname+'.ngl','w') as writer:
+    with open(fname,'w') as writer:
         writer.write(src)
 
 fname = sys.argv[1] # File which has NGL Speed code
