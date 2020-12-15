@@ -7,6 +7,9 @@ from bc2_1_sc import INT, FLOAT, BOOL, STRING, NULL, ARRAY, LIST, GOARROW1, GOAR
 import bc2_1_e as E
 from bc2_1_e import Variable, Collection, SYMBOL
 
+#TODO: Better handling of return values
+#TODO: More concise tab collapsing
+
 class NewType(Enum):        # Type of scope opem
     CLEAN = 1       # Create new, empty scope
     FUNCTION = 2    # Create clean scope, but add argument variables to spcTab
