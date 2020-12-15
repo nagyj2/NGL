@@ -121,7 +121,7 @@ def collapse(type1 = CollapseType.DROP, type2 = None, type3 = None, type4 = None
     if size <= 1: mark('cannot collapse with one for fewer scopes'); return
 
     if type2 == None: type2 = type1
-    if type3 == None: type3 = type1
+    if type3 == None: type3 = CollapseType.FUNCTION
     if type4 == None: type4 = CollapseType.MERGE # Assume user wants to accumulate modules
 
     _collapseTab(type1,symTab)
@@ -139,7 +139,11 @@ def newSym(name, value, level = -1):
         mark('values must be in variable or collection'); return
     elif name in symTab[level]:
         mark('variable already exists'); return
-    symTab[level][name] = value
+
+    elif name == RETURN:
+        spcTab[level][name] = value
+    else:
+        symTab[level][name] = value
 
 def setSym(name, value, index = -1, burrow = False, level = -1):
     global symTab, size
@@ -151,7 +155,7 @@ def setSym(name, value, index = -1, burrow = False, level = -1):
     error = False
 
     # TODO: Move to interpreter?
-    if name == 'res' or name == RETURN:
+    if name == RETURN:
         setSpc(RETURN, value, level)
         return
 

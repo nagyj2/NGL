@@ -56,6 +56,8 @@ def stmt():
 
         #if SC.sym == IDENT:
         name = SC.val
+        if name == 'res':
+            name = RETURN
         getSym()
 
         #if SC.sym in FIRSTCAST_TYPE:
@@ -89,6 +91,8 @@ def stmt():
 
         # if SC.sym == IDENT:
         name = SC.val
+        if name == 'res':
+            name = RETURN
         getSym()
 
         # if SC.sym in FIRSTEXPR:
