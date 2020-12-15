@@ -10,7 +10,7 @@ var b::float arg1::float;
 var c::float arg2::float;
 
 try set rootp (-b+(b^2-4*a*c)^0.5)/(2*a) ->;
-try set rootn (-b+(b^2-4*a*c)^0.5)/(2*a) ->;
+try set rootn (-b-(b^2-4*a*c)^0.5)/(2*a) ->;
 
 var res::float::array {float:rootp,rootn};
 goto =>;

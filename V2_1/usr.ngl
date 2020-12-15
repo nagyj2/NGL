@@ -2,6 +2,14 @@
 incl quad;
 
 print quad@2@1@-2;
+print quad@2@2@-2;
+print quad@-3@1@2;
+print quad@-3@1@1;
 
-print res;
+var a::int -3;
+var b::int 2;
+
+print quad@1@a+b@a*b;
+
+
 print 'Done';
