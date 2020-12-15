@@ -6,6 +6,7 @@ import ngl_s_t as TS
 
 # TODO: Ability to secifiy how 'deep' to assemble
 # TODO: Ability to create lines with specific data, not JUST a node
+    # TODO: 1 function takes a node and preps it for line creation and a second function actually writes the line
 # TODO: Assembler takes only block nodes and line builders take StmtNodes
 # TODO: Static functions for common tasks
 # TODO: Define state variables
@@ -17,6 +18,7 @@ import ngl_s_t as TS
 # TODO: special function which will just find identifiers
 # TODO: Footer assembler must be able to handle changes in size of `additional`
 # TODO: Footer assembly should be performed inline instead of at the end
+# TODO: For nested if stmts (if stmt in else branch)
 
 def assemble_init(ast):
     global vars, additional, add_i
@@ -207,9 +209,11 @@ def createIfLine(node):
     if node.stmt_false != None:
         line += stmt_false
 
-    if node.stmt_false != None:
+    if node.stmt_true != None:
         line += 'goto back'+str(loc_i)+';\ntrue'+str(loc_i) +':\n'
         line += stmt_true
+    else:
+        line += 'true'+str(loc_i) +':\n'
 
     line += 'back'+str(loc_i)+':'
 
