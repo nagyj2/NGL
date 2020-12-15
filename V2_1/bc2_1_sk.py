@@ -83,8 +83,8 @@ FOLLOWPROGRAM = FOLLOWLINE
 def program():
     if SC.sym not in FIRSTPROGRAM | {EOF}: mark('incorrect start: program')
 
-    ST.setSpc(GOARROW1, SC.line); getSym(); # Very beginning is jumpable
-    ST.setSpc(GOARROW2, SC.line); getSym();
+    ST.setSpc(GOARROW1, SC.line) # Very beginning is jumpable
+    ST.setSpc(GOARROW2, SC.line)
 
     while SC.sym in FIRSTPROGRAM:
         while SC.sym in FIRSTARROW:
@@ -100,8 +100,8 @@ def program():
         if SC.sym in FIRSTLINE:
             line()
 
-    ST.setSpc(RETARROW1, SC.line); getSym(); # Very end is jumpable
-    ST.setSpc(RETARROW2, SC.line); getSym();
+    ST.setSpc(RETARROW1, SC.line) # Very end is jumpable
+    ST.setSpc(RETARROW2, SC.line)
 
 @call
 def arrow():
