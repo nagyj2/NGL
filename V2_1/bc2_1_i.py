@@ -10,6 +10,7 @@ from bc2_1_sk import FIRSTPRIMATIVE, FOLLOWPRIMATIVE, FIRSTCOLLECTION, FOLLOWCOL
 import bc2_1_lib as LIB
 
 # TODO: Way to stop execution without killing ALL processes
+    # IDEA: quit vs stop commands
 
 # calls = 0
 # def call(func):

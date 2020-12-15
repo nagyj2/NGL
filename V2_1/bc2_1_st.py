@@ -9,6 +9,7 @@ from bc2_1_e import Variable, Collection, SYMBOL
 
 #TODO: Better handling of return values
 #TODO: More concise tab collapsing
+#QUESTION: Should NULL vars (or at least return var) simply take on a new value if they are changed?
 
 class NewType(Enum):        # Type of scope opem
     CLEAN = 1       # Create new, empty scope
