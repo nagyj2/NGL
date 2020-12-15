@@ -1,0 +1,19 @@
+
+
+var rootp::float;
+var rootn::float;
+
+print arg0::str+' '+arg1::str+' '+arg2::str;
+
+var a::float arg0::float;
+var b::float arg1::float;
+var c::float arg2::float;
+
+try set rootp (-b+(b^2-4*a*c)^0.5)/(2*a) ->;
+try set rootn (-b+(b^2-4*a*c)^0.5)/(2*a) ->;
+
+var res::float::array {float:rootp,rootn};
+goto =>;
+
+<-
+print 'negative descriminant';
