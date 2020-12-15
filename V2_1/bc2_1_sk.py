@@ -573,7 +573,7 @@ def collection():
 
 @call
 def func():
-    if SC.sym not in FIRSTFUNC: mark('invalid start: func')
+    if SC.sym not in FIRSTFUNC | {IDENT}: mark('invalid start: func')
 
     if SC.sym == TYPE: getSym()
     elif SC.sym == LABEL: getSym()
