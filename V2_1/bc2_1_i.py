@@ -11,6 +11,8 @@ import bc2_1_lib as LIB
 
 # TODO: Way to stop execution without killing ALL processes
     # IDEA: quit vs stop commands
+# TODO: Some way to track python exceptions and give the offending NGL line
+# TODO: Fix how consecutive > and < operate
 
 # calls = 0
 # def call(func):
