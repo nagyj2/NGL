@@ -4,7 +4,7 @@
 # There are three baked-in NGL functions in addition to the new 'incl' command
 # which can treat the contents of a .ngl file as a function
 
-# TODO: Restructure unary operators to have their own precidence level
+# TODO: Restructure unary operators to have their own precedence level
 
 # The program is separated into individual lines with arrows and labels
 # preceding
