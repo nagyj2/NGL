@@ -5,6 +5,7 @@
 # which can treat the contents of a .ngl file as a function
 
 # TODO: Restructure unary operators to have their own precedence level
+# TODO: Shift equality operators and inequality operators to different precedence
 
 # The program is separated into individual lines with arrows and labels
 # preceding
@@ -41,7 +42,7 @@ STMT          ::= 'var' IDENT CAST_TYPE EXPR
 
 # Labels are identifiers and arrows of various sizes which match to the pre-LINE
 # text stated in the PROGRAM production. For every shaft piece of the arrow,
-# the arrow will match 1 more beyond what it normall would
+# the arrow will match 1 more beyond what it normally would
 # FIRST  = {IDENT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROW_SHAFT, NOJUMP}
 # FOLLOW = (FIRST)
 LABEL         ::= IDENT
@@ -108,7 +109,7 @@ EXPR_L7       ::= ['!'] SUBATOM
 SUBATOM       ::= ATOM {CAST_TYPE}
 
 # Covers the smallest units an operand can be in an expression. Covers numbers,
-# variable identifiers, strings, booleans, precidence brackets and functions
+# variable identifiers, strings, booleans, precedence brackets and functions
 # FIRST  = {NUMBER, IDENT, RAW_STRING, BOOLEAN, LPAREN, LCURLY}
 # FOLLOW = (INDEX) | {NUMBER, IDENT, RAW_STRING, BOOLEAN, RPAREN, RCURLY} | (SUBATOM)
 ATOM          ::= NUMBER
@@ -125,7 +126,7 @@ ATOM          ::= NUMBER
 # FOLLOW = {LBRAK}
 INDEX          ::= '[' EXPR ']'
 
-# The primative datatypes
+# The primitive datatypes
 # FIRST  = {INT, FLOAT, BOOL, STRING}
 # FOLLOW = (FIRST)
 PRIMATIVE      ::= 'int' | 'float' | 'bool' | 'str'
