@@ -7,9 +7,10 @@ from bc2_1_sc import INT, FLOAT, BOOL, STRING, NULL, ARRAY, LIST, GOARROW1, GOAR
 import bc2_1_e as E
 from bc2_1_e import Variable, Collection, SYMBOL
 
-#TODO: Better handling of return values
-#TODO: More concise tab collapsing
-#QUESTION: Should NULL vars (or at least return var) simply take on a new value if they are changed?
+# TODO: Better handling of return values
+# TODO: More concise tab collapsing
+# QUESTION: Should NULL vars (or at least return var) simply take on a new value if they are changed?
+# TODO: Ability to import from an import
 
 class NewType(Enum):        # Type of scope opem
     CLEAN = 1       # Create new, empty scope
