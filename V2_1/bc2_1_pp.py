@@ -6,8 +6,6 @@ import bc2_1_st as ST
 import bc2_1_sk as PPG
 import bc2_1_i as I
 
-workingfile = 'conf'
-
 def init(fname, src = None, debug = False):
     # global modules
     # Perform setup in one pass
