@@ -33,6 +33,8 @@ def test_constant():
     assert bool1 == bool3
     assert bool1 != bool2
 
+    assert int1 != D.Variable(INT,3)
+
 def test_variable():
     int1 = D.Variable(INT,3)
     int2 = D.Variable(INT,3)
@@ -63,6 +65,8 @@ def test_variable():
     assert bool1 == bool2
     assert bool1 != bool3
 
+    assert int1 != D.Constant(INT,3)
+
     int3.setValue(3)
     assert int1 == int3
     float3.setValue(3)
@@ -88,6 +92,8 @@ def test_array():
     assert int1 != str1
     assert int1 != bool1
 
+    assert int1 != D.List(INT,(1,2,3))
+
 def test_list():
     int1 = D.List(INT,(1,2,3))
     int2 = D.List(INT,(1,2,3))
@@ -109,6 +115,8 @@ def test_list():
     assert float1 == float2
     assert str1 == str2
     assert bool1 == bool2
+
+    assert int1 != D.Array(INT,(1,2,3))
 
     float2.setValue(0,0)
     assert float1 != float2
