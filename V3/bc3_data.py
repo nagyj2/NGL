@@ -105,5 +105,14 @@ class Function:
     #fields: name, filename, param number
     pass
 
+# A representation of a jumpable line
+class Label:
+    #fields: name, filename, param number
+    pass
+
+# A representation of an exception
+class Error:
+    pass
+
 if __name__ == '__main__':
     pass
