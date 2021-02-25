@@ -58,12 +58,11 @@ RCURLY = 75 # }
 # Syntax Markers
 COMMA = 76 # ,
 COLON = 77 # :
-LINEEND = 78 # ; or \n
 
 # Types
 INT = 80 # int
-STR = 81 # str
-FLOAT = 82 # float
+FLOAT = 81 # float
+STR = 82 # str
 BOOL = 83 # bool
 ARRAY = 84 # array
 LIST = 85 # list
@@ -76,10 +75,80 @@ STRING = 92 # string
 IDENT = 93 # identifier
 
 # Utility
+LINEEND = 97 # ;
+NEWLINE = 98 # \n
 EOF = 99 # end of file marker
 
 # Symbol sets
 ARROWS = (GOARROW1, GOARROW2, RETARROW1, RETARROW2)
+TYPES = (INT, FLOAT, STR, BOOL)
+
+FIRST_LABEL = set({ARROWSHAFT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, NOJUMP, IDENT})
+LAST_LABEL  = FIRST_LABEL
+
+FIRST_PRIMITIVE = set({INT, FLOAT, STR, BOOL})
+LAST_PRIMITIVE  = FIRST_PRIMITIVE
+
+FIRST_COLLECTION = set({ARRAY, LIST})
+LAST_COLLECTION  = FIRST_COLLECTION
+
+FIRST_TYPE = FIRST_PRIMITIVE
+LAST_TYPE  = LAST_PRIMITIVE | LAST_COLLECTION
+
+FIRST_CAST = set({CAST})
+LAST_CAST  = LAST_TYPE
+
+FIRST_LINEEND = set({LINEEND})
+LAST_LINEEND  = FIRST_LINEEND
+
+FIRST_ATOM = set({NUMBER, DECIMAL, IDENT, STRING, LPAREN, LCURLY})
+LAST_ATOM  = set({NUMBER, DECIMAL, IDENT, STRING, RPAREN, RCURLY})
+
+FIRST_SUBATOM = FIRST_ATOM
+LAST_SUBATOM  = set({RBRAK}) | LAST_ATOM
+
+FIRST_EXPR_L9 = FIRST_SUBATOM
+LAST_EXPR_L9  = LAST_CAST | LAST_SUBATOM
+
+FIRST_EXPR_L8 = set({PLUS, MINUS, NOT}) | FIRST_EXPR_L9
+LAST_EXPR_L8  = LAST_EXPR_L9
+
+FIRST_EXPR_L7 = FIRST_EXPR_L8
+LAST_EXPR_L7  = LAST_EXPR_L8
+
+FIRST_EXPR_L6 = FIRST_EXPR_L8
+LAST_EXPR_L6  = LAST_EXPR_L8
+
+FIRST_EXPR_L5 = FIRST_EXPR_L6
+LAST_EXPR_L5  = LAST_EXPR_L6
+
+FIRST_EXPR_L4 = FIRST_EXPR_L5
+LAST_EXPR_L4  = LAST_EXPR_L5
+
+FIRST_EXPR_L3 = FIRST_EXPR_L4
+LAST_EXPR_L3  = LAST_EXPR_L4
+
+FIRST_EXPR_L2 = FIRST_EXPR_L3
+LAST_EXPR_L2  = LAST_EXPR_L3
+
+FIRST_EXPR_L1 = FIRST_EXPR_L2
+LAST_EXPR_L1  = LAST_EXPR_L2
+
+FIRST_EXPR_L0 = FIRST_EXPR_L1
+LAST_EXPR_L0  = LAST_EXPR_L1
+
+FIRST_EXPR = set({ENOT}) | FIRST_EXPR_L0
+LAST_EXPR  = LAST_EXPR_L0
+
+FIRST_STMT = set({VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, RAISE, LOG})
+LAST_STMT  = set({QUIT, RETURN, IDENT}) | LAST_CAST | LAST_EXPR | LAST_LABEL
+
+FIRST_LINE = set({GOARROW1, GOARROW2, RETARROW1, RETARROW2, IDENT}) | FIRST_STMT
+LAST_LINE  = set({GOARROW1, GOARROW2, RETARROW1, RETARROW2, COLON}) | LAST_LINEEND
+
+FIRST_PROG = FIRST_LINE
+LAST_PROG  = FIRST_PROG
+
 
 KEYWORDS = {'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STR,
     'array': ARRAY, 'list': LIST, 'null': NONE, 'var': VAR, 'const': CONST,
@@ -125,11 +194,15 @@ class Scanner:
 
     def resetLine(self, setline):
         # Resets all parsing variables to be at the beginning of a specified line
-        self.line, self.lastline, self.errline = setline, setline, setline
+        self.line, self.lastline, self.errline = setline, setline-1, setline-1
         self.pos, self.lastpos, self.errpos = 0, 0, 0
         self.sym, self.val = None, None
         self.index = 0
         self.jump, self.newline = False, 0
+
+        # for i,src_line in enumerate(self.source.splitlines()):
+        #     if i == self.newline: break
+        #     else: self.index += len(src_line)+1 # Include newline
 
     def mark(self, msg):
         # Marks an error and sets error flag to true
@@ -145,19 +218,14 @@ class Scanner:
 
     def execGoto(self):
         # Executes the line jump
-        resetline(self.newline)
+        self.resetLine(self.newline)
 
         # FIX: may be broken
         for i,src_line in enumerate(self.source.splitlines()):
-            if i == newline: break
+            if i == self.newline: break
             else: self.index += len(src_line)+1 # Include newline
 
         self.getChar(); self.getSym()
-
-    def nextLine(self):
-        # Jumps to the next source line
-        # Executed after an accepted parse of LINEEND
-        self.pos, self.line = 0, self.line + 1
 
     def number(self):
         global logger
@@ -179,8 +247,8 @@ class Scanner:
         elif self.val <= 2**-31:
             self.mark('number too small'); self.val = 0
 
-    # Parses a string
     def string(self, open):
+        # Parses a string
         global logger
         self.getChar()
         start = self.index - 1
@@ -222,7 +290,6 @@ class Scanner:
         # logger.debug('found line comment')
         while chr(0) != self.ch != '\n': self.getChar()
 
-
     def getChar(self):
         # Retrieves the next character in the input (does not consume input)
         # Jumps lines as required
@@ -230,10 +297,12 @@ class Scanner:
         else:
             self.ch, self.index = self.source[self.index], self.index + 1
             self.lastpos = self.pos
-            # if ch == '\n':
-            #     pos, line = 0, line + 1
-            # else:
-            self.lastline, self.pos = self.line, self.pos + 1
+            if self.ch == '\n':
+                self.pos, self.line = 0, self.line + 1
+            else:
+
+                self.lastline, self.pos = self.line, self.pos + 1
+            # if self.ch != '\n':
 
 
     def getSym(self):
@@ -299,6 +368,6 @@ class Scanner:
         elif self.ch == '}': self.getChar(); self.sym = RCURLY
         elif self.ch == ',': self.getChar(); self.sym = COMMA
         elif self.ch == ';': self.getChar(); self.sym = LINEEND
-        elif self.ch == '\n': self.getChar(); self.sym = LINEEND
+        elif self.ch == '\n': self.getChar(); self.sym = NEWLINE
         elif self.ch == chr(0): self.sym = EOF
         else: self.mark('illegal character: %s' % self.ch); self.getChar(); self.sym = None
