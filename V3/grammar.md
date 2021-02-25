@@ -13,22 +13,17 @@ FOLLOW = {}
 PROG    ::= {LINE}
 
 Each line can have a number of arrows or a label in addition to a statement.
-FIRST  = (ARROW) | (IDENT) | (STMT)
+FIRST  = {<-, <=, ->, =>, IDENT} | (STMT)
 LAST   = {:} | (ARROW) | (LINEEND)
 FOLLOW = (LINE)
-LINE    ::= { [{ARROW} | IDENT ':'] [STMT LINEEND] }
+LINE    ::= { [{<- | <= | -> | =>} | IDENT ':'] [STMT (LINEEND | NEWLINE | LINEEND NEWLINE)] }
 
-A label is an arrow or an identifier. Note that the identifier namespace and variable namspace is separate.
+A label is an arrow or an identifier. Note that the identifier namespace and variable namespace is separate. There are two types of arrows which do not interact, allowing for nesting. A tilde can be used to skip multiple arrows and a period will not skip.
 FIRST  = (ARROW) | (IDENT)
 LAST   = (ARROW) | (IDENT)
 FOLLOW = {:} | (LINEEND)
-LABEL   ::= {ARROW} | IDENT
-
-There are two types of arrows which do not interact, allowing for nesting. A tilde can be used to skip multiple arrows and a period will not skip.
-FIRST  = {~, ->, =>, <-, <=, .}
-LAST   = {~, ->, =>, <-, <=, .}
-FOLLOW = {:} | LINEEND
-ARROW   ::= {'~'} ('->' | '=>')
+LABEL   ::= IDENT
+          | {'~'} ('->' | '=>')
           | ('<-' | '<=') {'~'}
           | '.'
 
@@ -129,6 +124,7 @@ FIRST  = { NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
 FOLLOW = {[, ^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @ } | (CAST) | (LINEEND)
 ATOM    ::= NUMBER
+          | DECIMAL
           | IDENT
           | STRING
           | '(' EXPR ')'
@@ -151,8 +147,8 @@ FIRST  = {int, str, float, bool}
 LAST   = {int, str, float, bool}
 FOLLOW = {::} | (EXPR) | (LINEEND)
 PRIMITIVE   ::= 'int'
-              | 'str'
               | 'float'
+              | 'str'
               | 'bool'
 
 Available collection types.
