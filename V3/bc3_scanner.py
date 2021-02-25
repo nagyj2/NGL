@@ -1,6 +1,5 @@
 # NGL Bytecode 3.0 Scanner
-
-import logging
+# Designed so that there can be multiple scanners being used simultaneously
 
 # Operators
 ENOT = 1 # ><
@@ -79,247 +78,227 @@ IDENT = 93 # identifier
 # Utility
 EOF = 99 # end of file marker
 
+# Symbol sets
+ARROWS = (GOARROW1, GOARROW2, RETARROW1, RETARROW2)
+
 KEYWORDS = {'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STR,
     'array': ARRAY, 'list': LIST, 'null': NONE, 'var': VAR, 'const': CONST,
     'in': READ, 'set': SET, 'del': DEL, 'goto': GOTO, 'if': IF, 'try': TRY,
     'cmp': EXEC,  'out': PRINT, 'incl': INCLUDE, 'quit': QUIT, 'retn': RETURN,
     'flag': RAISE, 'log': LOG}
 
-# Initializes scanner for new source code
-def init(file, src = None, log = True):
-    global logger, line, lastline, errline, pos, lastpos, errpos, filename
-    global sym, val, error, source, index, jump, newline, suppress
+# Used as a placeholder for those who need a scanner but will be assigned one later
+class ScannerDummy:
+    def __init__(self):
+        pass
+    def mark(self,msg):
+        pass
 
-    if src == None: src = open(file).readlines()
+class Scanner:
+    def __init__(self,fname, src=None, log=False):
+        global logger
+        # Initializes a scanner for new source code
 
-    line, lastline, errline = 0, 0, 0 # current line, previous line, last error line
-    pos, lastpos, errpos = 0, 0, 0 # current pos in line, previous position, last error position
-    sym, val = None, None # current symbol, value associated with symbol
-    source, index = src, 0 # raw code, index in line, current line index in source
-    jump, newline, filename = False, 0, file # jump on new line, line to jump to, file name
-    error, suppress = False, False # error detected, supress detected errors
-    getChar(); getSym() # Load initial character and get symbol
+        if src == None: self.src = open(fname).readlines()
 
-    logger = logging.getLogger('scanner')
-    if log:         initLogging()
+        self.line, self.lastline, self.errline = 0, 0, 0 # current line, previous line, last error line
+        self.pos, self.lastpos, self.errpos = 0, 0, 0 # current pos in line, previous position, last error position
+        self.sym, self.val = None, None # current symbol, value associated with symbol
+        self.source, self.index = src, 0 # raw code, index in line, current line index in source
+        self.jump, self.newline, self.fname = False, 0, fname # jump on new line, line to jump to, file name
+        self.error, self.suppress = False, False # error detected, supress detected errors
+        self.getChar(); self.getSym() # Load initial character and get symbol
 
-def initLogging():
-    global logger, filename
-    logger.setLevel(logging.INFO)
-    fh = logging.FileHandler('scanner.log') # handler for log file
-    fh.setLevel(logging.INFO)
-    sh = logging.StreamHandler() # handler for console stream
-    sh.setLevel(logging.WARNING)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    sh.setFormatter(formatter)
-    logger.addHandler(fh)
-    logger.addHandler(sh)
+        # logger = logging.getLogger('scanner')
+        # if log:         self.initLogging()
 
-    logger.info('initialized scanner on file %s' % filename)
+    def reset(self):
+        global logger
+        # Reinitializes scanner for current source
+        self.line, self.lastline, self.errline = 0, 0, 0
+        self.pos, self.lastpos, self.errpos = 0, 0, 0
+        self.sym, self.val = None, None
+        self.index = 0
+        self.jump, self.newline = False, 0
+        self.error, self.suppress = False, False
+        self.getChar(); self.getSym()
 
-# Resets entire scanner state
-def reset():
-    global line, lastline, errline, pos, lastpos, errpos
-    global sym, val, error, index, jump, newline, suppress, logger
-    # Reinitializes scanner for current source
-    line, lastline, errline = 0, 0, 0
-    pos, lastpos, errpos = 0, 0, 0
-    sym, val = None, None
-    index = 0
-    jump, newline = False, 0
-    error, suppress = False, False
-    getChar(); getSym()
+    def resetLine(self, setline):
+        # Resets all parsing variables to be at the beginning of a specified line
+        self.line, self.lastline, self.errline = setline, setline, setline
+        self.pos, self.lastpos, self.errpos = 0, 0, 0
+        self.sym, self.val = None, None
+        self.index = 0
+        self.jump, self.newline = False, 0
 
-    logger.info('reinitialized scanner on file %s' % filename)
+    def mark(self, msg):
+        # Marks an error and sets error flag to true
+        self.error = True
+        if not self.suppress:
+            if self.lastline > self.errline or self.lastpos > self.errpos:
+                print('file',self.fname,'error: line', self.lastline+1, 'pos', self.lastpos, msg)
+            self.errline, self.errpos = self.lastline, self.lastpos
 
-# Resets all parsing variables to be at the beginning of a specified line
-def resetLine(setline):
-    global line, lastline, errline, pos, lastpos, errpos
-    global sym, val, error, index, jump, newline, suppress
-    # Reinitializes scanner for current source
-    line, lastline, errline = setline, setline, setline
-    pos, lastpos, errpos = 0, 0, 0
-    sym, val = None, None
-    index = 0
-    jump, newline = False, 0
+    def setGoto(self, line):
+        # Sets a specific line to jump to when the current line is fully parsed
+        self.jump, self.newline = True, line
 
-    logger.info('jumped execution to line %s' % line)
+    def execGoto(self):
+        # Executes the line jump
+        resetline(self.newline)
 
-# Marks an error and sets error flag to true
-def mark(msg):
-    global errline, errpos, error, suppress, filename
-    error = True
-    if not suppress:
-        if lastline > errline or lastpos > errpos:
-            print('file',filename,'error: line', lastline+1, 'pos', lastpos, msg)
-            logger.error('file',filename,'error: line', lastline+1, 'pos', lastpos, msg)
-        errline, errpos = lastline, lastpos
+        # FIX: may be broken
+        for i,src_line in enumerate(self.source.splitlines()):
+            if i == newline: break
+            else: self.index += len(src_line)+1 # Include newline
 
-# Sets a specific line to jump to when the current line is fully parsed
-def setGoto(jump_line):
-    global jump, newline
-    jump, newline = True, jump_line
+        self.getChar(); self.getSym()
 
-# Executes the line jump
-def execGoto():
-    global index, source
-    resetline(newline)
+    def nextLine(self):
+        # Jumps to the next source line
+        # Executed after an accepted parse of LINEEND
+        self.pos, self.line = 0, self.line + 1
 
-    # FIX: may be broken
-    for i,src_line in enumerate(source.splitlines()):
-        if i == newline: break
-        else: index += len(src_line)+1 # Include newline
+    def number(self):
+        global logger
+        # Parses a number to a integer or float
+        self.sym, self.val, div = NUMBER, 0, 10
+        while '0' <= self.ch <= '9':
+            self.val = 10 * self.val + int(self.ch)
+            self.getChar()
+        if self.ch == '.':
+            self.getChar()
+            self.sym = DECIMAL
+            while '0' <= self.ch <= '9':
+                self.val =  self.val + int(self.ch) / div
+                self.getChar(); div /= 10
 
-    getChar(); getSym()
+        # logger.debug('parsed number %s' % self.val)
+        if self.val >= 2**31:
+            self.mark('number too large'); self.val = 0
+        elif self.val <= 2**-31:
+            self.mark('number too small'); self.val = 0
 
-# Jumps to the next source line
-# Executed after an accepted parse of LINEEND
-def nextLine():
-    global line, pos
-    pos, line = 0, line + 1
-
-# Parses a number to a integer or float
-def number():
-    global sym, val
-    sym, val, div = NUMBER, 0, 10
-    while '0' <= ch <= '9':
-        val = 10 * val + int(ch)
-        getChar()
-    if ch == '.':
-        getChar()
-        sym = DECIMAL
-        while '0' <= ch <= '9':
-            val =  val + int(ch) / div
-            getChar(); div /= 10
-
-    logger.debug('parsed number %s' % val)
-    if val >= 2**31:
-        mark('number too large'); val = 0
-    elif val <= 2**-31:
-        mark('number too small'); val = 0
-
-
-# Parses a string
-def string(open):
-    global logger, sym, val
-    getChar()
-    start = index - 1
-    while chr(0) != ch != open: getChar()
-    if ch == chr(0): mark('string not terminated'); sym = None;
-    else:
-        sym = STRING; val = source[start:index-1]
-        getChar(); # Get rid of ending '
-
-        logger.debug('parsed string %s' % filename)
-
-# Parses a word as either a keyword or identifier
-def identKW():
-    global sym, val
-    start = index - 1
-    while ('A' <= ch <= 'Z') or ('a' <= ch <= 'z') or ('0' <= ch <= '9') or (ch == '_'): getChar()
-    val = source[start:index-1]
-    sym = KEYWORDS[val] if val in KEYWORDS else IDENT
-
-    logger.debug('parsed %s as %s' % (val,sym))
-
-# Keeps taking inputs until the end comment marker is found
-def blockcomment():
-    logger.debug('found block comment')
-    while chr(0) != ch:
-        if ch == '*':
-            getChar()
-            if ch == '/':
-                 getChar(); break
+    # Parses a string
+    def string(self, open):
+        global logger
+        self.getChar()
+        start = self.index - 1
+        while chr(0) != self.ch != open: self.getChar()
+        if self.ch == chr(0): mark('string not terminated'); self.sym = None;
         else:
-            getChar()
-    if ch == chr(0): mark('comment not terminated')
-    else: getChar()
+            self.sym = STRING; self.val = self.source[start:self.index-1]
+            self.getChar(); # Get rid of ending '
 
-# Keeps taking inputs until a newline or EOF is found
-def linecomment():
-    global logger
-    logger.debug('found line comment')
-    while chr(0) != ch != '\n': getChar()
+            # logger.debug('parsed string %s' % self.val)
+
+    def identKW(self):
+        global logger
+        # Parses a word as either a keyword or identifier
+        start = self.index - 1
+        while ('A' <= self.ch <= 'Z') or ('a' <= self.ch <= 'z') or ('0' <= self.ch <= '9') or (self.ch == '_'): self.getChar()
+        self.val = self.source[start:self.index-1]
+        self.sym = KEYWORDS[self.val] if self.val in KEYWORDS else IDENT
+
+        # logger.debug('parsed %s as %s' % (self.val,self.sym))
+
+    def blockcomment(self):
+        global logger
+        # Keeps taking inputs until the end comment marker is found
+        # logger.debug('found block comment')
+        while chr(0) != self.ch:
+            if self.ch == '*':
+                self.getChar()
+                if self.ch == '/':
+                     self.getChar(); break
+            else:
+                self.getChar()
+        if self.ch == chr(0): mark('comment not terminated')
+        else: self.getChar()
+
+    def linecomment(self):
+        global logger
+        # Keeps taking inputs until a newline or EOF is found
+        # logger.debug('found line comment')
+        while chr(0) != self.ch != '\n': self.getChar()
 
 
-# Retrieves the next character in the input (does not consume input)
-# Jumps lines as required
-def getChar():
-    global line, lastline, pos, lastpos, ch, index
-    if index == len(source): ch = chr(0)
-    else:
-        ch, index = source[index], index + 1
-        lastpos = pos
-        # if ch == '\n':
-        #     pos, line = 0, line + 1
-        # else:
-        lastline, pos = line, pos + 1
+    def getChar(self):
+        # Retrieves the next character in the input (does not consume input)
+        # Jumps lines as required
+        if self.index == len(self.source): self.ch = chr(0)
+        else:
+            self.ch, self.index = self.source[self.index], self.index + 1
+            self.lastpos = self.pos
+            # if ch == '\n':
+            #     pos, line = 0, line + 1
+            # else:
+            self.lastline, self.pos = self.line, self.pos + 1
 
 
-# Determines the next symbol in the input
-def getSym():
-    global logger, sym, jump, source
+    def getSym(self):
+        # Determines the next symbol in the input
+        global logger, sym, jump, source
 
-    while chr(0) < ch <= ' ' and ch != '\n':
-        getChar()
+        while chr(0) < self.ch <= ' ' and self.ch != '\n':
+            self.getChar()
 
-    if 'A' <= ch <= 'Z' or 'a' <= ch <= 'z' or ch == '_': identKW()
-    elif ch == "'" or ch == '"': string(ch)
-    elif '0' <= ch <= '9': number()
+        if 'A' <= self.ch <= 'Z' or 'a' <= self.ch <= 'z' or self.ch == '_': self.identKW()
+        elif self.ch == "'" or self.ch == '"': self.string(self.ch)
+        elif '0' <= self.ch <= '9': self.number()
 
-    elif ch == '>':
-        getChar()
-        if ch == '<': getChar(); sym = ENOT
-        else: sym = GT
-    elif ch == '@': getChar(); sym = PARAM
-    elif ch == '|':
-        getChar()
-        if ch == '|': getChar(); sym = UNION
-        else: sym = OR
-    elif ch == '&':
-        getChar()
-        if ch == '&': getChar(); sym = INTER
-        else: sym = AND
-    elif ch == '=':
-        getChar()
-        if ch == '>': getChar(); sym = GOARROW2
-        else: sym = EQ
-    elif ch == '<':
-        getChar()
-        if ch == '-': getChar(); sym = RETARROW1
-        elif ch == '=': getChar(); sym = RETARROW2
-        elif ch == '>': getChar(); sym = NE
-        else: sym = LT
-    elif ch == '+': getChar(); sym = PLUS
-    elif ch == '-':
-        getChar()
-        if ch == '>': getChar(); sym = GOARROW1
-        else: sym = MINUS
-    elif ch == '*': getChar(); sym = MULT
-    elif ch == '/':
-        getChar();
-        if ch == '/': getChar(); linecomment(); getSym()
-        elif ch == '*': getChar(); blockcomment(); getSym()
-        else: sym = DIV
-    elif ch == '\\': getChar(); sym = INTDIV
-    elif ch == '%': getChar(); sym = MOD
-    elif ch == '^': getChar(); sym = EXP
-    elif ch == '!': getChar(); sym = NOT
-    elif ch == ':':
-        getChar();
-        if ch == ':': getChar(); sym = CAST
-        else: sym = COLON
-    elif ch == '~': getChar(); sym = ARROWSHAFT
-    elif ch == '.': getChar(); sym = NOJUMP
-    elif ch == '(': getChar(); sym = LPAREN
-    elif ch == ')': getChar(); sym = RPAREN
-    elif ch == '[': getChar(); sym = LBRAK
-    elif ch == ']': getChar(); sym = RBRAK
-    elif ch == '{': getChar(); sym = LCURLY
-    elif ch == '}': getChar(); sym = RCURLY
-    elif ch == ',': getChar(); sym = COMMA
-    elif ch == ';': getChar(); sym = LINEEND
-    elif ch == '\n': getChar(); sym = LINEEND
-    elif ch == chr(0): sym = EOF
-    else: mark('illegal character: '+ch); getChar(); sym = None
+        elif self.ch == '>':
+            self.getChar()
+            if self.ch == '<': self.getChar(); self.sym = ENOT
+            else: self.sym = GT
+        elif self.ch == '@': self.getChar(); self.sym = PARAM
+        elif self.ch == '|':
+            self.getChar()
+            if self.ch == '|': self.getChar(); self.sym = UNION
+            else: self.sym = OR
+        elif self.ch == '&':
+            self.getChar()
+            if self.ch == '&': self.getChar(); self.sym = INTER
+            else: self.sym = AND
+        elif self.ch == '=':
+            self.getChar()
+            if self.ch == '>': self.getChar(); self.sym = GOARROW2
+            else: self.sym = EQ
+        elif self.ch == '<':
+            self.getChar()
+            if self.ch == '-': self.getChar(); self.sym = RETARROW1
+            elif self.ch == '=': self.getChar(); self.sym = RETARROW2
+            elif self.ch == '>': self.getChar(); self.sym = NE
+            else: self.sym = LT
+        elif self.ch == '+': self.getChar(); self.sym = PLUS
+        elif self.ch == '-':
+            self.getChar()
+            if self.ch == '>': self.getChar(); self.sym = GOARROW1
+            else: self.sym = MINUS
+        elif self.ch == '*': self.getChar(); self.sym = MULT
+        elif self.ch == '/':
+            self.getChar();
+            if self.ch == '/': self.getChar(); self.linecomment(); self.getSym()
+            elif self.ch == '*': self.getChar(); self.blockcomment(); self.getSym()
+            else: self.sym = DIV
+        elif self.ch == '\\': self.getChar(); self.sym = INTDIV
+        elif self.ch == '%': self.getChar(); self.sym = MOD
+        elif self.ch == '^': self.getChar(); self.sym = EXP
+        elif self.ch == '!': self.getChar(); self.sym = NOT
+        elif self.ch == ':':
+            self.getChar();
+            if self.ch == ':': self.getChar(); self.sym = CAST
+            else: self.sym = COLON
+        elif self.ch == '~': self.getChar(); self.sym = ARROWSHAFT
+        elif self.ch == '.': self.getChar(); self.sym = NOJUMP
+        elif self.ch == '(': self.getChar(); self.sym = LPAREN
+        elif self.ch == ')': self.getChar(); self.sym = RPAREN
+        elif self.ch == '[': self.getChar(); self.sym = LBRAK
+        elif self.ch == ']': self.getChar(); self.sym = RBRAK
+        elif self.ch == '{': self.getChar(); self.sym = LCURLY
+        elif self.ch == '}': self.getChar(); self.sym = RCURLY
+        elif self.ch == ',': self.getChar(); self.sym = COMMA
+        elif self.ch == ';': self.getChar(); self.sym = LINEEND
+        elif self.ch == '\n': self.getChar(); self.sym = LINEEND
+        elif self.ch == chr(0): self.sym = EOF
+        else: self.mark('illegal character: %s' % self.ch); self.getChar(); self.sym = None
