@@ -45,9 +45,9 @@ def _passOne(scanner, log=True):
     pre_logger.info('starting grammar check of {0}'.format(scanner.fname))
     PG.execute(scanner, log)
 
-    ST.printTab()
 
-    ST.collapse('drop','merge','merge') # want to keep jump locations
+    ST.collapse('merge','merge','merge') # want to keep jump locations
+    ST.printTab()
 
 def _passTwo(scanner, log=True):
     global pre_logger
