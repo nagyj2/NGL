@@ -1,6 +1,8 @@
 # NGL Bytecode 3.0 Scanner
 # Designed so that there can be multiple scanners being used simultaneously
 
+from bc3_logging import getLogger
+
 # Operators
 ENOT = 1 # ><
 PARAM = 2 # @
@@ -156,14 +158,16 @@ KEYWORDS = {'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STR,
 # Used as a placeholder for those who need a scanner but will be assigned one later
 class ScannerDummy:
     def __init__(self):
-        pass
-    def mark(self,msg):
+        self.logger = getLogger('dummy')
+    def mark(self,msg,error,scanner):
         pass
 
 class Scanner:
-    def __init__(self,fname, src=None, log=False):
-        global logger
+    def __init__(self,fname, src=None, log=True):
         # Initializes a scanner for new source code
+
+        if log: self.logger = getLogger('scanner_{0}'.format(fname))
+        else:   self.logger = getLogger('dummy')
 
         if src == None: self.src = open(fname).readlines()
 
@@ -175,8 +179,6 @@ class Scanner:
         self.error, self.suppress = False, False # error detected, supress detected errors
         self.getChar(); self.getSym() # Load initial character and get symbol
 
-        # logger = logging.getLogger('scanner')
-        # if log:         self.initLogging()
 
     def reset(self):
         global logger
@@ -189,6 +191,8 @@ class Scanner:
         self.error, self.suppress = False, False
         self.getChar(); self.getSym()
 
+        self.logger.info('reset scanner')
+
     def resetLine(self, setline):
         # Resets all parsing variables to be at the beginning of a specified line
         self.line, self.lastline, self.errline = setline, setline-1, setline-1
@@ -197,35 +201,43 @@ class Scanner:
         self.index = 0
         self.jump, self.newline = False, 0
 
-        # for i,src_line in enumerate(self.source.splitlines()):
-        #     if i == self.newline: break
-        #     else: self.index += len(src_line)+1 # Include newline
+        # TODO FIX ERROR: works as expected?
+        for i,src_line in enumerate(self.source.splitlines()):
+            if i == self.newline: break
+            else: self.index += len(src_line)+1 # Include newline
 
-    def mark(self, msg):
+        self.logger.debug('reset to line {0}'.format(setline))
+
+    def mark(self, msg, level='error', logger=None):
         # Marks an error and sets error flag to true
-        self.error = True
+        if level == 'error':self.error = True
+        if logger == None:  log = self.logger
+        else:               log = logger
+
         if not self.suppress:
             if self.lastline > self.errline or self.lastpos > self.errpos:
                 print('file',self.fname,'error: line', self.lastline+1, 'pos', self.lastpos, msg)
+
+                if level == 'debug':        log.debug('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
+                elif level == 'info':       log.info('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
+                elif level == 'warning':    log.warning('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
+                elif level == 'error':      log.error('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
+                elif level == 'critical':   log.critical('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
+
             self.errline, self.errpos = self.lastline, self.lastpos
 
     def setGoto(self, line):
         # Sets a specific line to jump to when the current line is fully parsed
         self.jump, self.newline = True, line
 
+        self.logger.debug('set jump to {0}'.format(self.newline))
+
     def execGoto(self):
         # Executes the line jump
         self.resetLine(self.newline)
-
-        # FIX: may be broken
-        for i,src_line in enumerate(self.source.splitlines()):
-            if i == self.newline: break
-            else: self.index += len(src_line)+1 # Include newline
-
         self.getChar(); self.getSym()
 
     def number(self):
-        global logger
         # Parses a number to a integer or float
         self.sym, self.val, div = NUMBER, 0, 10
         while '0' <= self.ch <= '9':
@@ -243,34 +255,35 @@ class Scanner:
             self.mark('number too large'); self.val = 0
         elif self.val <= 2**-31:
             self.mark('number too small'); self.val = 0
+        else:
+            self.logger.debug('parsed {0} as {1}'.format(self.val,self.sym))
 
     def string(self, open):
         # Parses a string
-        global logger
         self.getChar()
         start = self.index - 1
-        while chr(0) != self.ch != open: self.getChar()
+        while chr(0) != self.ch != open:
+            if self.ch == '\\': self.getChar() # Use \ to escape open
+            self.getChar()
         if self.ch == chr(0): mark('string not terminated'); self.sym = None;
         else:
-            self.sym = STRING; self.val = self.source[start:self.index-1]
-            self.getChar(); # Get rid of ending '
-
-            # logger.debug('parsed string %s' % self.val)
+            self.sym = STRING
+            self.val = self.source[start:self.index-1]
+            self.getChar(); # Get rid of ending quote
+            self.logger.debug('parsed {0} as {1}'.format(self.val,self.sym))
 
     def identKW(self):
-        global logger
         # Parses a word as either a keyword or identifier
         start = self.index - 1
         while ('A' <= self.ch <= 'Z') or ('a' <= self.ch <= 'z') or ('0' <= self.ch <= '9') or (self.ch == '_'): self.getChar()
         self.val = self.source[start:self.index-1]
         self.sym = KEYWORDS[self.val] if self.val in KEYWORDS else IDENT
 
-        # logger.debug('parsed %s as %s' % (self.val,self.sym))
+        self.logger.debug('parsed {0} as {1}'.format(self.val,self.sym))
 
     def blockcomment(self):
-        global logger
         # Keeps taking inputs until the end comment marker is found
-        # logger.debug('found block comment')
+        start = self.line
         while chr(0) != self.ch:
             if self.ch == '*':
                 self.getChar()
@@ -281,10 +294,12 @@ class Scanner:
         if self.ch == chr(0): mark('comment not terminated')
         else: self.getChar()
 
+        self.logger.debug('block comment from line {0} to {1}'.format(start,self.line))
+
     def linecomment(self):
-        global logger
         # Keeps taking inputs until a newline or EOF is found
         # logger.debug('found line comment')
+        self.logger.debug('line comment started line {0}'.format(self.line))
         while chr(0) != self.ch != '\n': self.getChar()
 
     def getChar(self):
@@ -297,15 +312,12 @@ class Scanner:
             if self.ch == '\n':
                 self.pos, self.line = 0, self.line + 1
             else:
-
                 self.lastline, self.pos = self.line, self.pos + 1
             # if self.ch != '\n':
 
 
     def getSym(self):
         # Determines the next symbol in the input
-        global logger, sym, jump, source
-
         while chr(0) < self.ch <= ' ' and self.ch != '\n':
             self.getChar()
 
@@ -368,3 +380,5 @@ class Scanner:
         elif self.ch == '\n': self.getChar(); self.sym = NEWLINE
         elif self.ch == chr(0): self.sym = EOF
         else: self.mark('illegal character: %s' % self.ch); self.getChar(); self.sym = None
+
+        self.logger.debug('parsed symbol {0}'.format(self.sym))
