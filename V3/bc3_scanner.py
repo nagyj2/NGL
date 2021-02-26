@@ -152,7 +152,7 @@ FIRST_PROG = FIRST_LINE
 LAST_PROG  = FIRST_PROG
 
 STRONGSYMS = set({LINEEND, NEWLINE}) | FIRST_STMT
-WEAKSYMS   = set({LINEEND, NEWLINE}) |
+WEAKSYMS   = set({LINEEND, NEWLINE})
 
 
 KEYWORDS = {'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STR,
@@ -255,6 +255,10 @@ class Scanner:
             while '0' <= self.ch <= '9':
                 self.val =  self.val + int(self.ch) / div
                 self.getChar(); div /= 10
+
+        if self.ch == 'f':
+            self.getChar()
+            self.sym = DECIMAL
 
         # logger.debug('parsed number %s' % self.val)
         if self.val >= 2**31:
