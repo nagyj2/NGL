@@ -16,7 +16,7 @@ Each line can have a number of arrows or a label in addition to a statement.
 FIRST  = {<-, <=, ->, =>, IDENT} | (STMT)
 LAST   = {:} | (ARROW) | (LINEEND)
 FOLLOW = (LINE)
-LINE    ::= { [{<- | <= | -> | =>} | IDENT ':'] [STMT (LINEEND | NEWLINE | LINEEND NEWLINE)] }
+LINE    ::= {<- | <= | -> | =>} [IDENT ':'] [STMT] LINEEND
 
 A label is an arrow or an identifier. Note that the identifier namespace and variable namespace is separate. There are two types of arrows which do not interact, allowing for nesting. A tilde can be used to skip multiple arrows and a period will not skip.
 FIRST  = (ARROW) | (IDENT)
@@ -29,17 +29,17 @@ LABEL   ::= IDENT
 
 There are a multitude of supported statements. New to 3.0, 'read' becomes 'in', 'print' becomes 'out', the addition of 'retn', 'const', 'flag'.
 FIRST  = {var, const, in, set, del, goto, if, try, cmp, out, incl, quit, retn, flag, log}
-LAST   = {retn, quit} | (CAST) | (EXPR) | (IDENT) | (LABEL)
+LAST   = {retn, quit} | (EXPR) | (IDENT) | (LABEL)
 FOLLOW = (LINEEND)
-STMT    ::= 'var'   IDENT CAST  [EXPR]  // Create new variable with optional initial value
-          | 'const' IDENT CAST  EXPR    // Create new constant
-          | 'in'    IDENT [CAST]        // Assign input to a new var (w cast) or existing var (w/o cast)
+STMT    ::= 'var'   IDENT ['::'] TYPE [EXPR] // Create new variable with optional initial value
+          | 'const' IDENT ['::'] TYPE EXPR   // Create new constant
+          | 'in'    EXPR                // Assign input to a var
           | 'set'   IDENT EXPR          // Set a new variable value
           | 'del'   IDENT               // Delete a variable's record
           | 'goto'  LABEL               // Jump to the corresponding label
           | 'if'    EXPR  LABEL         // Evaluate boolean expression and jump to label if true
-          | 'try'   STMT  LABEL         // Evaluate a statement and if there is an error, jump to label
           | 'cmp'   EXPR                // Evaluates an expression
+          | 'try'   STMT  LABEL         // Evaluate a statement and if there is an error, jump to label
           | 'out'   EXPR                // Outputs an expression result to stdout
           | 'incl'  IDENT               // Imports another file as an executable
           | 'quit'                      // Stops execution of entire trace
@@ -111,52 +111,30 @@ Type casting to a primitive or collection.
 FIRST  = { NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
 FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @ } | (LINEEND)
-EXPR_L9 ::= SUBATOM [CAST]
+EXPR_L9 ::= SUBATOM ['::' TYPE]
 
 Indexing. Available for strings, integers and floats
 FIRST  = { NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @ } | (CAST) | (LINEEND)
+FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, ::} | (LINEEND)
 SUBATOM ::= ATOM [ '[' EXPR ']' ]
 
 The highest precidence. Elements are numbers, identifiers, raw strings, parentheses and collections.
 FIRST  = { NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = {[, ^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @ } | (CAST) | (LINEEND)
+FOLLOW = {[, ^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, :: } | (LINEEND)
 ATOM    ::= NUMBER
           | DECIMAL
           | IDENT
           | STRING
           | '(' EXPR ')'
-          | '{' TYPE ':' [ EXPR ({',' EXPR} | ':' EXPR) ] '}'
-
-Used to denote a type or convert types.
-FIRST  = {::}
-LAST   = (TYPE)
-FOLLOW = (EXPR) | (LINEEND)
-CAST    ::= '::' TYPE
+          | '{' TYPE ':' [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
 
 States a basic type or collection type.
-FIRST  = (PRIMITIVE)
-LAST   = (PRIMITIVE) | (COLLECTION)
+FIRST  = {int, float, str, bool}
+LAST   = {int, float, str, bool, 'array', list}
 FOLLOW = (EXPR) | (LINEEND)
-TYPE    ::= PRIMITIVE ['::' COLLECTION]
-
-Available basic types.
-FIRST  = {int, str, float, bool}
-LAST   = {int, str, float, bool}
-FOLLOW = {::} | (EXPR) | (LINEEND)
-PRIMITIVE   ::= 'int'
-              | 'float'
-              | 'str'
-              | 'bool'
-
-Available collection types.
-FIRST  = {array, list}
-LAST   = {array, list}
-FOLLOW = (EXPR) | (LINEEND)
-COLLECTION  ::= 'array'
-              | 'list'
+TYPE    ::= ('int' | 'float' | 'str' | 'bool') ['::' ('array' | 'list')]
 
 Definition of a number.
 NUMBER  ::= (0-9)+ ['.' (0-9)*]
@@ -169,5 +147,6 @@ STRING  ::= '\'' .* '\''
           | '"' .* '"'
 
 Delineates lines.
-LINEEND ::= ';' | '\n'
+LINEEND ::= ';' ['\n']
+          | '\n'
 ```
