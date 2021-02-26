@@ -13,8 +13,36 @@ from bc3_scanner import INT, FLOAT, STR, BOOL
 #             return self.type == other.type and self.value = other.value
 #         return False
 
+class Int:
+    def __eq__(self,other):
+        return type(self) == type(other)
+
+class Float:
+    def __eq__(self,other):
+        return type(self) == type(other)
+
+class Str:
+    def __eq__(self,other):
+        return type(self) == type(other)
+
+class Bool:
+    def __eq__(self,other):
+        return type(self) == type(other)
+
+class Array:
+    def __init__(self,typ):
+        self.type = typ
+    def __eq__(self,other):
+        return type(self) == type(other) and self.type == other.type
+
+class List:
+    def __init__(self,typ):
+        self.type = typ
+    def __eq__(self,other):
+        return type(self) == type(other) and self.type == other.type
+
 # Represents a value constant
-class Constant:
+class ConstantValue:
     def __init__(self, typ, value):
         self.type = typ
         self.value = value
@@ -35,9 +63,8 @@ class Constant:
     def __ne__(self,other):
         return not self == other
 
-
 # Represents a variable value (used exclusively within the symbol table)
-class Variable(Constant):
+class VariableValue(Constant):
     def __init__(self, typ, value=None):
         super().__init__(typ,None)
         if value != None:
@@ -54,7 +81,7 @@ class Variable(Constant):
         self.value = value
 
 # Represents a constant collection
-class Array:
+class ConstantArray:
     def __init__(self, typ, value):
         self.type = typ
         self.value = tuple(value)
@@ -80,9 +107,8 @@ class Array:
     def __ne__(self,other):
         return not self == other
 
-
 # Represents a variable collection (used exclusively within the symbol table)
-class List(Array):
+class VariableArray(Array):
     def __init__(self, typ, value):
         super().__init__(typ,value)
         self.value = list(self.value)
