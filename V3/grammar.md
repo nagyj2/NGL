@@ -57,19 +57,31 @@ Function calls are the next lowest. They are so low because the EXPR children sh
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
 FOLLOW = (LINEEND)
-EXPR_L0 ::= EXPR_L1 ['@' EXPR {',' EXPR}]
+EXPR_L0 ::= EXPR_S1 ['@' EXPR {',' EXPR}]
 
-Logical OR for booleans (single bar) and union of collections (double bar).
+Logical OR for booleans.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
 FOLLOW = { @ } | (LINEEND)
-EXPR_L1 ::= EXPR_L2 {('|' | '||') EXPR_L2}
+EXPR_S1 ::= EXPR_L1 {('|') EXPR_L1}
 
-Logical AND for booleans (single ampersand) and intersection of collections (double ampersand).
+Logical AND for booleans.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { |, ||, @ } | (LINEEND)
-EXPR_L2 ::= EXPR_L3 {('&' | '&&') EXPR_L3}
+FOLLOW = { |, @ } | (LINEEND)
+EXPR_L1 ::= EXPR_S2 {'&' EXPR_S2}
+
+Union for collections.
+FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
+LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
+FOLLOW = { |, &, @ } | (LINEEND)
+EXPR_S2 ::= EXPR_L2 {('||') EXPR_L2}
+
+Intersection for collections.
+FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
+LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
+FOLLOW = { |, ||, &, @ } | (LINEEND)
+EXPR_L2 ::= EXPR_L3 {'&&' EXPR_L3}
 
 Equality and inequality operators. When multiple are used, the individual operators are taken in disjunction, so "a = b <> c <> a" evaluates to "a = b & b <> c & c <> a".
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
