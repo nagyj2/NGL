@@ -55,86 +55,86 @@ EXPR    ::= ['><'] EXPR_L0
 
 Function calls are the next lowest. They are so low because the EXPR children should be able to compute calculations of their own.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
+LAST   = { NUMBER, IDENTIFIER, STRING, ), }, }
 FOLLOW = (LINEEND)
 EXPR_L0 ::= EXPR_S1 ['@' EXPR {',' EXPR}]
 
 Logical OR for booleans.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { @ } | (LINEEND)
+LAST   = { NUMBER, IDENTIFIER, STRING, ), }, }
+FOLLOW = { @, , } | (LINEEND)
 EXPR_S1 ::= EXPR_L1 {('|') EXPR_L1}
 
 Logical AND for booleans.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { |, @ } | (LINEEND)
+FOLLOW = { |, @, , } | (LINEEND)
 EXPR_L1 ::= EXPR_S2 {'&' EXPR_S2}
 
 Union for collections.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { |, &, @ } | (LINEEND)
+FOLLOW = { |, &, @, , } | (LINEEND)
 EXPR_S2 ::= EXPR_L2 {('||') EXPR_L2}
 
 Intersection for collections.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { |, ||, &, @ } | (LINEEND)
+FOLLOW = { |, ||, &, @, , } | (LINEEND)
 EXPR_L2 ::= EXPR_L3 {'&&' EXPR_L3}
 
 Equality and inequality operators. When multiple are used, the individual operators are taken in disjunction, so "a = b <> c <> a" evaluates to "a = b & b <> c & c <> a".
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { &, &&, |, ||, @ } | (LINEEND)
+FOLLOW = { &, &&, |, ||, @, , } | (LINEEND)
 EXPR_L3 ::= EXPR_L4 {('=' | '<>') EXPR_L4}
 
 Comparsions are similar to equality operators in that they are taken as a disjunction.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { =, <>, &, &&, |, ||, @ } | (LINEEND)
+FOLLOW = { =, <>, &, &&, |, ||, @, , } | (LINEEND)
 EXPR_L4 ::= EXPR_L5 {('>' | '<') EXPR_L5}
 
 Simple addition and subtraction.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { >, <, =, <>, &, &&, |, ||, @ } | (LINEEND)
+FOLLOW = { >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
 EXPR_L5 ::= EXPR_L6 {('+' | '-') EXPR_L6}
 
 Simple multiplication, decimal and integer division and remainder
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = { +, -, >, <, =, <>, &, &&, |, ||, @ } | (LINEEND)
+FOLLOW = { +, -, >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
 EXPR_L6 ::= EXPR_L7 {('*' | '/' | '\' | '%') EXPR_L7}
 
 Exponentiation.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = {*, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @ } | (LINEEND)
+FOLLOW = {*, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
 EXPR_L7 ::= EXPR_L8 {'^' EXPR_L8}
 
 Mathematical unary operators, positive, negative and logical NOT.
 FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @ } | (LINEEND)
+FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
 EXPR_L8 ::= ['+' | '-' | '!'] EXPR_L9
 
 Type casting to a primitive or collection.
 FIRST  = { NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @ } | (LINEEND)
+FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
 EXPR_L9 ::= SUBATOM ['::' TYPE]
 
 Indexing. Available for strings, integers and floats
 FIRST  = { NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, ::} | (LINEEND)
+FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, ::, ,} | (LINEEND)
 SUBATOM ::= ATOM [ '[' EXPR ']' ]
 
 The highest precidence. Elements are numbers, identifiers, raw strings, parentheses and collections.
 FIRST  = { NUMBER, IDENTIFIER, STRING, (, { }
 LAST   = { NUMBER, IDENTIFIER, STRING, ), } }
-FOLLOW = {[, ^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, :: } | (LINEEND)
+FOLLOW = {[, ^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, ::, , } | (LINEEND)
 ATOM    ::= NUMBER
           | DECIMAL
           | IDENT
