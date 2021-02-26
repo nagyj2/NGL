@@ -36,10 +36,11 @@ def strTab(choice=('sym','jmp','spc')):
             strep += '={0}Tab Scope {1}=\n'.format(name,scope)
             for j, (n, v) in enumerate(space.items()):
                 if v != None:
-                    if n == GOARROW1: n = '->'
-                    elif n == GOARROW2: n = '=>'
-                    elif n == RETARROW1: n = '<-'
-                    elif n == RETARROW2: n = '<='
+                    if n == GOARROW1: n = '->'; v = [x+1 for x in v] # add 1 so it matches text editor lines
+                    elif n == GOARROW2: n = '=>'; v = [x+1 for x in v] # add 1 so it matches text editor lines
+                    elif n == RETARROW1: n = '<-'; v = [x+1 for x in v] # add 1 so it matches text editor lines
+                    elif n == RETARROW2: n = '<='; v = [x+1 for x in v] # add 1 so it matches text editor lines
+                    elif name == 'jmp': v += 1
                     strep += '{0} : {1}\n'.format(n, v)
                 else: # Handle empty values in special tab
                     pass
