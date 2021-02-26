@@ -7,6 +7,13 @@ from bc3_logging import getLogger
 sym_logger = getLogger('dummy')
 linked = ScannerDummy()
 
+# TODO: collapse symTab and jmpTab into one
+# Symbol table has values
+    # constants -> values
+    # variables -> reference by default (value can be called when needed)
+    # functions -> file to call
+    # labels -> line number
+
 def init(log=True):
     # Sets up the module to work. Also resets the module to its initial state
     global symTab, jmpTab, spcTab, size, linked, sym_logger
