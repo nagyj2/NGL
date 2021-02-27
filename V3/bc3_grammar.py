@@ -1,14 +1,16 @@
 # NGL Bytecode 3.0 Grammar Skeleton
 
 from bc3_scanner import Scanner
-from bc3_scanner import ENOT, PARAM, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, NOT, CAST, VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, RAISE, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWSHAFT, NOJUMP, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES
+from bc3_scanner import ENOT, PARAM, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, NOT, CAST, VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWSHAFT, NOJUMP, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES
 from bc3_scanner import FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_SUBATOM, LAST_SUBATOM, FIRST_EXPR_L9, LAST_EXPR_L9, FIRST_EXPR_L8, LAST_EXPR_L8, FIRST_EXPR_L7, LAST_EXPR_L7, FIRST_EXPR_L6, LAST_EXPR_L6, FIRST_EXPR_L5, LAST_EXPR_L5, FIRST_EXPR_L4, LAST_EXPR_L4, FIRST_EXPR_L3, LAST_EXPR_L3, FIRST_EXPR_L2, LAST_EXPR_L2, FIRST_EXPR_S2, LAST_EXPR_S2, FIRST_EXPR_L1, LAST_EXPR_L1, FIRST_EXPR_S1, LAST_EXPR_S1, FIRST_EXPR_L0, LAST_EXPR_L0, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG
 import bc3_symboltable as ST
 
 from bc3_logging import getLogger
-from bc3_data import Int, Float, Str, Bool, Ref, Array, List
+from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Array, List
 
 # TODO: update logging to inform of check results
+
+missing = []
 
 def prog():
     global SC
@@ -29,7 +31,7 @@ def line():
         SC.getSym()
 
     if SC.sym == IDENT:
-        ST.newJmp(SC.val,SC.line)
+        ST.newSym(SC.val,Lab(SC.line))
         gra_logger.info('label {0} jump to {1}'.format(SC.val,SC.line))
         SC.getSym()
         if SC.sym == COLON: SC.getSym()
@@ -67,7 +69,7 @@ def label():
         SC.mark('expected label, got {0}'.format(SC.sym))
 
 def stmt():
-    global SC
+    global SC, missing
     if SC.sym not in FIRST_STMT:
         SC.mark('attempt to parse {0} as STMT'.format(SC.sym))
 
@@ -80,16 +82,27 @@ def stmt():
 
         if SC.sym == CAST:          SC.getSym()
 
-        elif SC.sym in FIRST_TYPE:  varType = typ(); # TODO: update other docs to be consistent
+        if SC.sym in FIRST_TYPE:    varType = typ();
         else:                       SC.mark('expected type')
 
         if SC.sym in FIRST_EXPR:
             exprType = expr()
 
+            # if type(exprType) == Ref and ST.hasSym(exprType.data):
+            #     exprType = ST.getSym(exprType.data)
+
             if varType != exprType:
                 SC.mark('variable type mismatch',logger=gra_logger)
 
-        ST.newSym(name,varType) # FIX
+            if type(varType) == Ref and varType.type == 'func' and type(exprType) == Func:
+                varType = Func(exprType.val)
+            elif type(varType) == Ref and varType.type == 'label' and type(exprType) == Lab:
+                varType = Lab(exprType.val)
+
+        if type(varType) == Ref and varType.type == 'ident':
+            missing.append(name)
+
+        ST.newSym(name,varType)
 
     elif SC.sym == CONST:
         # TODO: log var, type and val if present
@@ -100,16 +113,25 @@ def stmt():
 
         if SC.sym == CAST:          SC.getSym()
 
-        elif SC.sym in FIRST_TYPE:  constType = typ(); # TODO: update other docs to be consistent
+        if SC.sym in FIRST_TYPE:  constType = typ(); # TODO: update other docs to be consistent
         else:                       SC.mark('expected type')
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
-        else:                       SC.mark('expected expression')
+        else:                       SC.mark('expected expression, got {0}'.format(SC.sym))
+
+        if type(constType) == Ref and constType.type == 'func' and type(exprType) == Func:
+            constType = Func(exprType.val)
+        elif type(constType) == Ref and constType.type == 'label' and type(exprType) == Lab:
+            constType = Lab(exprType.val)
 
         if constType != exprType:
-            SC.mark('constant type mismatch',logger=gra_logger)
+            SC.mark('variable type mismatch {0}'.format(name),logger=gra_logger)
 
-        ST.newSym(name,exprType) # FIX
+        if type(constType) == Ref and constType.type == 'ident':
+            missing.append(name)
+
+        constType.const = True
+        ST.newSym(name,constType)
 
     elif SC.sym == READ:
         # TODO: log var, val and if created new var
@@ -119,7 +141,7 @@ def stmt():
         else:                       SC.mark('expected identifier')
 
         if SC.sym in FIRST_EXPR:    exprType = expr(); ST.newSym(name,exprType)
-        else:                       ST.newSym(name,Ref())
+        else:                       ST.newSym(name,Ref('input'))
 
         # create new var or load existing var
         ST.newSym(name,exprType) # FIX
@@ -134,12 +156,23 @@ def stmt():
         if SC.sym in FIRST_EXPR:    exprType = expr()
         else:                       SC.mark('expected expression')
 
-        # if constType != exprType:
-        #     SC.mark('type mismatch',logger=gra_logger)
-        # if constant var
-        #     SC.mark('cannot modify constant',logger=gra_logger)
+        if not ST.hasSym(name):
+            SC.mark('variable {0} does not exist'.format(name),logger=gra_logger)
 
-        ST.setSym(name,varType)
+        else:
+            varType = ST.getSym(name)
+
+            if varType.const:
+                SC.mark('constant value cannot be reassigned',logger=gra_logger)
+
+            else:
+                if varType != exprType:
+                    SC.mark('variable type mismatch {0}'.format(name),logger=gra_logger)
+
+                if type(exprType) == Ref and exprType.type == 'ident':
+                    missing.append(name)
+
+                ST.setSym(name,exprType)
 
     elif SC.sym == DEL:
         SC.getSym()
@@ -150,7 +183,8 @@ def stmt():
         # if constType != exprType:
         #     SC.mark('type mismatch',logger=gra_logger)
 
-        ST.delSym(name)
+        if ST.hasSym(name): ST.delSym(name)
+        else:               SC.mark('non-existant identifier',logger=gra_logger)
 
     elif SC.sym == GOTO:
         SC.getSym()
@@ -200,19 +234,13 @@ def stmt():
         if SC.sym == IDENT:         name = SC.val; SC.getSym()
         else:                       SC.mark('expected identifier')
 
-        ST.newSym(name,Ref())
+        ST.newSym(name,Func('{0}.ngl'.format(name)))
 
     elif SC.sym == QUIT:
         SC.getSym()
 
     elif SC.sym == RETURN:
         SC.getSym()
-
-    elif SC.sym == RAISE:
-        SC.getSym()
-
-        if SC.sym == IDENT:         SC.getSym()
-        else:                       SC.mark('expected identifier')
 
     elif SC.sym == LOG:
         SC.getSym()
@@ -245,13 +273,14 @@ def expr_l0():
 
     base = expr_s1()
 
-    # TODO: Function type
     if SC.sym == PARAM:
         SC.getSym()
         sub = expr()
         while SC.sym == COMMA:
             SC.getSym()
             sub = expr()
+
+        base = Ref('func')
 
     return base
 
@@ -539,7 +568,8 @@ def atom():
     elif SC.sym == IDENT:
         name = SC.val
         SC.getSym()
-        base = ST.getSym(name)
+        if ST.hasSym(name): base = ST.getSym(name)
+        else:               base = Ref('ident')
         # TODO: base = ??
         # IDEA: For proper parser, return a 'Variable' object which only gets looked up when needed
 
@@ -610,8 +640,12 @@ def typ():
         base = Float()
     elif SC.sym == STR:
         base = Str()
-    else: # if SC.sym == BOOL:
+    elif SC.sym == BOOL:
         base = Bool()
+    elif SC.sym == FUNC:
+        base = Ref('func')
+    elif SC.sym == LABEL:
+        base = Ref('label')
 
     SC.getSym()
 

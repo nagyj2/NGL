@@ -68,7 +68,9 @@ STR = 82 # str
 BOOL = 83 # bool
 ARRAY = 84 # array
 LIST = 85 # list
-NONE = 86 # null (TBD)
+FUNC = 86 # func
+LABEL = 87 # label
+NONE = 88 # null (TBD)
 
 # Literals
 NUMBER = 90 # integer number
@@ -88,7 +90,7 @@ TYPES = (INT, FLOAT, STR, BOOL)
 FIRST_LABEL = set({ARROWSHAFT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, NOJUMP, IDENT})
 LAST_LABEL  = FIRST_LABEL
 
-FIRST_TYPE = set({INT, FLOAT, STR, BOOL})
+FIRST_TYPE = set({INT, FLOAT, STR, BOOL, FUNC, LABEL})
 LAST_TYPE  = set({ARRAY, LIST}) | FIRST_TYPE
 
 FIRST_CAST = set({CAST})
@@ -156,10 +158,10 @@ WEAKSYMS   = set({LINEEND, NEWLINE})
 
 
 KEYWORDS = {'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STR,
-    'array': ARRAY, 'list': LIST, 'null': NONE, 'var': VAR, 'const': CONST,
-    'in': READ, 'set': SET, 'del': DEL, 'goto': GOTO, 'if': IF, 'try': TRY,
-    'cmp': EXEC,  'out': PRINT, 'incl': INCLUDE, 'quit': QUIT, 'retn': RETURN,
-    'flag': RAISE, 'log': LOG}
+    'array': ARRAY, 'list': LIST, 'func': FUNC, 'label': LABEL, 'null': NONE,
+    'var': VAR, 'const': CONST, 'in': READ, 'set': SET, 'del': DEL,
+    'goto': GOTO, 'if': IF, 'try': TRY, 'cmp': EXEC,  'out': PRINT,
+    'incl': INCLUDE, 'quit': QUIT, 'retn': RETURN, 'log': LOG}
 
 # Used as a placeholder for those who need a scanner but will be assigned one later
 class ScannerDummy:
