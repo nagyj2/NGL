@@ -3,11 +3,11 @@
 
 from bc3_scanner import ScannerDummy, INT, FLOAT, BOOL, STR, NONE, ARRAY, LIST, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWS, IDENT
 from bc3_logging import getLogger
+from copy import deepcopy
 
 sym_logger = getLogger('dummy')
 linked = ScannerDummy()
 
-# TODO: collapse symTab and jmpTab into one
 # Symbol table has values
     # constants -> values
     # variables -> reference by default (value can be called when needed)
@@ -16,27 +16,36 @@ linked = ScannerDummy()
 
 def init(log=True):
     # Sets up the module to work. Also resets the module to its initial state
-    global symTab, jmpTab, spcTab, size, linked, sym_logger
+    global symTab, spcTab, size, linked, sym_logger
     symTab = [] # Symbols (Named Constants, Variables, Functions) -> User
-    jmpTab = [] # Generic Jump Labels -> User
     spcTab = [] # Special Symbols, Arrow Jumps, Function arguments -> System
     size = 0 # Depth of symbol table
     newScope()
 
     if log: sym_logger = getLogger('symboltable')
 
+def export():
+    # Returns current scope only
+    global symTab, spcTab
+    return (deepcopy(symTab[-1]),deepcopy(spcTab[-1]))
+
+def load(tabs):
+    # Overrides current scope
+    global symTab, spcTab
+    symTab[-1] = tabs[0]
+    spcTab[-1] = tabs[1]
+
 def updateLink(scanner):
     # Display errors with the currently linked parser object
     global linked
     linked = scanner
 
-def strTab(choice=('sym','jmp','spc')):
-    global symTab, jmpTab, spcTab
+def strTab(choice=('sym','spc')):
+    global symTab, spcTab
     tabs,strep = [], ''
     if 'sym' in choice: tabs.append(symTab)
-    if 'jmp' in choice: tabs.append(jmpTab)
     if 'spc' in choice: tabs.append(spcTab)
-    if tabs == []:      tabs, choice = [symTab,jmpTab,spcTab], ('sym','jmp','spc')
+    if tabs == []:      tabs, choice = [symTab,spcTab], ('sym','spc')
 
     for tab,name in enumerate(choice):
         for scope,space in enumerate(tabs[tab]):
@@ -47,22 +56,20 @@ def strTab(choice=('sym','jmp','spc')):
                     elif n == GOARROW2: n = '=>'; v = [x+1 for x in v] # add 1 so it matches text editor lines
                     elif n == RETARROW1: n = '<-'; v = [x+1 for x in v] # add 1 so it matches text editor lines
                     elif n == RETARROW2: n = '<='; v = [x+1 for x in v] # add 1 so it matches text editor lines
-                    elif name == 'jmp': v += 1
                     strep += '{0} : {1}\n'.format(n, v)
                 else: # Handle empty values in special tab
                     pass
         strep += '\n'
     return strep
 
-def printTab(choice=('sym','jmp','spc')):
-    print(strTab(choice))
+def printTab(choice=('sym','spc')):
+    print(strTab(choice),end='')
 
 def newScope():
-    global symTab, spcTab, jmpTab, size
+    global symTab, spcTab, size
     # Will create a new scope for each table. Will assign default values to the special table
 
     symTab.append({})
-    jmpTab.append({})
     spcTab.append({ GOARROW1: [], GOARROW2: [],
                     RETARROW1: [], RETARROW2: [] })
     size += 1
@@ -110,6 +117,16 @@ def getSym(name, level=-1, burrow=False):
     else:
         return symTab[level][name]
 
+def hasSym(name, level=-1, burrow=False):
+    global symTab, size, linked
+    level = __validateLevel(level)
+
+    if name not in symTab[level]:
+        if abs(level) == size:  return False
+        elif burrow:            return hasSym(name,level-1,burrow)
+
+    return name in symTab[level]
+
 def delSym(name, level=-1, burrow=False):
     global symTab, size, linked
     level = __validateLevel(level)
@@ -120,27 +137,6 @@ def delSym(name, level=-1, burrow=False):
     else:
         del symTab[level][name]
         sym_logger.debug('deleted {0}'.format(name))
-
-def newJmp(name, value, level=-1):
-    global jmpTab, size, linked
-    level = __validateLevel(level)
-
-    if name in jmpTab[level]:
-        linked.mark('label already exists',logger=sym_logger)
-        return
-
-    jmpTab[level][name] = value
-    sym_logger.debug('new label {0} set to {1}'.format(name,value))
-
-def getJmp(name, level=-1, burrow=False):
-    global jmpTab, size, linked
-    level = __validateLevel(level)
-
-    if name not in jmpTab[level]:
-        if abs(level) == size:  linked.mark('label {0} does not exist'.format(name),logger=sym_logger)
-        elif burrow:            return getJmp(name,level-1,burrow)
-    else:
-        return jmpTab[level][name]
 
 def setSpc(name, value, level=-1):
     global spcTab, size, linked
@@ -192,22 +188,20 @@ def getNextArrow(name, currline, back=0, level=-1):
         linked.mark('requested non-arrow',logger=sym_logger)
     return currline
 
-def collapse(symType='drop', jmpType='drop', spcType='drop'):
+def collapse(symType='drop', spcType='drop'):
     # TODO: Implement type -> need DROP, MERGE and OVERWRITE
-    global symTab, spcTab, jmpTab, size, linked
+    global symTab, spcTab, size, linked
     if size <= 1: linked.mark('cannot collapse last scope',logger=sym_logger); return
 
     _collapseTab(symType, symTab)
-    _collapseTab(jmpType, jmpTab)
     _collapseTab(spcType, spcTab) # FIX: The arrows should merge or drop and sort
 
     _delScope()
     sym_logger.debug('deleted scope')
 
 def _delScope():
-    global symTab, spcTab, jmpTab, size
+    global symTab, spcTab, size
     symTab.pop()
-    jmpTab.pop()
     spcTab.pop()
     size -= 1
 
