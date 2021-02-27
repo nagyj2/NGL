@@ -28,7 +28,7 @@ LABEL   ::= IDENT
           | '.'
 
 There are a multitude of supported statements. New to 3.0, 'read' becomes 'in', 'print' becomes 'out', the addition of 'retn', 'const', 'flag'.
-FIRST  = {var, const, in, set, del, goto, if, try, cmp, out, incl, quit, retn, flag, log}
+FIRST  = {var, const, in, set, del, goto, if, try, cmp, out, incl, quit, retn, log}
 LAST   = {retn, quit} | (EXPR) | (IDENT) | (LABEL)
 FOLLOW = (LINEEND)
 STMT    ::= 'var'   IDENT ['::'] TYPE [EXPR] // Create new variable with optional initial value
@@ -44,7 +44,6 @@ STMT    ::= 'var'   IDENT ['::'] TYPE [EXPR] // Create new variable with optiona
           | 'incl'  IDENT               // Imports another file as an executable
           | 'quit'                      // Stops execution of entire trace
           | 'retn'                      // Stops execution of the subfile (TBD)
-          | 'flag'  IDENT               // Raises an exception (TBD)
           | 'log'   EXPR                // Outputs an expression result to errout (TBD)
 
 Lowest precedence is an operator which negates the entire expression
@@ -143,10 +142,10 @@ ATOM    ::= NUMBER
           | '{' TYPE ':' [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
 
 States a basic type or collection type.
-FIRST  = {int, float, str, bool}
-LAST   = {int, float, str, bool, 'array', list}
+FIRST  = {int, float, str, bool, func, label}
+LAST   = {int, float, str, bool, func, label, 'array', list}
 FOLLOW = (EXPR) | (LINEEND)
-TYPE    ::= ('int' | 'float' | 'str' | 'bool') ['::' ('array' | 'list')]
+TYPE    ::= ('int' | 'float' | 'str' | 'bool' | 'func' | 'label') ['::' ('array' | 'list')]
 
 Definition of a number.
 NUMBER  ::= (0-9)+ ['.' (0-9)*]
