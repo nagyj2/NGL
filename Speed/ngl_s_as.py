@@ -4,6 +4,7 @@ from ngl_s_sc import PLUS, MINUS, MULT, DIV, AND, OR, EQ, LT, GT, NOT, INPUT, CO
 import ngl_s_ast as AST
 import ngl_s_t as TS
 
+# TODO: Preprocess AST for variables
 # TODO: Ability to secifiy how 'deep' to assemble
 # TODO: Ability to create lines with specific data, not JUST a node
     # TODO: 1 function takes a node and preps it for line creation and a second function actually writes the line
@@ -19,6 +20,8 @@ import ngl_s_t as TS
 # TODO: Footer assembler must be able to handle changes in size of `additional`
 # TODO: Footer assembly should be performed inline instead of at the end
 # TODO: For nested if stmts (if stmt in else branch)
+# TODO: Optimizations
+    # If statements without else branch
 
 def assemble_init(ast):
     global vars, additional, add_i
