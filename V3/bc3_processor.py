@@ -46,8 +46,11 @@ def _passOne(scanner, log=True):
     PG.execute(scanner, log)
 
 
-    ST.collapse('merge','merge','merge') # want to keep jump locations
-    ST.printTab()
+    state = ST.export()
+    ST.collapse()
+
+    ST.load(state)
+    ST.printTab(['sym'])
 
 def _passTwo(scanner, log=True):
     global pre_logger
