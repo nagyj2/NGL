@@ -59,7 +59,7 @@ def func(fname, src = None, args = [], debug = False):
 
 def _readSource(fname):
     source = ''
-    with open(fname+'.ngl','r') as reader:
+    with open(fname,'r') as reader:
         for line in reader.readlines():
             source += line
     return source

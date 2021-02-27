@@ -12,7 +12,7 @@ def _writefile(fname,src):
         writer.write(src)
 
 fname = sys.argv[1] # File which has NGL Speed code
-wfile = 'work' # File to store NGL code
+wfile = 'work.ngl' # File to store NGL code
 
 code = AS.convert(fname) # Convert file of NGL Speed to NGL Assembly
 if not AS.error():

@@ -1,4 +1,5 @@
 # NGL Bytecode 2.1 Interpreter
+import sys
 
 import bc2_1_sc as SC
 from bc2_1_sc import PLUS, MINUS, MULT, DIV, MOD, EXP, AND, OR, NOT, E_NOT, EQ, NE, LT, GT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROW_SHAFT, NOJUMP, COMMA, COLON, CAST, SEMICOLON, PARAM, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, INT, FLOAT, BOOL, STRING, ARRAY, LIST, NULL, NUMBER, RAW_STRING, BOOLEAN, IDENT, VAR, SET, GOTO, IF, COMPARE, PRINT, READ, DELETE, TRY, INCLUDE, RETURN, QUIT, TYPE, LABEL, LEN, EOF, getSym, mark
@@ -13,6 +14,7 @@ import bc2_1_lib as LIB
     # IDEA: quit vs stop commands
 # TODO: Some way to track python exceptions and give the offending NGL line
 # TODO: Fix how consecutive > and < operate
+# TODO: Fix <= not working
 
 # calls = 0
 # def call(func):
@@ -241,8 +243,8 @@ def label():
             getSym()
         src_line = ST.getSpc(GOARROW2,SC.line,back)
 
-    elif SC.sym == GOARROW1:
-        src_line = ST.getSpc(RETARROW1,SC.line,back)
+    elif SC.sym == GOARROW2:
+        src_line = ST.getSpc(RETARROW2,SC.line,back)
         getSym()
 
     elif SC.sym == GOARROW2:
@@ -255,9 +257,9 @@ def label():
             getSym()
 
         if SC.sym == GOARROW1:
-            src_line = getSpc(RETARROW1,SC.line,back)
+            src_line = ST.getSpc(RETARROW1,SC.line,back)
         else: # SC.sym == GOARROW2:
-            src_line = getSpc(RETARROW2,SC.line,back)
+            src_line = ST.getSpc(RETARROW2,SC.line,back)
         getSym()
 
     else: # SC.sym == NOJUMP:
@@ -521,7 +523,7 @@ def atom():
                 value = LIB.func_type(param)
 
             elif fun == IDENT and val in ST.usrTab[-1]: # Function is user defined
-                PP.func(val, args = param) # debug = True
+                PP.func(val + '.ngl', args = param) # debug = True
                 value = ST.getSym(RETURN) # Get return value
 
             else:
@@ -618,8 +620,12 @@ def execute_init(fname, src = None, args = [], stats = False):
 
 
 if __name__ == '__main__':
-    fname = 'usr'
-    execute_init(fname)
+
+    fname = 'usr.ngl'
+    if len(sys.argv) >= 2:
+        fname = sys.argv[1]
+
+    execute_init(fname, stats=True)
 
 # var fixed::bool true;
 # if fixed ->;
