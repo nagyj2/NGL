@@ -224,7 +224,7 @@ class Scanner:
 
         if not self.suppress:
             if self.lastline > self.errline or self.lastpos > self.errpos:
-                print('file',self.fname,'error: line', self.lastline+1, 'pos', self.lastpos, msg)
+                print('file',self.fname,level,': line', self.lastline+1, 'pos', self.lastpos, msg)
 
                 if level == 'debug':        log.debug('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
                 elif level == 'info':       log.info('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
