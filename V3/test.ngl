@@ -1,0 +1,8 @@
+//Modifiable FizzBuzz
+
+fir: incl geb;
+sec: incl josie;
+thi: incl abba;
+
+var var_funcs label geb;
+var functions label::list {label::list:geb,josie,abba}

@@ -1,0 +1,29 @@
+//Modifiable FizzBuzz
+
+incl quad
+var quady func quad
+
+quit
+
+var i int 1;
+const fizz int 3;
+const buzz int 5
+const limit float 30f;
+
+var a bool;
+var b bool;
+var c bool;
+
+-> if i>limit | i=limit end;
+
+if ><(i%fizz)::bool =>
+out 'FIZZ';
+<= if ><(i%buzz)::bool =>
+out 'BUZZ';
+<=
+
+goto <-
+
+if ({int::list:5:3} && ({int::array:3,6,5,5}))::bool ->;
+
+end:
