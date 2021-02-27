@@ -231,10 +231,15 @@ def stmt():
     elif SC.sym == INCLUDE:
         SC.getSym()
 
-        if SC.sym == IDENT:         name = SC.val; SC.getSym()
-        else:                       SC.mark('expected identifier')
+        if SC.sym == IDENT:
+            name = SC.val; SC.getSym()
+            ST.newSym(name,Func('{0}.ngl'.format(name)))
+            while SC.sym == IDENT:
+                name = SC.val; SC.getSym()
+                ST.newSym(name,Func('{0}.ngl'.format(name)))
 
-        ST.newSym(name,Func('{0}.ngl'.format(name)))
+        else:
+            SC.mark('expected identifier')
 
     elif SC.sym == QUIT:
         SC.getSym()

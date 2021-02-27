@@ -41,7 +41,7 @@ STMT    ::= 'var'   IDENT ['::'] TYPE [EXPR] // Create new variable with optiona
           | 'cmp'   EXPR                // Evaluates an expression
           | 'try'   STMT  LABEL         // Evaluate a statement and if there is an error, jump to label
           | 'out'   EXPR                // Outputs an expression result to stdout
-          | 'incl'  IDENT               // Imports another file as an executable
+          | 'incl'  IDENT {IDENT}       // Imports file(s) as an executable function
           | 'quit'                      // Stops execution of entire trace
           | 'retn'                      // Stops execution of the subfile (TBD)
           | 'log'   EXPR                // Outputs an expression result to errout (TBD)
