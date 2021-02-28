@@ -156,6 +156,7 @@ def stmt():
         else:                       SC.mark('expected identifier')
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
+        elif SC.sym in FIRST_TYPE:    SC.mark('type not needed for set')
         else:                       SC.mark('expected expression')
 
         if not ST.hasSym(name):
