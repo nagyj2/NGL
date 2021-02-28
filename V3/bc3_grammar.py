@@ -31,7 +31,9 @@ def line():
         SC.getSym()
 
     if SC.sym == IDENT:
-        ST.newSym(SC.val,Lab(SC.line))
+        jumplabel = Lab(SC.line)
+        jumplabel.const = True # Prevents changing val leading to crazy results
+        ST.newSym(SC.val,jumplabel)
         gra_logger.info('label {0} jump to {1}'.format(SC.val,SC.line))
         SC.getSym()
         if SC.sym == COLON: SC.getSym()
