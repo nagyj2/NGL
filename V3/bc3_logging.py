@@ -41,7 +41,7 @@ def _initLogger(category,masterLevel,fileLevel,streamLevel,filename):
     logger.info('==Started logging {0}==='.format(category))
     return logger
 
-def getLogger(category='master',masterLevel=logging.INFO,fileLevel=logging.INFO,streamLevel=logging.CRITICAL,filename='master'):
+def getLogger(category='master',masterLevel=logging.INFO,fileLevel=logging.INFO,streamLevel=logging.WARNING,filename='master'):
     # If logger is not open, it is initialized. If it is open, simply return
     # instance of respective logger
     global open
