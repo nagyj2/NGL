@@ -551,9 +551,7 @@ def expr_l9():
 
     base = subatom()
 
-    if SC.sym in set({CAST,COLON}):
-        if SC.sym == COLON:
-            SC.mark('casting expects \'::\', not \':\'','warning')
+    if SC.sym in set({CAST}):
 
         SC.getSym()
         if SC.sym in FIRST_TYPE:    base = typ()
@@ -711,9 +709,7 @@ def typ():
 
     SC.getSym()
 
-    if SC.sym in set({CAST,COLON}):
-        if SC.sym == COLON:
-            SC.mark('expected cast, not colon','warning')
+    if SC.sym in set({CAST}):
         SC.getSym()
 
         if SC.sym == ARRAY: base = Arr(base)
