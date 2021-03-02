@@ -152,7 +152,7 @@ def stmt():
         else:                       SC.mark('expected identifier')
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
-        elif SC.sym in FIRST_TYPE:    SC.mark('type not needed for set')
+        elif SC.sym in FIRST_TYPE:  SC.mark('type not needed for set')
         else:                       SC.mark('expected expression')
 
         if not ST.hasSym(name):
@@ -171,7 +171,8 @@ def stmt():
                 if type(exprType) == Ref and exprType.type == 'ident':
                     missing.append(name)
 
-                ST.setSym(name,exprType)
+                newType.const = False
+                ST.setSym(name,newType)
 
     elif SC.sym == DEL:
         SC.getSym()
@@ -242,6 +243,8 @@ def stmt():
 
     elif SC.sym == QUIT:
         SC.getSym()
+        _logger.info('quit early')
+        quit()
 
     elif SC.sym == RETURN:
         SC.getSym()
