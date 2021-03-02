@@ -63,17 +63,30 @@ class Lst(Value):
     def __eq__(self,other):
         return type(self) == type(other)
 
-class Ref:
+class Ref(Value):
     # Represents a variable or function call where the type is not know at compile time
     strrep = 'ref'
+
     def __init__(self,typ,data=None,const=False):
-        self.type = typ
         self.data = data
         self.const = const
+
+        if typ == 'input':      self.sub = Ref.Input()
+        elif typ == 'ident':    self.sub = Ref.Ident()
+        elif typ == 'list':    self.sub = Ref.List()
+        else:                   raise Exception('unknown ref type')
     def __eq__(self,other):
         if type(other) in set({Int,Float,Str,Bool,Func,Lab}) or type(other) == Ref:
             return True
         return False
+
+    class Input:
+        strrep = 'input'
+    class Ident:
+        strrep = 'ident'
+    class List:
+        strrep = 'auto'
+
 
 # Runtime Types
 

@@ -33,7 +33,7 @@ LAST   = {retn, quit} | (EXPR) | (IDENT) | (LABEL)
 FOLLOW = (LINEEND)
 STMT    ::= 'var'   IDENT ['::'] TYPE [EXPR] // Create new variable with optional initial value
           | 'const' IDENT ['::'] TYPE EXPR   // Create new constant
-          | 'in'    EXPR                // Assign input to a var
+          | 'in'    EXPR_L9             // Assign input to a var
           | 'set'   IDENT EXPR          // Set a new variable value
           | 'del'   IDENT               // Delete a variable's record
           | 'goto'  LABEL               // Jump to the corresponding label
@@ -139,7 +139,7 @@ ATOM    ::= NUMBER
           | IDENT
           | STRING
           | '(' EXPR ')'
-          | '{' TYPE ':' [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
+          | '{' PRIME ['::' COLLECT] ':' [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
           | '[' [ EXPR {',' EXPR} ] ']'
 
 
@@ -147,7 +147,17 @@ States a basic type or collection type.
 FIRST  = {int, float, str, bool, func, label, list}
 LAST   = {int, float, str, bool, func, label, list, array}
 FOLLOW = (EXPR) | (LINEEND)
-TYPE    ::= ('int' | 'float' | 'str' | 'bool' | 'func' | 'label' | 'list') ['::' ('array')]
+TYPE    ::= PRIME ['::' COLLECT]
+
+PRIME   ::= 'int'
+          | 'float'
+          | 'str'
+          | 'bool'
+          | 'func'
+          | 'label'
+          | 'list')
+
+COLLECT ::= 'array'
 
 Definition of a number.
 NUMBER  ::= (0-9)+ ['.' (0-9)*]

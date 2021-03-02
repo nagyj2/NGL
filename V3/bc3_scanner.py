@@ -215,12 +215,12 @@ class Scanner:
 
         self.logger.debug('reset to line {0} pos {0} index {1}'.format(setline, self.pos,self.index))
 
-    def mark(self, msg, level='error', logger=None):
+    def mark(self, msg=None, level='error'):
         # Marks an error and sets error flag to true
         if level in set({'error','critical'}):
             self.error = True
 
-        if not self.suppress:
+        if not self.suppress and msg != None:
             if self.lastline > self.errline or self.lastpos > self.errpos:
                 # print('file',self.fname,level,': line', self.lastline+1, 'pos', self.lastpos, msg)
 
