@@ -187,8 +187,8 @@ def stmt():
                 if type(exprType) == Ref and exprType.type == 'ident':
                     missing.append(name)
 
-                newType.const = False
-                ST.setSym(name,newType)
+                exprType.const = False
+                ST.setSym(name,exprType)
 
     elif SC.sym == DEL:
         SC.getSym()
