@@ -277,7 +277,7 @@ class Scanner:
                 if False:   pass # placeholder for escaped chars
                 else:       self.getChar() # Use \ to escape open
             self.getChar()
-        if self.ch == chr(0): mark('string not terminated'); self.sym = None;
+        if self.ch == chr(0): self.mark('string not terminated'); self.sym = None;
         else:
             self.sym = STRING
             self.val = self.source[start:self.index-1]
@@ -306,7 +306,7 @@ class Scanner:
                      self.getChar(); break
             else:
                 self.getChar()
-        if self.ch == chr(0): mark('comment not terminated')
+        if self.ch == chr(0): self.mark('comment not terminated')
         else: self.getChar()
 
         self.logger.debug('block comment from line {0} to {1}'.format(start,self.line))
@@ -397,7 +397,7 @@ class Scanner:
         elif self.ch == ';': self.getChar(); self.sym = LINEEND
         elif self.ch == '\n': self.getChar(); self.sym = NEWLINE
         elif self.ch == chr(0): self.sym = EOF
-        else: self.mark('illegal character: %s' % self.ch); self.getChar(); self.sym = None
+        else: self.mark('illegal character, got {0}'.format(self.ch)); self.getChar(); self.sym = None
 
         e = self.index # end of token parse
 
