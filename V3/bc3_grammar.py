@@ -569,10 +569,8 @@ def atom():
     elif SC.sym == IDENT:
         name = SC.val
         SC.getSym()
-        if ST.hasSym(name): base = ST.getSym(name)
+        if ST.hasSym(name): base = ST.getSym(name).clone() # dont return actual b/c of aliasing
         else:               base = Ref('ident')
-        # TODO: base = ??
-        # IDEA: For proper parser, return a 'Variable' object which only gets looked up when needed
 
     elif SC.sym == STRING:
         SC.getSym()
