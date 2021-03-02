@@ -1,15 +1,20 @@
 # NGL Bytecode 3.0 Data Containers
 
+from copy import deepcopy
+
 # Simple Types
 
 class Value:
     strrep = 'null'
+    sub = None
     def __init__(self,const=False):
         self.const = const
+    def clone(self):
+        return deepcopy(self)
     def __eq__(self,other):
         return type(self) == type(other) or type(other) == Ref
     def __str__(self):
-        return '{0}{1}'.format('const ' if self.const == True else '', self.strrep)
+        return '{0}{1}{2}'.format('const ' if self.const == True else '', self.strrep, ' of {0}'.format(self.sub.strrep) if self.sub != None else '')
 
 class Int(Value):
     # Represents an integer
