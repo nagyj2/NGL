@@ -3,59 +3,55 @@
 # Simple Types
 
 class Value:
+    strrep = 'null'
     def __init__(self,const=False):
         self.const = const
     def __eq__(self,other):
         return type(self) == type(other) or type(other) == Ref
+    def __str__(self):
+        return '{0}{1}'.format('const ' if self.const == True else '', self.strrep)
 
 class Int(Value):
     # Represents an integer
-    def __str__(self):
-        return 'int'
+    strrep = 'int'
 
 class Float(Value):
     # Represents a floating point number
-    def __str__(self):
-        return 'float'
+    strrep = 'float'
 
 class Str(Value):
     # Represents a string
-    def __str__(self):
-        return 'str'
+    strrep = 'str'
 
 class Bool(Value):
     # Represents a boolean
-    def __str__(self):
-        return 'bool'
+    strrep = 'bool'
 
 class Func(Value):
     # Represents a function: can be converted to the full runtime version
+    strrep = 'func'
     def __init__(self,value,const=False):
         super().__init__(const)
         self.val = value # represents file name
-    def __str__(self):
-        return 'func({0})'.format(self.val)
 
 class Lab(Value):
     # Represents a label: can be converted to the full runtime version
+    strrep = 'label'
     def __init__(self,value,const=False):
         super().__init__(const)
         self.val = value # represents jump destination
-    def __str__(self):
-        return 'label({0})'.format(self.val)
 
 class Ref:
     # Represents a variable or function call where the type is not know at compile time
-    def __init__(self,typ,data=None):
+    strrep = 'ref'
+    def __init__(self,typ,data=None,const=False):
         self.type = typ
         self.data = data
-    def __str__(self):
-        return 'ref({0})'.format(self.type)
+        self.const = const
     def __eq__(self,other):
         if type(other) in set({Int,Float,Str,Bool,Func,Lab}) or type(other) == Ref:
             return True
         return False
-
 
 # Runtime Types
 
