@@ -264,9 +264,9 @@ class Scanner:
             self.sym = DECIMAL
 
         if self.val >= 2**31:
-            self.mark('number too large','warning')
-        elif self.val <= 2**-31:
-            self.mark('number too small','warning')
+            self.mark('number too large, got {0}'.format(self.val),'warning')
+        elif self.val <= -2**-31:
+            self.mark('number too small, got {0}'.format(self.val),'warning')
 
     def string(self, open):
         # Parses a string
