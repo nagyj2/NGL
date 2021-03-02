@@ -11,8 +11,8 @@ def test_parseSyntax():
         SC.getSym()
 
 def test_parseKeyword():
-    keyword_syms = 'var const in set del goto if try cmp out incl quit retn flag log \n'
-    keyword_ans = [VAR,CONST,READ,SET,DEL,GOTO,IF,TRY,EXEC,PRINT,INCLUDE,QUIT,RETURN,RAISE,LOG]
+    keyword_syms = 'var const in set del goto if try cmp out incl quit retn log \n'
+    keyword_ans = [VAR,CONST,READ,SET,DEL,GOTO,IF,TRY,EXEC,PRINT,INCLUDE,QUIT,RETURN,LOG]
     SC = Scanner('',keyword_syms,False)
     for sym in keyword_ans:
         assert SC.sym == sym
@@ -43,7 +43,7 @@ def test_parseComment():
         SC.getSym()
 
 def test_parseError():
-    error_syms = '`'
+    error_syms = '` $'
     SC = Scanner('',error_syms,False)
     assert SC.error == True
 
