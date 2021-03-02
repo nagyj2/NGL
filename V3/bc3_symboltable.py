@@ -5,7 +5,7 @@ from bc3_scanner import ScannerDummy, INT, FLOAT, BOOL, STR, NONE, ARRAY, LIST, 
 from bc3_logging import getLogger
 from copy import deepcopy
 
-sym_logger = getLogger('dummy')
+_logger = getLogger('dummy')
 linked = ScannerDummy()
 
 # Symbol table has values
@@ -16,13 +16,13 @@ linked = ScannerDummy()
 
 def init(log=True):
     # Sets up the module to work. Also resets the module to its initial state
-    global symTab, spcTab, size, linked, sym_logger
+    global symTab, spcTab, size, linked, _logger
     symTab = [] # Symbols (Named Constants, Variables, Functions) -> User
     spcTab = [] # Special Symbols, Arrow Jumps, Function arguments -> System
     size = 0 # Depth of symbol table
     newScope()
 
-    if log: sym_logger = getLogger('symboltable')
+    if log: _logger = getLogger('symboltable')
 
 def export():
     # Returns current scope only
@@ -73,7 +73,7 @@ def newScope():
     spcTab.append({ GOARROW1: [], GOARROW2: [],
                     RETARROW1: [], RETARROW2: [] })
     size += 1
-    sym_logger.debug('new scope')
+    _logger.debug('new scope')
 
 def __validateLevel(level):
     global size, linked
@@ -81,7 +81,7 @@ def __validateLevel(level):
     # -1 is highest level, -2 second highest, ... , -size is lowest
     if level > 0: level *= -1 # Convert to negative if needed
     if abs(level) > size:
-        linked.mark('level does not exist',logger=sym_logger)
+        _logger.warning('level does not exist, returned {0}'.format(-1))
         return -1
     return level
 
@@ -90,31 +90,32 @@ def newSym(name, value, level=-1):
     level = __validateLevel(level)
 
     if name in symTab[level]:
-        linked.mark('variable already exists',logger=sym_logger)
+        _logger.warning('symbol already declared, got {0}'.format(name))
         return
 
     symTab[level][name] = value
-    sym_logger.debug('new {0} set to {1}'.format(name,value))
+    _logger.debug('new symbol {0} set to {1}'.format(name,value))
 
 def setSym(name, value, level=-1, burrow=False):
     global symTab, size, linked
     level = __validateLevel(level)
 
     if name not in symTab[level]:
-        if abs(level) == size:  sym_logger.warning('variable {0} does not exist'.format(name),logger=sym_logger)
-        elif burrow:            setSym(name,value,level-1,burrow)
+        if abs(level) == size:  _logger.warning('symbol not declared, got {0}'.format(name))
+        elif burrow:            _logger.info('symbol not found on level {0}, burrowing...'.format(name)); setSym(name,value,level-1,burrow)
     else:
         symTab[level][name] = value
-        sym_logger.debug('set {0} to {1}'.format(name,value))
+        _logger.debug('set symbol {0} to {1}'.format(name,value))
 
 def getSym(name, level=-1, burrow=False):
     global symTab, size, linked
     level = __validateLevel(level)
 
     if name not in symTab[level]:
-        if abs(level) == size:  sym_logger.mark('variable {0} does not exist'.format(name),logger=sym_logger)
-        elif burrow:            return getSym(name,level-1,burrow)
+        if abs(level) == size:  _logger.error('symbol not declared, got {0}'.format(name))
+        elif burrow:            _logger.info('symbol not found on level {0}, burrowing...'.format(name)); return getSym(name,level-1,burrow)
     else:
+        _logger.debug('returned symbol {0} as {1}'.format(name,symTab[level][name]))
         return symTab[level][name]
 
 def hasSym(name, level=-1, burrow=False):
@@ -132,11 +133,11 @@ def delSym(name, level=-1, burrow=False):
     level = __validateLevel(level)
 
     if name not in symTab[level]:
-        if abs(level) == size:  linked.mark('variable {0} does not exist'.format(name),logger=sym_logger)
-        elif burrow:            getSym(name,level-1,burrow)
+        if abs(level) == size:  _logger.mark('symbol not declared, got {0}'.format(name))
+        elif burrow:            _logger.info('symbol not found on level {0}, burrowing...'.format(name)); getSym(name,level-1,burrow)
     else:
         del symTab[level][name]
-        sym_logger.debug('deleted {0}'.format(name))
+        _logger.debug('deleted symbol {0}'.format(name))
 
 def setSpc(name, value, level=-1):
     global spcTab, size, linked
@@ -144,22 +145,23 @@ def setSpc(name, value, level=-1):
 
     if name in ARROWS:
         jumps = spcTab[level][name] # list of jump spots
-        if value in jumps or value < 0:  return
+        if value in jumps or value < 0:  _logger.debug('skipped arrow add to {0}'.format(name)); return
 
         jumps.append(value)
         jumps.sort()
-        sym_logger.debug('added to arrow {0} with {1}'.format(name,value))
+        _logger.debug('added to arrow {0} with {1}'.format(name,value))
     else:
-        linked.mark('unknown spcTab symbol {0}'.format(name),logger=sym_logger)
+        _logger.mark('unknown special symbol, got {0}'.format(name))
 
 def getSpc(name, level=-1, burrow=False):
     global spcTab, size, linked
     level = __validateLevel(level)
 
     if name not in spcTab[level]:
-        if abs(level) == size:  linked.mark('special data {0} does not exist'.format(name),logger=sym_logger)
-        elif burrow:            return getSpc(name,level-1,burrow)
+        if abs(level) == size:  linked.mark('special symbol not declared, got {0}'.format(name),logger=_logger)
+        elif burrow:            _logger.info('special symbol not found on level {0}, burrowing...'.format(name)); return getSpc(name,level-1,burrow)
     else:
+        _logger.debug('returned special symbol {0} as {1}'.format(name,spcTab[level][name]))
         return spcTab[level][name]
 
 def getNextArrow(name, currline, back=0, level=-1):
@@ -174,30 +176,30 @@ def getNextArrow(name, currline, back=0, level=-1):
                 lastGreater=True
             elif (lastGreater and jumps[i]>currline):
                 try:                return jumps[i-1+back]
-                except IndexError:  linked.mark('cannot go further',logger=sym_logger); return currline
+                except IndexError:  _logger.warning('arrow cannot be found, returning {0}'.format(currline)); return currline
         try:                return jumps[-1+back]
-        except IndexError:  linked.mark('cannot go further',logger=sym_logger); return currline
+        except IndexError:  _logger.warning('arrow cannot be found, returning {0}'.format(currline)); return currline
     elif name in (GOARROW1, GOARROW2):
         jumps = spcTab[level][name]
         for i in range(len(jumps)):
             if (jumps[i]>=currline): # >= means you skip current line. > means you dont
-                if i-1-back < 0:    linked.mark('cannot go further',logger=sym_logger); return currline
+                if i-1-back < 0:    _logger.warning('arrow cannot be found, returning {0}'.format(currline)); return currline
                 else:               return jumps[i-1-back]
-        linked.mark('no matching return arrow',logger=sym_logger)
+        _logger.warning('arrow cannot be found, returning {0}'.format(currline))
     else:
-        linked.mark('requested non-arrow',logger=sym_logger)
+        _logger.warning('expected arrow, got {0}. returning {0}'.format(name,currline))
     return currline
 
 def collapse(symType='drop', spcType='drop'):
     # TODO: Implement type -> need DROP, MERGE and OVERWRITE
     global symTab, spcTab, size, linked
-    if size <= 1: linked.mark('cannot collapse last scope',logger=sym_logger); return
+    if size <= 1: _logger.warning('cannot collapse last scope'); return
 
     _collapseTab(symType, symTab)
     _collapseTab(spcType, spcTab) # FIX: The arrows should merge or drop and sort
 
     _delScope()
-    sym_logger.debug('deleted scope')
+    _logger.debug('deleted scope')
 
 def _delScope():
     global symTab, spcTab, size
@@ -214,7 +216,3 @@ def _collapseTab(type, table):
                 table[-2][name] = elem
         else: # add element to previous table
             table[-2][name] = elem
-
-
-
-# Function for inserting vars and vals important for subcalls (like args and return val)
