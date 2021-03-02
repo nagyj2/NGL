@@ -2,6 +2,11 @@
 
 <!-- Note: All setup, like jumpable start + end and boolean constants should be done in PROG preprocess -->
 
+### Thinkpad
+This section is dedicated to potential changes to the grammar.
+
+- Use of backquotes, like `` `...` ``, to additionally convert expression results to a string. For string printing, `(...)::str` can be quite cumbersome, especially if string operations are occurring as well. Instead, any operations which should be performed and then converted to a string can be placed within backquotes. The result of the backquotes would be a string.
+
 ### Productions
 Below is the list of productions in the 3rd version of NGL. Above each production will be a small description of what that production will match and three bullet points. The first bullet is the set of terminals which can begin the production, the second is the set of terminals which can end the production and the last is the set of terminals which can follow the production. When referencing other productions in follows, they refer to the first set. The start symbol is `PROG`.
 
@@ -142,7 +147,6 @@ ATOM    ::= NUMBER
           | '{' PRIME ['::' COLLECT] ':' [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
           | '[' [ EXPR {',' EXPR} ] ']'
 
-
 States a basic type or collection type.
 FIRST  = {int, float, str, bool, func, label, list}
 LAST   = {int, float, str, bool, func, label, list, array}
@@ -159,8 +163,11 @@ PRIME   ::= 'int'
 
 COLLECT ::= 'array'
 
-Definition of a number.
-NUMBER  ::= (0-9)+ ['.' (0-9)*]
+Definition of a integer.
+NUMBER  ::= (0-9)+
+
+Definition of a float.
+DECIMAL ::= (0-9)+ (['.' (0-9)*] | 'f')
 
 Definition of an identifier.
 IDENT   ::= (a-zA-Z_) {a-zA-Z0-9_}
