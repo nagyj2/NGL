@@ -35,16 +35,33 @@ class Bool(Value):
 class Func(Value):
     # Represents a function: can be converted to the full runtime version
     strrep = 'func'
-    def __init__(self,value,const=False):
+    def __init__(self,value=None,const=False):
         super().__init__(const)
         self.val = value # represents file name
 
 class Lab(Value):
     # Represents a label: can be converted to the full runtime version
     strrep = 'label'
-    def __init__(self,value,const=False):
+    def __init__(self,value=None,const=False):
         super().__init__(const)
         self.val = value # represents jump destination
+
+class Arr(Value):
+    strrep = 'array'
+    def __init__(self,subtyp,const=False):
+        super().__init__(const)
+        self.sub = subtyp
+    def __eq__(self,other):
+        if type(self) == type(other):
+            return self.sub == other.sub
+        return False
+
+class Lst(Value):
+    strrep = 'list'
+    def __init__(self,const=False):
+        super().__init__(const)
+    def __eq__(self,other):
+        return type(self) == type(other)
 
 class Ref:
     # Represents a variable or function call where the type is not know at compile time

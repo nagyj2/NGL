@@ -6,11 +6,12 @@ from bc3_scanner import FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CA
 import bc3_symboltable as ST
 
 from bc3_logging import getLogger
-from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Array, List
+from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Arr, Lst
 
 # TODO: update logging to inform of check results
 
 missing = [] # track variables missing values (Have ref @ end)
+_logger = getLogger('dummy')
 
 def prog():
     global SC
@@ -89,20 +90,16 @@ def stmt():
         if SC.sym in FIRST_EXPR:
             exprType = expr()
 
-            # if type(exprType) == Ref and ST.hasSym(exprType.data):
-            #     exprType = ST.getSym(exprType.data)
+            if type(varType) == Lab == type(exprType):
+                varType = exprType
 
             if varType != exprType:
-                SC.mark('variable type mismatch',logger=gra_logger)
-
-            if type(varType) == Ref and varType.type == 'func' and type(exprType) == Func:
-                varType = Func(exprType.val)
-            elif type(varType) == Ref and varType.type == 'label' and type(exprType) == Lab:
-                varType = Lab(exprType.val)
+                SC.mark('variable type mismatch {0}'.format(name),logger=gra_logger)
 
         if type(varType) == Ref and varType.type == 'ident':
             missing.append(name)
 
+        varType.const = False
         ST.newSym(name,varType)
 
     elif SC.sym == CONST:
@@ -114,16 +111,16 @@ def stmt():
 
         if SC.sym == CAST:          SC.getSym()
 
-        if SC.sym in FIRST_TYPE:  constType = typ(); # TODO: update other docs to be consistent
+        if SC.sym in FIRST_TYPE:    constType = typ(); # TODO: update other docs to be consistent
         else:                       SC.mark('expected type')
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
         else:                       SC.mark('expected expression, got {0}'.format(SC.sym))
 
-        if type(constType) == Ref and constType.type == 'func' and type(exprType) == Func:
-            constType = Func(exprType.val)
-        elif type(constType) == Ref and constType.type == 'label' and type(exprType) == Lab:
-            constType = Lab(exprType.val)
+        if type(constType) == Lab == type(exprType):
+            constType = exprType
+        elif type(constType) == Func == type(exprType):
+            constType = exprType
 
         if constType != exprType:
             SC.mark('variable type mismatch {0}'.format(name),logger=gra_logger)
@@ -287,7 +284,7 @@ def expr_l0():
             SC.getSym()
             sub = expr()
 
-        base = Ref('func')
+        base = Func() # Ref('func')
 
     return base
 
@@ -342,7 +339,7 @@ def expr_s2():
     base = expr_l2()
 
     if SC.sym in set({UNION}):
-        if type(base) not in set({Array,List}):
+        if type(base) not in set({Arr,Lst}):
             SC.mark('only collection types can take union',logger=gra_logger)
 
         while SC.sym in set({UNION}):
@@ -350,10 +347,10 @@ def expr_s2():
 
             mod = expr_l2()
 
-            if type(base) not in set({Array,List}):
+            if type(base) not in set({Arr,Lst}):
                 SC.mark('only collection types can take union',logger=gra_logger)
 
-        base = List(base.type)
+        base = Lst(base.sub)
 
     return base
 
@@ -364,7 +361,7 @@ def expr_l2():
     base = expr_l3()
 
     if SC.sym in set({INTER}):
-        if type(base) not in set({Array,List}):
+        if type(base) not in set({Arr,Lst}):
             SC.mark('only collection types can take intersection',logger=gra_logger)
 
         while SC.sym in set({INTER}):
@@ -372,10 +369,10 @@ def expr_l2():
 
             mod = expr_l3()
 
-            if type(base) not in set({Array,List}):
+            if type(base) not in set({Arr,Lst}):
                 SC.mark('only collection types can take intersection',logger=gra_logger)
 
-        base = List(base.type)
+        base = Lst(base.sub)
 
     return base
 
@@ -403,7 +400,7 @@ def expr_l4():
     base = expr_l5()
 
     if SC.sym in set({LT,GT}):
-        if type(base) in set({Array,List}):
+        if type(base) in set({Arr,Lst}):
             SC.mark('collection type cannot take relational operators',logger=gra_logger)
         elif type(base) in set({Bool}):
             SC.mark('boolean cannot take relational operators',logger=gra_logger)
@@ -415,7 +412,7 @@ def expr_l4():
 
             if type(mod) in set({Bool}):
                 SC.mark('boolean cannot take additive operators',logger=gra_logger)
-            elif type(mod) in set({Array,List}):
+            elif type(mod) in set({Arr,Lst}):
                 SC.mark('collection type cannot take additive operators',logger=gra_logger)
 
         base = Bool()
@@ -429,7 +426,7 @@ def expr_l5():
     base = expr_l6()
 
     if SC.sym in set({PLUS,MINUS}):
-        if type(base) in set({Array,List}):
+        if type(base) in set({Arr,Lst}):
             SC.mark('collection type cannot take additive operators',logger=gra_logger)
         elif type(base) not in set({Int,Float}):
             SC.mark('only numerical types can take additive operators',logger=gra_logger)
@@ -439,7 +436,7 @@ def expr_l5():
 
             mod = expr_l6()
 
-            if type(mod) in set({Array,List}):
+            if type(mod) in set({Arr,Lst}):
                 SC.mark('collection type cannot take additive operators',logger=gra_logger)
             elif type(mod) in set({Str,Bool}):
                 SC.mark('only numerical types can take additive operators',logger=gra_logger)
@@ -456,7 +453,7 @@ def expr_l6():
     base = expr_l7()
 
     if SC.sym in set({MULT,DIV,INTDIV,MOD}):
-        if type(base) in set({Array,List}):
+        if type(base) in set({Arr,Lst}):
             SC.mark('collection type cannot take multiplicative operators',logger=gra_logger)
         elif type(base) not in set({Int,Float}):
             SC.mark('only numerical types can take multiplicative operators',logger=gra_logger)
@@ -466,7 +463,7 @@ def expr_l6():
 
             mod = expr_l7()
 
-            if type(mod) in set({Array,List}):
+            if type(mod) in set({Arr,Lst}):
                 SC.mark('collection type cannot take multiplicative operators',logger=gra_logger)
             elif type(mod) not in set({Int,Float}):
                 SC.mark('only numerical types can take multiplicative operators',logger=gra_logger)
@@ -483,7 +480,7 @@ def expr_l7():
     base = expr_l8()
 
     if SC.sym == EXP:
-        if type(base) in set({Array,List}):
+        if type(base) in set({Arr,Lst}):
             SC.mark('collection type cannot take exponentiation',logger=gra_logger)
         elif type(base) not in set({Int,Float}):
             SC.mark('only numerical types can take exponentiation',logger=gra_logger)
@@ -493,7 +490,7 @@ def expr_l7():
 
             mod = expr_l8()
 
-            if type(mod) in set({Array,List}):
+            if type(mod) in set({Arr,Lst}):
                 SC.mark('collection type cannot take exponentiation',logger=gra_logger)
             elif type(mod) in set({Str,Bool}):
                 SC.mark('only numerical types can take exponentiation',logger=gra_logger)
@@ -513,9 +510,6 @@ def expr_l8():
     elif SC.sym == NOT:     op = SC.sym; SC.getSym()
 
     base = expr_l9()
-
-    if type(base) in (Array,List):  sub = base.type
-    else:                           sub = base
 
     if op == PLUS and type(base) not in set({Int,Float}):
         SC.mark('only numerical types can take unary addition',logger=gra_logger)
@@ -546,7 +540,7 @@ def subatom():
 
     if SC.sym == LBRAK:
         # Int, Float can be indexed for digits, string for chars
-        if type(base) not in set({Int,Float,Str,Array,List}):
+        if type(base) not in set({Int,Float,Str,Arr,Lst}):
             SC.mark('type cannot be indexed',logger=gra_logger)
 
         SC.getSym()
@@ -596,7 +590,10 @@ def atom():
 
         base = typ()
 
-        if type(base) not in (Array, List):
+        if type(base) != Arr:
+            base = Arr(base)
+
+        if type(base) not in set({Arr}):
             SC.mark('expected collection type',logger=gra_logger)
 
         if SC.sym == COLON:     SC.getSym()
@@ -607,14 +604,14 @@ def atom():
 
             if SC.sym == COMMA:
 
-                if base.type != sub:
+                if base.sub != sub:
                     SC.mark('collection-element type mismatch',logger=gra_logger)
 
                 while SC.sym == COMMA:
                     SC.getSym()
                     sub = expr()
 
-                    if base.type != sub:
+                    if base.sub != sub:
                         SC.mark('collection-element type mismatch',logger=gra_logger)
 
             elif SC.sym == COLON:
@@ -630,6 +627,21 @@ def atom():
 
         if SC.sym == RCURLY:    SC.getSym()
         else:                   SC.mark('expected closing curly brace')
+
+    elif SC.sym == LBRAK:
+        SC.getSym()
+
+        base = Lst()
+
+        if SC.sym in FIRST_EXPR:
+            sub = expr() # subtype
+
+            while SC.sym == COMMA:
+                SC.getSym()
+                sub = expr()
+
+        if SC.sym == RBRAK: SC.getSym()
+        else:               SC.mark('expected closing bracket')
 
     else:
         SC.mark('unknown atom')
@@ -650,21 +662,21 @@ def typ():
     elif SC.sym == BOOL:
         base = Bool()
     elif SC.sym == FUNC:
-        base = Ref('func')
+        base = Func() # Ref('func')
     elif SC.sym == LABEL:
-        base = Ref('label')
+        base = Lab() # Ref('label')
+    elif SC.sym == LIST:
+        base = Lst()
+    else:
+        SC.mark('unknown primitive type')
 
     SC.getSym()
 
     if SC.sym == CAST:
         SC.getSym()
 
-        if SC.sym == ARRAY:
-            base = Array(base)
-        elif SC.sym == LIST:
-            base = List(base)
-        else:
-            SC.mark('unknown collection type')
+        if SC.sym == ARRAY: base = Arr(base)
+        else:               SC.mark('unknown collection type')
 
         SC.getSym()
 
