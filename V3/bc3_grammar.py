@@ -87,6 +87,7 @@ def stmt():
         else:                       SC.mark('expected identifier, got {0}'.format(SC.sym))
 
         if SC.sym == CAST:          SC.getSym()
+        elif SC.sym == COLON:       SC.mark('expected cast or space, not colon'); SC.getSym()
 
         if SC.sym in FIRST_TYPE:    varType = typ();
         else:                       SC.mark('expected type, got {0}'.format(SC.sym)); varType = Int()
@@ -116,6 +117,7 @@ def stmt():
         else:                       SC.mark('expected identifier, got {0}'.format(SC.sym))
 
         if SC.sym == CAST:          SC.getSym()
+        elif SC.sym == COLON:       SC.mark('expected cast or space, not colon'); SC.getSym()
 
         if SC.sym in FIRST_TYPE:    constType = typ();
         else:                       SC.mark('expected type, got {0}'.format(SC.sym))
@@ -157,7 +159,6 @@ def stmt():
             else:                   ST.newSym(name,base)
 
     elif SC.sym == SET:
-        # TODO: log var and val
         SC.getSym()
 
         if SC.sym == IDENT:         name = SC.val; SC.getSym() # TODO: find type
@@ -550,9 +551,11 @@ def expr_l9():
 
     base = subatom()
 
-    if SC.sym == CAST:
-        SC.getSym()
+    if SC.sym in set({CAST,COLON}):
+        if SC.sym == COLON:
+            SC.mark('casting expects \'::\', not \':\'','warning')
 
+        SC.getSym()
         if SC.sym in FIRST_TYPE:    base = typ()
         else:                       SC.mark('expected type, got {0}'.format(SC.sym))
 
@@ -631,6 +634,7 @@ def atom():
             _logger.error('invalid collection type, got {0}'.format(base))
 
         if SC.sym == COLON:     SC.getSym()
+        elif SC.sym == CAST:    SC.mark('expected colon, not cast'.format(SC.sym))
         else:                   SC.mark('expected colon, got {0}'.format(SC.sym))
 
         if SC.sym in FIRST_EXPR:
@@ -707,7 +711,9 @@ def typ():
 
     SC.getSym()
 
-    if SC.sym == CAST:
+    if SC.sym in set({CAST,COLON}):
+        if SC.sym == COLON:
+            SC.mark('expected cast, not colon','warning')
         SC.getSym()
 
         if SC.sym == ARRAY: base = Arr(base)

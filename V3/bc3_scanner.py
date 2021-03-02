@@ -288,7 +288,13 @@ class Scanner:
         start = self.index - 1
         while ('A' <= self.ch <= 'Z') or ('a' <= self.ch <= 'z') or ('0' <= self.ch <= '9') or (self.ch == '_'): self.getChar()
         self.val = self.source[start:self.index-1]
-        self.sym = KEYWORDS[self.val] if self.val in KEYWORDS else IDENT
+
+        if self.val in set({'print','output'}):
+            self.mark('output is \'out\'','warning'); self.sym = PRINT
+        elif self.val in set({'read'}):
+            self.mark('input is \'in\'','warning'); self.sym = PRINT
+        else:
+            self.sym = KEYWORDS[self.val] if self.val in KEYWORDS else IDENT
 
     def blockcomment(self):
         # Keeps taking inputs until the end comment marker is found
