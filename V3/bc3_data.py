@@ -155,25 +155,9 @@ class Label:
         # return 'Label {0} at {1}'.format(self.type,self.val+1) # add 1 to line up with text editor
         return 'Label at {0}'.format(self.val+1) # add 1 to line up with text editor
 
-class Arrow:
-    # A representation of an arrow
-    def __init__(self,name,value=-1):
-        self.type = name # Label name
-        self.val = value # jump destination
-    def __eq__(self,other):
-        return False
-    def __str__(self):
-        return 'Arrow {0} from {1}'.format(self.type,self.val)
-
 class Error:
     # A representation of an exception
     pass
-
-CONTAINERS  = set({Const,Var,Array,List})
-PRIMITIVES  = set({Int,Float,Str,Bool})
-SIMPLE      = set({Const,Var,Label})
-COMPLEX     = set({Array,List,Function})
-NONDATA     = set({Error})
 
 
 # (TBD) Non constant value (like from a variable)
