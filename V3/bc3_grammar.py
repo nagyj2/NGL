@@ -10,7 +10,7 @@ from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Array, List
 
 # TODO: update logging to inform of check results
 
-missing = []
+missing = [] # track variables missing values (Have ref @ end)
 
 def prog():
     global SC
@@ -31,8 +31,7 @@ def line():
         SC.getSym()
 
     if SC.sym == IDENT:
-        jumplabel = Lab(SC.line)
-        jumplabel.const = True # Prevents changing val leading to crazy results
+        jumplabel = Lab(SC.line,True) # const prevents changing a literal label's value, causing mass confusion
         ST.newSym(SC.val,jumplabel)
         gra_logger.info('label {0} jump to {1}'.format(SC.val,SC.line))
         SC.getSym()
@@ -695,6 +694,13 @@ def execute(scanner, log=True):
 
     SC = scanner
     gra_logger = getLogger('grammar_{0}'.format(SC.fname))
+
+    # Add default variables
+    ST.newSym('__file',Str())   # file name
+    ST.newSym('__func',Bool())  # is a function call (false for main, true for func call)
+
+    ST.newSym('true',Bool(True))    # add boolean constants
+    ST.newSym('false',Bool(True))
 
     start = time()
     prog()
