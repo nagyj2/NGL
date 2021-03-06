@@ -43,7 +43,7 @@ STMT    ::= 'var'   IDENT ['::'] TYPE [EXPR] // Create new variable with optiona
           | 'const' IDENT ['::'] TYPE EXPR   // Create new constant
           | 'in'    EXPR_L9             // Assign input to a var
           | 'set'   IDENT EXPR          // Set a new variable value
-          | 'del'   IDENT               // Delete a variable's record
+          | 'del'   IDENT {IDENT}       // Delete a variable's record
           | 'goto'  LABEL               // Jump to the corresponding label
           | 'if'    EXPR  LABEL         // Evaluate boolean expression and jump to label if true
           | 'cmp'   EXPR                // Evaluates an expression

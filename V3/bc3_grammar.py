@@ -193,14 +193,21 @@ def stmt():
     elif SC.sym == DEL:
         SC.getSym()
 
-        if SC.sym == IDENT:         name = SC.val; SC.getSym()
-        else:                       SC.mark('expected identifier, got {0}'.format(SC.sym))
+        if SC.sym == IDENT:
+            while SC.sym == IDENT:
+                name = SC.val
+                SC.getSym()
+
+                if ST.hasSym(name): ST.delSym(name)
+                else:               _logger.warning('variable {0} does not exist'.format(name))
+
+        else:
+            SC.mark('expected identifier, got {0}'.format(SC.sym))
 
         # if constType != exprType:
         #     SC.mark('type mismatch',logger=gra_logger)
 
-        if ST.hasSym(name): ST.delSym(name)
-        else:               _logger.warning('variable {0} does not exist'.format(name))
+
 
     elif SC.sym == GOTO:
         SC.getSym()
