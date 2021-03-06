@@ -747,10 +747,12 @@ def execute(scanner, log=True):
 
     # Add default variables
     ST.newSym('__file',Str())   # file name
-    ST.newSym('__func',Bool())  # is a function call (false for main, true for func call)
+    ST.newSym('__main',Bool())  # is a function call (false for main, true for func call)
 
     ST.newSym('true',Bool(True))    # add boolean constants
     ST.newSym('false',Bool(True))
+    ST.newSym('argv',Lst())         # Argument list
+    ST.newSym('retv',Lst())         # Return list
 
     start = time()
     prog()
