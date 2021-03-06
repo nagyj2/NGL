@@ -74,18 +74,21 @@ class Ref(Value):
         if typ == 'input':      self.sub = Ref.Input()
         elif typ == 'ident':    self.sub = Ref.Ident()
         elif typ == 'list':    self.sub = Ref.List()
+        elif typ == 'spc':    self.sub = Ref.Special()
         else:                   raise Exception('unknown ref type')
     def __eq__(self,other):
         if type(other) in set({Int,Float,Str,Bool,Func,Lab}) or type(other) == Ref:
             return True
         return False
 
-    class Input:
+    class Input: # from `in` statement
         strrep = 'input'
-    class Ident:
+    class Ident: # from an unresolved identifier call -> should not exist when interpretation begins
         strrep = 'ident'
-    class List:
+    class List: # contents of a list
         strrep = 'auto'
+    class Special: # an identifier whoch should be treated differently
+        strrep = 'sys'
 
 
 # Runtime Types

@@ -760,6 +760,7 @@ def execute(scanner, log=True):
     ST.newSym('false',Bool(True))
     ST.newSym('argv',Lst())         # Argument list
     ST.newSym('retv',Lst())         # Return list
+    ST.newSym('reti',Ref('spc'))    # Return element
 
     start = time()
     prog()
