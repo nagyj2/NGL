@@ -6,9 +6,20 @@
 This section is dedicated to potential changes to the grammar.
 
 - Use of backquotes, like `` `...` ``, to additionally convert expression results to a string. For string printing, `(...)::str` can be quite cumbersome, especially if string operations are occurring as well. Instead, any operations which should be performed and then converted to a string can be placed within backquotes. The result of the backquotes would be a string.
-- Use of pound, `#`, to represent parameters to the function call operator. The comma already has numerous functions within the language, so the pound symbol may offer more clarity on what exactly is occurring in a function call expression. It also allows easier nesting of function call operations.
+- Modify `@` operation to ATOM level   
+    - Use of pound, `#`, to represent parameters to the function call operator
+    - `#` is the second lowest precidence and `@` is the highest
+    - `@`'s argument is an identifier or another defined function
 - Use of `::=` for type equality. Instead of having a method of returning type, a dedicated type equality operator can be used. Returns true if both arguments have the same type.
-- Inline, ternary if statements with `? EXPR_L8 EXPR : EXPR `?
+- ~~Inline, ternary if statements with `? EXPR_L8 EXPR : EXPR `~~
+- Modify statements to take second EXPR instead of LABELs since the namespace is now shared
+
+- Constants or some other way to declare identifiers which cannot be deleted
+- Use of `$` to denote end/beginning of a collection
+- Modify higher end of precedence level to clarify identifiers can have casts and sequencing
+- `retn` must take a return value
+- `load` function for _reti_, _retv_, _argv_, etc...?
+- `log` statement can print to a specific file
 
 ### Productions
 Below is the list of productions in the 3rd version of NGL. Above each production will be a small description of what that production will match and three bullet points. The first bullet is the set of terminals which can begin the production, the second is the set of terminals which can end the production and the last is the set of terminals which can follow the production. When referencing other productions in follows, they refer to the first set. The start symbol is `PROG`.
