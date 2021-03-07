@@ -14,6 +14,9 @@ linked = ScannerDummy()
     # functions -> file to call
     # labels -> line number
 
+_CONSTANT = set({'true','false','__file','__main'})
+_SPECIAL  = set({'argv','retv','reti'})
+
 def init(log=True):
     # Sets up the module to work. Also resets the module to its initial state
     global symTab, spcTab, size, linked, _logger
@@ -131,6 +134,10 @@ def hasSym(name, level=-1, burrow=False):
 def delSym(name, level=-1, burrow=False):
     global symTab, size, linked
     level = __validateLevel(level)
+
+    if name in _CONSTANT | _SPECIAL:
+        _logger.error('cannot delete system constant, got {0}'.format(name))
+        return
 
     if name not in symTab[level]:
         if abs(level) == size:  _logger.mark('symbol not declared, got {0}'.format(name))
