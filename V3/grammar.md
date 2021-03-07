@@ -5,177 +5,148 @@
 ### Thinkpad
 This section is dedicated to potential changes to the grammar.
 
-- Use of backquotes, like `` `...` ``, to additionally convert expression results to a string. For string printing, `(...)::str` can be quite cumbersome, especially if string operations are occurring as well. Instead, any operations which should be performed and then converted to a string can be placed within backquotes. The result of the backquotes would be a string.
-- Modify `@` operation to ATOM level   
+- Use of backquotes, like `` `...` ``, to additionally convert expression results to a string. **implemented**
+- Modify `@` operation to ATOM level **implemented**
     - Use of pound, `#`, to represent parameters to the function call operator
-    - `#` is the second lowest precidence and `@` is the highest
+    - `#` is the second lowest precidence and `@` is the highest _half implemented_
     - `@`'s argument is an identifier or another defined function
-- Use of `::=` for type equality. Instead of having a method of returning type, a dedicated type equality operator can be used. Returns true if both arguments have the same type.
+- Use of `::=` for type equality. **implemented**
 - ~~Inline, ternary if statements with `? EXPR_L8 EXPR : EXPR `~~
-- Modify statements to take second EXPR instead of LABELs since the namespace is now shared
+- Modify statements to take second EXPR instead of LABELs since the namespace is now shared **implemented**
 
 - Constants or some other way to declare identifiers which cannot be deleted
-- Use of `$` to denote end/beginning of a collection
-- Modify higher end of precedence level to clarify identifiers can have casts and sequencing
-- `retn` must take a return value
+- Use of `$` to denote end/beginning of a collection **implemented**
+- Modify higher end of precedence level to clarify identifiers can have casts and sequencing **implemented**
+- `retn` must take a return value **implemented**
 - `load` function for _reti_, _retv_, _argv_, etc...?
-- `log` statement can print to a specific file
+- `log` statement can print to a specific file **implemented**
 
 ### Productions
 Below is the list of productions in the 3rd version of NGL. Above each production will be a small description of what that production will match and three bullet points. The first bullet is the set of terminals which can begin the production, the second is the set of terminals which can end the production and the last is the set of terminals which can follow the production. When referencing other productions in follows, they refer to the first set. The start symbol is `PROG`.
 
 ```
-The program is separated into a number of lines.
-FIRST  = (LINE)
-LAST   = (LINE)
-FOLLOW = {}
 PROG    ::= {LINE}
 
-Each line can have a number of arrows or a label in addition to a statement.
-FIRST  = {<-, <=, ->, =>, IDENT} | (STMT)
-LAST   = {:} | (ARROW) | (LINEEND)
-FOLLOW = (LINE)
 LINE    ::= {<- | <= | -> | =>} [IDENT ':'] [STMT] LINEEND
 
-A label is an arrow or an identifier. Note that the identifier namespace and variable namespace is separate. There are two types of arrows which do not interact, allowing for nesting. A tilde can be used to skip multiple arrows and a period will not skip.
-FIRST  = (ARROW) | (IDENT)
-LAST   = (ARROW) | (IDENT)
-FOLLOW = {:} | (LINEEND)
 LABEL   ::= IDENT
           | {'~'} ('->' | '=>')
           | ('<-' | '<=') {'~'}
-          | '.'
 
-There are a multitude of supported statements. New to 3.0, 'read' becomes 'in', 'print' becomes 'out', the addition of 'retn', 'const', 'flag'.
-FIRST  = {var, const, in, set, del, goto, if, try, cmp, out, incl, quit, retn, log}
-LAST   = {retn, quit} | (EXPR) | (IDENT) | (LABEL)
-FOLLOW = (LINEEND)
-STMT    ::= 'var'   IDENT ['::'] TYPE [EXPR] // Create new variable with optional initial value
-          | 'const' IDENT ['::'] TYPE EXPR   // Create new constant
-          | 'in'    EXPR_L9             // Assign input to a var
-          | 'set'   IDENT EXPR          // Set a new variable value
-          | 'del'   IDENT {IDENT}       // Delete a variable's record
-          | 'goto'  LABEL               // Jump to the corresponding label
-          | 'if'    EXPR  LABEL         // Evaluate boolean expression and jump to label if true
-          | 'cmp'   EXPR                // Evaluates an expression
-          | 'try'   STMT  LABEL         // Evaluate a statement and if there is an error, jump to label
-          | 'out'   EXPR                // Outputs an expression result to stdout
-          | 'incl'  IDENT {IDENT}       // Imports file(s) as an executable function
-          | 'quit'                      // Stops execution of entire trace
-          | 'retn'                      // Stops execution of the subfile (TBD)
-          | 'log'   EXPR                // Outputs an expression result to errout (TBD)
-
-Lowest precedence is an operator which negates the entire expression
-FIRST  = { ><, +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = (LINEEND)
-EXPR    ::= ['><'] EXPR_L0
+STMT    ::= 'var'   ELEMENT [EXPR]    // Create new variable with optional initial value
+          | 'const' ELEMENT EXPR      // Create new constant
+          | 'in'    ELEMENT           // Assign input to a var
+          | 'set'   INDEXED EXPR      // Set a new variable value
+          | 'del'   INDEXED {INDEXED} // Delete a variable's record
+          | 'goto'  LABEL             // Jump to the corresponding label
+          | 'if'    EXPR  LABEL       // Evaluate boolean expression and jump to label if true
+          | 'cmp'   EXPR              // Evaluates an expression
+          | 'try'   STMT  LABEL       // Evaluate a statement and if there is an error, jump to label
+          | 'out'   EXPR              // Outputs an expression result to stdout
+          | 'incl'  IDENT {IDENT}     // Imports file(s) as an executable function
+          | 'quit'                    // Stops execution of entire trace
+          | 'retn'  EXPR              // Stops execution of the subfile and returns a value
+          | 'log'   EXPR EXPR         // Outputs an expression result (2nd) to a specifed file (1st)
 
 Function calls are the next lowest. They are so low because the EXPR children should be able to compute calculations of their own.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
+FIRST  = { ><, +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
 FOLLOW = (LINEEND)
-EXPR_L0 ::= EXPR_S1 ['@' EXPR {',' EXPR}]
+EXPR      ::= ['><'] CJN_EXPR]
 
-Logical OR for booleans.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = { @, , } | (LINEEND)
-EXPR_S1 ::= EXPR_L1 {('|') EXPR_L1}
+Logical OR for booleans and union for collections.
+FIRST  = { +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = (LINEEND)
+CJN_EXPR  ::= DIS_EXPR {('|' | '||') DIS_EXPR}
 
-Logical AND for booleans.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = { |, @, , } | (LINEEND)
-EXPR_L1 ::= EXPR_S2 {'&' EXPR_S2}
-
-Union for collections.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = { |, &, @, , } | (LINEEND)
-EXPR_S2 ::= EXPR_L2 {('||') EXPR_L2}
-
-Intersection for collections.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = { |, ||, &, @, , } | (LINEEND)
-EXPR_L2 ::= EXPR_L3 {'&&' EXPR_L3}
+Logical AND for booleans and intersection for collections.
+FIRST  = { +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { |, || } | (LINEEND)
+DIS_EXPR  ::= EQ_EXPR {('&' | '&&') EQ_EXPR}
 
 Equality and inequality operators. When multiple are used, the individual operators are taken in disjunction, so "a = b <> c <> a" evaluates to "a = b & b <> c & c <> a".
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = { &, &&, |, ||, @, , } | (LINEEND)
-EXPR_L3 ::= EXPR_L4 {('=' | '<>') EXPR_L4}
+FIRST  = { +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { &, &&, |, || } | (LINEEND)
+EQ_EXPR   ::= CMP_EXPR {('=' | '<>' | '::=') CMP_EXPR}
 
 Comparsions are similar to equality operators in that they are taken as a disjunction.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = { =, <>, &, &&, |, ||, @, , } | (LINEEND)
-EXPR_L4 ::= EXPR_L5 {('>' | '<') EXPR_L5}
+FIRST  = { +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { =, <>, ::=, &, &&, |, || } | (LINEEND)
+CMP_EXPR  ::= ADD_EXPR {('>' | '<') ADD_EXPR}
 
-Simple addition and subtraction.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = { >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
-EXPR_L5 ::= EXPR_L6 {('+' | '-') EXPR_L6}
+Simple addition and subtraction
+FIRST  = { +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { >, <, =, <>, ::=, &, &&, |, || } | (LINEEND)
+ADD_EXPR  ::= MULT_EXPR {('+' | '-') MULT_EXPR}
 
 Simple multiplication, decimal and integer division and remainder
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = { +, -, >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
-EXPR_L6 ::= EXPR_L7 {('*' | '/' | '\' | '%') EXPR_L7}
+FIRST  = { +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { +, -, >, <, =, <>, ::=, &, &&, |, || } | (LINEEND)
+MULT_EXPR ::= EXP_EXPR {('*' | '/' | '\' | '%') EXP_EXPR}
 
 Exponentiation.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = {*, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
-EXPR_L7 ::= EXPR_L8 {'^' EXPR_L8}
+FIRST  = { +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { *, /, \, %, +, -, >, <, =, <>, ::=, &, &&, |, || } | (LINEEND)
+EXP_EXPR  ::= UN_EXPR {'**' UN_EXPR}
 
 Mathematical unary operators, positive, negative and logical NOT.
-FIRST  = { +, -, !, NUMBER, IDENTIFIER, STRING, (, {, ] }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
-EXPR_L8 ::= ['+' | '-' | '!'] EXPR_L9
+FIRST  = { +, -, !, NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { **, *, /, \, %, +, -, >, <, =, <>, ::=, &, &&, |, || } | (LINEEND)
+UN_EXPR   ::= ['+' | '-' | '!'] ELEMENT
 
 Type casting to a primitive or collection.
-FIRST  = { NUMBER, IDENTIFIER, STRING, (, {, [ }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, , } | (LINEEND)
-EXPR_L9 ::= SUBATOM ['::' TYPE]
+FIRST  = { NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { **, *, /, \, %, +, -, >, <, =, <>, ::=, &, &&, |, || } | (LINEEND)
+ELEMENT   ::= INDEXED ['::' TYPE]
 
 Indexing. Available for strings, integers and floats
-FIRST  = { NUMBER, IDENTIFIER, STRING, (, {, [ }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = {^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, ::, ,} | (LINEEND)
-SUBATOM ::= ATOM [ '[' EXPR ']' ]
+FIRST  = { NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { **, *, /, \, %, +, -, >, <, =, <>, ::=, &, &&, |, ||, :: } | (LINEEND)
+INDEXED   ::= ATOM [ '[' INDEX ']' ]
 
 The highest precidence. Elements are numbers, identifiers, raw strings, parentheses and collections.
-FIRST  = { NUMBER, IDENTIFIER, STRING, (, {, [ }
-LAST   = { NUMBER, IDENTIFIER, STRING, ), }, ] }
-FOLLOW = {[, ^, *, /, \, %, +, -, >, <, =, <>, &, &&, |, ||, @, ::, , } | (LINEEND)
-ATOM    ::= NUMBER
-          | DECIMAL
-          | IDENT
-          | STRING
-          | '(' EXPR ')'
-          | '{' PRIME ['::' COLLECT] ':' [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
-          | '[' [ EXPR {',' EXPR} ] ']'
+FIRST  = { NUMBER, DECIMAL, STRING, IDENT, @, (, {, [, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
+FOLLOW = { [, **, *, /, \, %, +, -, >, <, =, <>, ::=, &, &&, |, ||, :: } | (LINEEND)
+ATOM      ::= NUMBER
+            | DECIMAL
+            | STRING
+            | IDENT
+            | '@' IDENT {'#' EXPR} ['\\']
+            | '(' EXPR ')'
+            | '`' EXPR '`'
+            | '{' PRIME ['::' COLLECT] ':' [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
+            | '[' [ EXPR {',' EXPR} ] ']'
 
 States a basic type or collection type.
 FIRST  = {int, float, str, bool, func, label, list}
 LAST   = {int, float, str, bool, func, label, list, array}
 FOLLOW = (EXPR) | (LINEEND)
-TYPE    ::= PRIME ['::' COLLECT]
+TYPE      ::= PRIME ['::' COLLECT]
 
-PRIME   ::= 'int'
-          | 'float'
-          | 'str'
-          | 'bool'
-          | 'func'
-          | 'label'
-          | 'list')
+PRIME     ::= 'int'
+            | 'float'
+            | 'str'
+            | 'bool'
+            | 'func'
+            | 'label'
+            | 'list')
 
-COLLECT ::= 'array'
+COLLECT   ::= 'array'
+
+Definition of a valid index
+INDEX     ::= EXPR ['..' (EXPR | '$')]
+            | '$'
 
 Definition of a integer.
 NUMBER  ::= (0-9)+

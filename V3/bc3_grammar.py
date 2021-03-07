@@ -1,8 +1,8 @@
 # NGL Bytecode 3.0 Grammar Skeleton
 
 from bc3_scanner import Scanner
-from bc3_scanner import ENOT, PARAM, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, NOT, CAST, VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWSHAFT, NOJUMP, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES
-from bc3_scanner import FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_SUBATOM, LAST_SUBATOM, FIRST_EXPR_L9, LAST_EXPR_L9, FIRST_EXPR_L8, LAST_EXPR_L8, FIRST_EXPR_L7, LAST_EXPR_L7, FIRST_EXPR_L6, LAST_EXPR_L6, FIRST_EXPR_L5, LAST_EXPR_L5, FIRST_EXPR_L4, LAST_EXPR_L4, FIRST_EXPR_L3, LAST_EXPR_L3, FIRST_EXPR_L2, LAST_EXPR_L2, FIRST_EXPR_S2, LAST_EXPR_S2, FIRST_EXPR_L1, LAST_EXPR_L1, FIRST_EXPR_S1, LAST_EXPR_S1, FIRST_EXPR_L0, LAST_EXPR_L0, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG
+from bc3_scanner import ENOT, CALL, BACK, CALLEND, PARAM, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, NOT, CAST, VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWSHAFT, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES
+from bc3_scanner import FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG
 import bc3_symboltable as ST
 
 from bc3_logging import getLogger
@@ -64,9 +64,6 @@ def label():
         SC.getSym()
         while SC.sym == ARROWSHAFT: SC.getSym()
 
-    elif SC.sym == NOJUMP:
-        SC.getSym()
-
     elif SC.sym == IDENT:
         SC.getSym()
 
@@ -83,62 +80,61 @@ def stmt():
         # TODO: log var, type and val if present
         SC.getSym()
 
-        if SC.sym == IDENT:         name = SC.val; SC.getSym()
+        if SC.sym == IDENT:         name = SC.val
         else:                       SC.mark('expected identifier, got {0}'.format(SC.sym))
 
-        if SC.sym == CAST:          SC.getSym()
-        elif SC.sym == COLON:       SC.mark('expected cast or space, not colon'); SC.getSym()
+        # TODO: separate atom into two pieces, one is acceptable here and expr and other for expr only
+        base = element() # get ident with optional cast, index
 
-        if SC.sym in FIRST_TYPE:    varType = typ();
-        else:                       SC.mark('expected type, got {0}'.format(SC.sym)); varType = Int()
+        # if SC.sym == CAST:          SC.getSym()
+        # elif SC.sym == COLON:       SC.mark('expected cast or space, not colon'); SC.getSym()
+
+        # if SC.sym in FIRST_TYPE:    varType = typ();
+        # else:                       SC.mark('expected type, got {0}'.format(SC.sym)); varType = Int()
 
         if SC.sym in FIRST_EXPR:
             exprType = expr()
 
-            if type(varType) == Lab == type(exprType):
-                varType = exprType
+            if type(base) == Lab == type(exprType):
+                base = exprType
 
-            if varType != exprType:
-                _logger.error('incorrect expression type, expected {0} got {1}'.format(varType,exprType))
+            if base != exprType:
+                _logger.error('incorrect expression type, expected {0} got {1}'.format(base,exprType))
                 SC.mark()
 
-        if type(varType) == Ref and varType.type == 'ident':
+        if type(base) == Ref and base.sub == 'ident':
             missing.append(name)
 
-        varType.const = False
-
-        ST.newSym(name,varType)
+        base.const = False
+        ST.newSym(name,base)
 
     elif SC.sym == CONST:
         # TODO: log var, type and val if present
         SC.getSym()
 
-        if SC.sym == IDENT:         name = SC.val; SC.getSym()
+        if SC.sym == IDENT:         name = SC.val
         else:                       SC.mark('expected identifier, got {0}'.format(SC.sym))
 
-        if SC.sym == CAST:          SC.getSym()
-        elif SC.sym == COLON:       SC.mark('expected cast or space, not colon'); SC.getSym()
-
-        if SC.sym in FIRST_TYPE:    constType = typ();
-        else:                       SC.mark('expected type, got {0}'.format(SC.sym))
+        # TODO: separate atom into two pieces, one is acceptable here and expr and other for expr only
+        base = element() # get ident with optional cast, index
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
         else:                       SC.mark('expected expression, got {0}'.format(SC.sym))
 
-        if type(constType) == Lab == type(exprType):
-            constType = exprType
-        elif type(constType) == Func == type(exprType):
-            constType = exprType
+        if type(base) == Lab == type(exprType):
+            base = exprType
+        elif type(base) == Func == type(exprType):
+            base = exprType
 
-        if constType != exprType:
+        if base != exprType:
             _logger.error('incorrect expression type, expected {0} got {1}'.format(constType,exprType))
             SC.mark()
 
-        if type(constType) == Ref and constType.type == 'ident':
+        if type(base) == Ref and base.sub == 'ident':
             missing.append(name)
 
-        constType.const = True
-        ST.newSym(name,constType)
+        base.const = True
+        ST.newSym(name,base)
 
     elif SC.sym == READ:
         # TODO: complete
@@ -147,7 +143,8 @@ def stmt():
         if SC.sym == IDENT: name = SC.val
         else:               SC.mark('expected identifier, got {0}'.format(SC.sym))
 
-        base = expr_l9()
+        # TODO: separate atom into two pieces, one is acceptable here and expr and other for expr only
+        base = element() # get ident with optional cast, index
         _logger.info('variable {0} assigned input type {0}'.format(name, base))
 
         # If casted, known type. If ref, unknown
@@ -161,8 +158,11 @@ def stmt():
     elif SC.sym == SET:
         SC.getSym()
 
-        if SC.sym == IDENT:         name = SC.val; SC.getSym() # TODO: find type
+        if SC.sym == IDENT:         name = SC.val
         else:                       SC.mark('expected identifier, got {0}'.format(SC.sym))
+
+        # TODO: separate atom into two pieces, one is acceptable here and expr and other for expr only
+        base = indexed() # get ident with optional cast, index
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
         elif SC.sym in FIRST_TYPE:  SC.mark('type not needed for set','warning'); typ()
@@ -173,18 +173,18 @@ def stmt():
             SC.mark()
 
         else:
-            varType = ST.getSym(name)
+            base = ST.getSym(name) # get type of identifier
 
-            if varType.const:
-                _logger.error('constants cannot be reassigned')
+            if base.const:
+                _logger.error('constants cannot be reassigned, got {0}'.format(name))
                 SC.mark()
 
             else:
-                if varType != exprType:
-                    _logger.error('variable type mismatch, needed {0} got {1}'.format(varType,exprType))
+                if base != exprType:
+                    _logger.error('variable type mismatch, needed {0} got {1}'.format(base,exprType))
                     SC.mark()
 
-                if type(exprType) == Ref and exprType.type == 'ident':
+                if type(exprType) == Ref and exprType.sub == 'ident':
                     missing.append(name)
 
                 exprType.const = False
@@ -194,9 +194,11 @@ def stmt():
         SC.getSym()
 
         if SC.sym == IDENT:
+
             while SC.sym == IDENT:
-                name = SC.val
+                name = SC.val # protected by while loop
                 SC.getSym()
+                # base = indexed() # base isnt used
 
                 if ST.hasSym(name): ST.delSym(name)
                 else:               _logger.warning('variable {0} does not exist'.format(name))
@@ -206,8 +208,6 @@ def stmt():
 
         # if constType != exprType:
         #     SC.mark('type mismatch',logger=gra_logger)
-
-
 
     elif SC.sym == GOTO:
         SC.getSym()
@@ -290,7 +290,7 @@ def expr():
     inv = False
     if SC.sym == ENOT:  SC.getSym(); inv = True
 
-    base = expr_l0()
+    base = cjn_expr()
 
     if inv:
         if type(base) != Bool:
@@ -300,140 +300,97 @@ def expr():
 
     return base
 
-def expr_l0():
-    if SC.sym not in FIRST_EXPR_L0:
-        _logger.error('attempt to parse {0} as EXPR_L0'.format(SC.sym))
+def cjn_expr():
+    if SC.sym not in FIRST_CJN_EXPR:
+        _logger.error('attempt to parse {0} as CJN_EXPR'.format(SC.sym))
         SC.mark()
 
-    base = expr_s1()
+    base = dis_expr()
 
-    if SC.sym == PARAM:
-        SC.getSym()
-        sub = expr()
-        while SC.sym == COMMA:
-            SC.getSym()
-            sub = expr()
-
-        base = Func() # Ref('func')
-
-    return base
-
-def expr_s1():
-    if SC.sym not in FIRST_EXPR_S1:
-        _logger.error('attempt to parse {0} as EXPR_S1'.format(SC.sym))
-        SC.mark()
-
-    base = expr_l1()
-
-    if SC.sym in set({OR}):
-        if type(base) not in set({Bool}):
+    if SC.sym in set({OR, UNION}):
+        if SC.sym == OR and type(base) not in set({Bool}):
             _logger.warning('incompatible logical OR type, got {0}'.format(base))
-
-        while SC.sym in set({OR}):
-            SC.getSym()
-
-            mod = expr_l1()
-
-            if type(mod) not in set({Bool}):
-                _logger.warning('incompatible logical OR arg type, got {0}'.format(mod))
-
-        base = Bool()
-
-    return base
-
-def expr_l1():
-    if SC.sym not in FIRST_EXPR_L1:
-        _logger.error('attempt to parse {0} as EXPR_L1'.format(SC.sym))
-        SC.mark()
-
-    base = expr_s2()
-
-    if SC.sym in set({AND}):
-        if type(base) not in set({Bool}):
-            _logger.warning('incompatible logical AND type, got {0}'.format(base))
-
-        while SC.sym in set({AND}):
-            SC.getSym()
-
-            mod = expr_s2()
-
-            if type(mod) not in set({Bool}):
-                _logger.warning('incompatible logical AND arg type, got {0}'.format(mod))
-
-        base = Bool()
-
-    return base
-
-def expr_s2():
-    if SC.sym not in FIRST_EXPR_S2:
-        _logger.error('attempt to parse {0} as EXPR_S2'.format(SC.sym))
-        SC.mark()
-
-    base = expr_l2()
-
-    if SC.sym in set({UNION}):
-        if type(base) not in set({Arr,Lst}):
+        elif SC.sym == UNION and type(base) not in set({Arr,Lst}):
             _logger.warning('incompatible union type, got {0}'.format(base))
 
-        while SC.sym in set({UNION}):
-            SC.getSym()
+        while SC.sym in set({OR, UNION}):
+            if SC.sym == OR:
+                SC.getSym()
+                mod = dis_expr()
 
-            mod = expr_l2()
+                if type(mod) not in set({Bool}):
+                    _logger.warning('incompatible logical OR arg type, got {0}'.format(mod))
 
-            if type(mod) not in set({Arr,Lst}):
-                _logger.warning('incompatible union arg type, got {0}'.format(mod))
+                base = Bool()
 
-        base = Lst(base.sub)
+            elif SC.sym == UNION:
+                SC.getSym()
+                mod = dis_expr()
+
+                if type(mod) not in set({Arr,Lst}):
+                    _logger.warning('incompatible union arg type, got {0}'.format(mod))
+
+                base = Lst()
 
     return base
 
-def expr_l2():
-    if SC.sym not in FIRST_EXPR_L2:
-        _logger.error('attempt to parse {0} as EXPR_L2'.format(SC.sym))
+def dis_expr():
+    if SC.sym not in FIRST_DIS_EXPR:
+        _logger.error('attempt to parse {0} as DIS_EXPR'.format(SC.sym))
         SC.mark()
 
-    base = expr_l3()
+    base = eq_expr()
 
-    if SC.sym in set({INTER}):
-        if type(base) not in set({Arr,Lst}):
+    if SC.sym in set({AND, INTER}):
+        if SC.sym == AND and type(base) not in set({Bool}):
+            _logger.warning('incompatible logical AND type, got {0}'.format(base))
+        elif SC.sym == INTER and type(base) not in set({Arr,Lst}):
             _logger.warning('incompatible intersection type, got {0}'.format(base))
 
-        while SC.sym in set({INTER}):
-            SC.getSym()
+        while SC.sym in set({AND, INTER}):
+            if SC.sym == AND:
+                SC.getSym()
+                mod = eq_expr()
 
-            mod = expr_l3()
+                if type(mod) not in set({Bool}):
+                    _logger.warning('incompatible logical AND arg type, got {0}'.format(mod))
 
-            if type(mod) not in set({Arr,Lst}):
-                _logger.warning('incompatible intersection arg type, got {0}'.format(base))
+                base = Bool()
 
-        base = Lst(base.sub)
+            elif SC.sym == INTER:
+                SC.getSym()
+                mod = eq_expr()
+
+                if type(mod) not in set({Arr,Lst}):
+                    _logger.warning('incompatible intersection arg type, got {0}'.format(mod))
+
+                base = Lst()
 
     return base
 
-def expr_l3():
-    if SC.sym not in FIRST_EXPR_L3:
-        _logger.error('attempt to parse {0} as EXPR_L3'.format(SC.sym))
+def eq_expr():
+    if SC.sym not in FIRST_EQ_EXPR:
+        _logger.error('attempt to parse {0} as EQ_EXPR'.format(SC.sym))
         SC.mark()
 
-    base = expr_l4()
+    base = cmp_expr()
 
-    if SC.sym in set({EQ,NE}):
-
-        while SC.sym in set({EQ,NE}):
+    if SC.sym in set({EQ,NE,TE}):
+        while SC.sym in set({EQ,NE,TE}):
             SC.getSym()
 
-            mod = expr_l4()
+            mod = cmp_expr()
 
         base = Bool()
 
     return base
 
-def expr_l4():
-    if SC.sym not in FIRST_EXPR_L4:
-        _logger.error('attempt to parse {0} as EXPR_L4'.format(SC.sym))
+def cmp_expr():
+    if SC.sym not in FIRST_CMP_EXPR:
+        _logger.error('attempt to parse {0} as CMP_EXPR'.format(SC.sym))
         SC.mark()
 
-    base = expr_l5()
+    base = add_expr()
 
     if SC.sym in set({LT,GT}):
         if type(base) not in set({Int,Float,Str}):
@@ -446,7 +403,7 @@ def expr_l4():
         while SC.sym in set({LT,GT}):
             SC.getSym()
 
-            mod = expr_l5()
+            mod = add_expr()
 
             if type(mod) in set({Bool,Arr,Lst}):
                 _logger.warning('incompatible comparison arg type, got {0}'.format(mod))
@@ -455,22 +412,23 @@ def expr_l4():
 
     return base
 
-def expr_l5():
-    if SC.sym not in FIRST_EXPR_L5:
-        _logger.error('attempt to parse {0} as EXPR_L5'.format(SC.sym))
+def add_expr():
+    if SC.sym not in FIRST_ADD_EXPR:
+        _logger.error('attempt to parse {0} as ADD_EXPR'.format(SC.sym))
         SC.mark()
 
-    base = expr_l6()
+    base = mult_expr()
 
     if SC.sym in set({PLUS,MINUS}):
-
         if type(base) not in set({Int,Float,Str}):
             _logger.warning('incompatible additive type, got {0}'.format(base))
+
+        # TODO FIX implement type checking (Int and Floats can work together and only Str will work with Str)
 
         while SC.sym in set({PLUS,MINUS}):
             SC.getSym()
 
-            mod = expr_l6()
+            mod = mult_expr()
 
             if type(mod) not in set({Int,Float,Str}):
                 _logger.warning('incompatible additive arg type, got {0}'.format(mod))
@@ -480,22 +438,21 @@ def expr_l5():
 
     return base
 
-def expr_l6():
-    if SC.sym not in FIRST_EXPR_L6:
-        _logger.error('attempt to parse {0} as EXPR_L6'.format(SC.sym))
+def mult_expr():
+    if SC.sym not in FIRST_MULT_EXPR:
+        _logger.error('attempt to parse {0} as MULT_EXPR'.format(SC.sym))
         SC.mark()
 
-    base = expr_l7()
+    base = exp_expr()
 
     if SC.sym in set({MULT,DIV,INTDIV,MOD}):
-
         if type(base) not in set({Int,Float,Str}):
             _logger.warning('incompatible multiplicitive type, got {0}'.format(base))
 
         while SC.sym in set({MULT,DIV,INTDIV,MOD}):
             SC.getSym()
 
-            mod = expr_l7()
+            mod = exp_expr()
 
             if type(mod) not in set({Int,Float,Str}):
                 _logger.warning('incompatible multiplicitive arg type, got {0}'.format(mod))
@@ -505,34 +462,33 @@ def expr_l6():
 
     return base
 
-def expr_l7():
-    if SC.sym not in FIRST_EXPR_L7:
-        _logger.error('attempt to parse {0} as EXPR_L7'.format(SC.sym))
+def exp_expr():
+    if SC.sym not in FIRST_EXP_EXPR:
+    #     _logger.error('attempt to parse {0} as EXP_EXPR'.format(SC.sym))
         SC.mark()
 
-    base = expr_l8()
+    base = un_expr()
 
     if SC.sym == EXP:
-
         if type(base) not in set({Int,Float}):
             _logger.warning('incompatible exponentiation type, got {0}'.format(base))
 
         while SC.sym == EXP:
             SC.getSym()
 
-            mod = expr_l8()
+            mod = un_expr()
 
             if type(base) not in set({Int,Float}):
                 _logger.warning('incompatible exponentiation arg type, got {0}'.format(base))
 
-            if type(base) == Int and type(mod) == Float:
+            if type(mod) == Float:
                 base = Float()
 
     return base
 
-def expr_l8():
-    if SC.sym not in FIRST_EXPR_L8:
-        _logger.error('attempt to parse {0} as EXPR_L8'.format(SC.sym))
+def un_expr():
+    if SC.sym not in FIRST_UN_EXPR:
+        _logger.error('attempt to parse {0} as UN_EXPR'.format(SC.sym))
         SC.mark()
 
     op = None
@@ -540,7 +496,7 @@ def expr_l8():
     elif SC.sym == MINUS:   op = SC.sym; SC.getSym()
     elif SC.sym == NOT:     op = SC.sym; SC.getSym()
 
-    base = expr_l9()
+    base = element()
 
     if op == PLUS and type(base) not in set({Int,Float}):
         _logger.warning('incompatible unary addition type, got {0}'.format(base))
@@ -551,12 +507,12 @@ def expr_l8():
 
     return base
 
-def expr_l9():
-    if SC.sym not in FIRST_EXPR_L9:
-        _logger.error('attempt to parse {0} as EXPR_L9'.format(SC.sym))
+def element():
+    if SC.sym not in FIRST_ELEMENT:
+        _logger.error('attempt to parse {0} as ELEMENT'.format(SC.sym))
         SC.mark()
 
-    base = subatom()
+    base = indexed()
 
     if SC.sym in set({CAST}):
 
@@ -566,24 +522,42 @@ def expr_l9():
 
     return base
 
-def subatom():
-    if SC.sym not in FIRST_SUBATOM:
-        _logger.error('attempt to parse {0} as SUBATOM'.format(SC.sym))
+def indexed():
+    if SC.sym not in FIRST_INDEXED:
+        _logger.error('attempt to parse {0} as INDEXED'.format(SC.sym))
         SC.mark()
 
     base = atom()
 
-    if SC.sym == LBRAK:
+    if SC.sym in set({LBRAK,BACK}):
         # Int, Float can be indexed for digits, string for chars, Lists and Arrays for elements
         if type(base) not in set({Int,Float,Str,Arr,Lst}):
             _logger.error('invalid type for indexing, got {0}'.format(base))
             SC.mark()
 
-        SC.getSym()
-        sub = expr()
+        if SC.sym == BACK: # match end of collection
+            SC.getSym()
 
-        if type(sub) not in set({Int}):
-            _logger.error('invalid index type, got {0}'.format(base))
+        elif SC.sym in FIRST_EXPR:
+            sub = expr()
+
+            if type(sub) not in set({Int}):
+                _logger.error('invalid index type, got {0}'.format(sub))
+                SC.mark()
+
+            if SC.sym == RANGE:
+                SC.getSym()
+
+                if SC.sym == BACK:
+                    SC.getSym()
+                else:
+                    mod = expr()
+                    if type(mod) not in set({Int}):
+                        _logger.error('invalid index type, got {0}'.format(mod))
+                        SC.mark()
+
+        else:
+            _logger.error('invalid index, got {0}'.format(mod))
             SC.mark()
 
         if type(base) in set({Int,Float}):  base = Int()
@@ -609,15 +583,32 @@ def atom():
         SC.getSym()
         base = Float()
 
+    elif SC.sym == STRING:
+        SC.getSym()
+        base = Str()
+
     elif SC.sym == IDENT:
         name = SC.val
         SC.getSym()
         if ST.hasSym(name): base = ST.getSym(name).clone() # dont return actual b/c of aliasing
         else:               base = Ref('ident')
 
-    elif SC.sym == STRING:
+    elif SC.sym == CALL:
         SC.getSym()
-        base = Str()
+
+        name = expr()
+        print(name)
+
+        if type(name) != Func:
+            _logger.error('attempt call non-function, got {0}'.format(name))
+            SC.mark()
+
+        while SC.sym == PARAM:
+            SC.getSym()
+            sub = expr()
+
+        if SC.sym == CALLEND:
+            SC.getSym()
 
     elif SC.sym == LPAREN:
         SC.getSym()
@@ -625,6 +616,14 @@ def atom():
         base = expr()
         if SC.sym == RPAREN:    SC.getSym()
         else:                   SC.mark('expected closing parenthesis, got {0}'.format(SC.sym))
+
+    elif SC.sym == BACKQUOTE:
+        SC.getSym()
+
+        base = expr()
+        if SC.sym == BACKQUOTE: SC.getSym()
+        else:                   SC.mark('expected backquote, got {0}'.format(SC.sym))
+        base = Str()
 
     elif SC.sym == LCURLY:
         SC.getSym()

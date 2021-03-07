@@ -20,7 +20,7 @@ print 'begin';
 var g::int e;
 loop2:
 if >< !(g=n)::bool finish2;
-print g;
+print 'start' + `g+5**3*3`;
 if (e=(0)::int)::bool true3;
 goto back3;
 true3:
@@ -36,6 +36,6 @@ set e ((e/2))::int;
 back4:
 goto loop2;
 finish2:
-print g;
+print `g`;
 print 'end';
 quit;

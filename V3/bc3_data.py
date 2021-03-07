@@ -73,8 +73,8 @@ class Ref(Value):
 
         if typ == 'input':      self.sub = Ref.Input()
         elif typ == 'ident':    self.sub = Ref.Ident()
-        elif typ == 'list':    self.sub = Ref.List()
-        elif typ == 'spc':    self.sub = Ref.Special()
+        elif typ == 'list':     self.sub = Ref.List()
+        elif typ == 'spc':      self.sub = Ref.Special()
         else:                   raise Exception('unknown ref type')
     def __eq__(self,other):
         if type(other) in set({Int,Float,Str,Bool,Func,Lab}) or type(other) == Ref:

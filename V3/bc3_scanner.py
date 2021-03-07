@@ -5,7 +5,7 @@ from bc3_logging import getLogger
 
 # Operators
 ENOT = 1 # ><
-PARAM = 2 # @
+CALL = 2 # @
 OR = 3 # |
 UNION = 4 # ||
 AND = 5 # &
@@ -20,9 +20,14 @@ MULT = 13 # *
 DIV = 14 # /
 INTDIV = 15 # \
 MOD = 16 # %
-EXP = 17 # ^
+EXP = 17 # **
 NOT = 18 # !
 CAST = 19 # ::
+PARAM = 20 # #
+CALLEND = 21 # \\
+TE = 22 # ::=
+BACK = 23 # $
+BACKQUOTE = 24 # `
 
 # Keywords
 VAR = 30 # var
@@ -47,7 +52,6 @@ GOARROW2 = 61 # =>
 RETARROW1 = 62 # <-
 RETARROW2 = 63 # <=
 ARROWSHAFT = 64 # ~
-NOJUMP = 65 # .
 
 # Brackets
 LPAREN = 70 # (
@@ -87,7 +91,7 @@ EOF = 99 # end of file marker
 ARROWS = (GOARROW1, GOARROW2, RETARROW1, RETARROW2)
 TYPES = (INT, FLOAT, STR, BOOL)
 
-FIRST_LABEL = set({ARROWSHAFT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, NOJUMP, IDENT})
+FIRST_LABEL = set({ARROWSHAFT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, IDENT})
 LAST_LABEL  = FIRST_LABEL
 
 FIRST_TYPE = set({INT, FLOAT, STR, BOOL, FUNC, LABEL, LIST})
@@ -99,50 +103,44 @@ LAST_CAST  = LAST_TYPE
 FIRST_LINEEND = set({LINEEND, NEWLINE})
 LAST_LINEEND  = FIRST_LINEEND
 
-FIRST_ATOM = set({NUMBER, DECIMAL, IDENT, STRING, LPAREN, LCURLY, LBRAK})
-LAST_ATOM  = set({NUMBER, DECIMAL, IDENT, STRING, RPAREN, RCURLY, LBRAK})
+FIRST_ATOM = set({NUMBER, DECIMAL, IDENT, STRING, LPAREN, LCURLY, LBRAK, BACKQUOTE, CALL})
+LAST_ATOM  = set({NUMBER, DECIMAL, IDENT, STRING, RPAREN, RCURLY, LBRAK, BACKQUOTE, CALLEND})
 
-FIRST_SUBATOM = FIRST_ATOM
-LAST_SUBATOM  = set({RBRAK}) | LAST_ATOM
+FIRST_INDEXED = FIRST_ATOM
+LAST_INDEXED  = set({RBRAK}) | LAST_ATOM
 
-FIRST_EXPR_L9 = FIRST_SUBATOM
-LAST_EXPR_L9  = LAST_CAST | LAST_SUBATOM
+FIRST_ELEMENT = FIRST_INDEXED
+LAST_ELEMENT  = LAST_CAST | LAST_INDEXED
 
-FIRST_EXPR_L8 = set({PLUS, MINUS, NOT}) | FIRST_EXPR_L9
-LAST_EXPR_L8  = LAST_EXPR_L9
+FIRST_UN_EXPR = set({PLUS, MINUS, NOT}) | FIRST_ELEMENT
+LAST_UN_EXPR  = LAST_ELEMENT
 
-FIRST_EXPR_L7 = FIRST_EXPR_L8
-LAST_EXPR_L7  = LAST_EXPR_L8
+FIRST_EXP_EXPR = FIRST_UN_EXPR
+LAST_EXP_EXPR  = LAST_UN_EXPR
 
-FIRST_EXPR_L6 = FIRST_EXPR_L8
-LAST_EXPR_L6  = LAST_EXPR_L8
+FIRST_MULT_EXPR = FIRST_EXP_EXPR
+LAST_MULT_EXPR  = LAST_EXP_EXPR
 
-FIRST_EXPR_L5 = FIRST_EXPR_L6
-LAST_EXPR_L5  = LAST_EXPR_L6
+FIRST_ADD_EXPR = FIRST_MULT_EXPR
+LAST_ADD_EXPR  = LAST_MULT_EXPR
 
-FIRST_EXPR_L4 = FIRST_EXPR_L5
-LAST_EXPR_L4  = LAST_EXPR_L5
+FIRST_CMP_EXPR = FIRST_ADD_EXPR
+LAST_CMP_EXPR  = LAST_ADD_EXPR
 
-FIRST_EXPR_L3 = FIRST_EXPR_L4
-LAST_EXPR_L3  = LAST_EXPR_L4
+FIRST_EQ_EXPR = FIRST_CMP_EXPR
+LAST_EQ_EXPR  = LAST_CMP_EXPR
 
-FIRST_EXPR_L2 = FIRST_EXPR_L3
-LAST_EXPR_L2  = LAST_EXPR_L3
+FIRST_DIS_EXPR = FIRST_EQ_EXPR
+LAST_DIS_EXPR  = LAST_EQ_EXPR
 
-FIRST_EXPR_S2 = FIRST_EXPR_L2
-LAST_EXPR_S2  = LAST_EXPR_L2
+FIRST_CJN_EXPR = FIRST_DIS_EXPR
+LAST_CJN_EXPR  = LAST_DIS_EXPR
 
-FIRST_EXPR_L1 = FIRST_EXPR_S2
-LAST_EXPR_L1  = LAST_EXPR_S2
+FIRST_ENT_EXPR = FIRST_CJN_EXPR
+LAST_ENT_EXPR  = LAST_CJN_EXPR
 
-FIRST_EXPR_S1 = FIRST_EXPR_L1
-LAST_EXPR_S1  = LAST_EXPR_L1
-
-FIRST_EXPR_L0 = FIRST_EXPR_L1
-LAST_EXPR_L0  = LAST_EXPR_L1
-
-FIRST_EXPR = set({ENOT}) | FIRST_EXPR_L0
-LAST_EXPR  = LAST_EXPR_L0
+FIRST_EXPR = set({ENOT}) | FIRST_ENT_EXPR
+LAST_EXPR  = LAST_ENT_EXPR
 
 FIRST_STMT = set({VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG})
 LAST_STMT  = set({QUIT, RETURN, IDENT}) | LAST_CAST | LAST_EXPR | LAST_LABEL
@@ -371,22 +369,31 @@ class Scanner:
             self.getChar()
             if self.ch == '>': self.getChar(); self.sym = GOARROW1
             else: self.sym = MINUS
-        elif self.ch == '*': self.getChar(); self.sym = MULT
+        elif self.ch == '*':
+            self.getChar();
+            if self.ch == '*': self.getChar(); self.sym = EXP
+            else: self.sym = MULT
         elif self.ch == '/':
             self.getChar();
             if self.ch == '/': self.getChar(); self.linecomment(); self.getSym()
             elif self.ch == '*': self.getChar(); self.blockcomment(); self.getSym()
             else: self.sym = DIV
-        elif self.ch == '\\': self.getChar(); self.sym = INTDIV
+        elif self.ch == '\\':
+            self.getChar();
+            if self.ch == '\\': self.getChar(); self.sym = CALLEND
+            else: self.sym = INTDIV
         elif self.ch == '%': self.getChar(); self.sym = MOD
-        elif self.ch == '^': self.getChar(); self.sym = EXP
+        elif self.ch == '$': self.getChar(); self.sym = BACK
+        elif self.ch == '`': self.getChar(); self.sym = BACKQUOTE
         elif self.ch == '!': self.getChar(); self.sym = NOT
         elif self.ch == ':':
             self.getChar();
-            if self.ch == ':': self.getChar(); self.sym = CAST
+            if self.ch == ':':
+                self.getChar();
+                if self.ch == '=': self.getChar(); self.sym = TE
+                else: self.sym = CAST
             else: self.sym = COLON
         elif self.ch == '~': self.getChar(); self.sym = ARROWSHAFT
-        elif self.ch == '.': self.getChar(); self.sym = NOJUMP
         elif self.ch == '(': self.getChar(); self.sym = LPAREN
         elif self.ch == ')': self.getChar(); self.sym = RPAREN
         elif self.ch == '[': self.getChar(); self.sym = LBRAK
