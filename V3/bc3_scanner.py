@@ -213,6 +213,9 @@ class Scanner:
 
         self.logger.debug('reset to line {0} pos {0} index {1}'.format(setline, self.pos,self.index))
 
+    def lineInfo(self):
+        return 'line {0} pos {1}'.format(self.lastline+1,self.lastpos)
+
     def mark(self, msg=None, level='error'):
         # Marks an error and sets error flag to true
         if level in set({'error','critical'}):
@@ -222,12 +225,12 @@ class Scanner:
             if self.lastline > self.errline or self.lastpos > self.errpos:
                 # print('file',self.fname,level,': line', self.lastline+1, 'pos', self.lastpos, msg)
 
-                if level == 'debug':    self.logger.debug('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
-                elif level == 'info':   self.logger.info('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
-                elif level == 'warning':self.logger.warning('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
-                elif level == 'error':  self.logger.error('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
+                if level == 'debug':    self.logger.debug('{0} {1}'.format(self.lineInfo(),msg))
+                elif level == 'info':   self.logger.info('{0} {1}'.format(self.lineInfo(),msg))
+                elif level == 'warning':self.logger.warning('{0} {1}'.format(self.lineInfo(),msg))
+                elif level == 'error':  self.logger.error('{0} {1}'.format(self.lineInfo(),msg))
 
-            if level == 'critical':     self.logger.critical('line {0} pos {1} {2}'.format(self.lastline+1,self.lastpos,msg))
+            if level == 'critical':     self.logger.critical('{0} {1}'.format(self.lineInfo(),msg))
 
             self.errline, self.errpos = self.lastline, self.lastpos
 
