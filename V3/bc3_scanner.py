@@ -51,7 +51,7 @@ GOARROW1 = 60 # ->
 GOARROW2 = 61 # =>
 RETARROW1 = 62 # <-
 RETARROW2 = 63 # <=
-ARROWSHAFT = 64 # ~
+TILDE = 64 # ~
 
 # Brackets
 LPAREN = 70 # (
@@ -64,6 +64,8 @@ RCURLY = 75 # }
 # Syntax Markers
 COMMA = 76 # ,
 COLON = 77 # :
+PERIOD = 78 # .
+RANGE = 79 # ..
 
 # Types
 INT = 80 # int
@@ -91,7 +93,7 @@ EOF = 99 # end of file marker
 ARROWS = (GOARROW1, GOARROW2, RETARROW1, RETARROW2)
 TYPES = (INT, FLOAT, STR, BOOL)
 
-FIRST_LABEL = set({ARROWSHAFT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, IDENT})
+FIRST_LABEL = set({TILDE, GOARROW1, GOARROW2, RETARROW1, RETARROW2, IDENT})
 LAST_LABEL  = FIRST_LABEL
 
 FIRST_TYPE = set({INT, FLOAT, STR, BOOL, FUNC, LABEL, LIST})
@@ -396,7 +398,11 @@ class Scanner:
                 if self.ch == '=': self.getChar(); self.sym = TE
                 else: self.sym = CAST
             else: self.sym = COLON
-        elif self.ch == '~': self.getChar(); self.sym = ARROWSHAFT
+        elif self.ch == '.':
+            self.getChar();
+            if self.ch == '.': self.getChar(); self.sym = RANGE
+            else: self.sym = PERIOD
+        elif self.ch == '~': self.getChar(); self.sym = TILDE
         elif self.ch == '(': self.getChar(); self.sym = LPAREN
         elif self.ch == ')': self.getChar(); self.sym = RPAREN
         elif self.ch == '[': self.getChar(); self.sym = LBRAK

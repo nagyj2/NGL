@@ -145,7 +145,7 @@ PRIME     ::= 'int'
 COLLECT   ::= 'array'
 
 Definition of a valid index
-INDEX     ::= EXPR ['..' (EXPR | '$')]
+INDEX     ::= EXPR ['~' (EXPR | '$')]
             | '$'
 
 Definition of a integer.
