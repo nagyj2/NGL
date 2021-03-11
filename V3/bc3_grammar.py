@@ -105,16 +105,12 @@ def stmt():
             SC.mark('expected identifier, got {0}'.format(SC.sym))
             name = '_'
 
+        if ST.hasSym(name): # cannot error because of potential gotos
+            _logger.warning('variable already exists, got {0}'.format(name))
+
         base = element() # get ident with optional cast, index
-
-        # if SC.sym == CAST:          SC.getSym()
-        # elif SC.sym == COLON:       SC.mark('expected cast or space, not colon'); SC.getSym()
-
-        # if SC.sym in FIRST_TYPE:    varType = typ();
-        # else:                       SC.mark('expected type, got {0}'.format(SC.sym)); varType = Int()
-
         if type(base) == Ref and type(base.sub) == Ref.Ident:
-            _logger.warning('expected type, but got none')
+            _logger.warning('expected type, got {0}'.format(base))
 
         if SC.sym in FIRST_EXPR:
             exprType = expr()
@@ -145,6 +141,9 @@ def stmt():
             SC.mark('expected identifier, got {0}'.format(SC.sym))
             name = '_'
 
+        if ST.hasSym(name):
+            _logger.warning('variable already exists, got {0}'.format(name))
+
         base = element() # get ident with optional cast, index
 
         if SC.sym in FIRST_EXPR:
@@ -165,7 +164,6 @@ def stmt():
 
         if type(base) == Ref and type(base.sub) == Ref.Ident:
             missing.append(name)
-
         base.const = True
         ST.newSym(name,base)
 
@@ -199,6 +197,7 @@ def stmt():
             SC.mark('expected identifier, got {0}'.format(SC.sym))
             name = '_'
 
+        # base = ST.getSym(name) # get type of identifier -> old method
         base = indexed() # get ident with optional cast, index
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
@@ -211,11 +210,7 @@ def stmt():
             base = Ref('null')
 
         if not ST.hasSym(name):
-            _logger.error('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
-            SC.setError()
-            return # can return since at the grammar stage since the types have to match at grammar stage
-
-        base = ST.getSym(name) # get type of identifier
+            _logger.warning('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
 
         if base.const:
             _logger.error('{0} constants cannot be reassigned, got {1}'.format(SC.lineInfo(),name))
@@ -717,10 +712,14 @@ def atom():
     elif SC.sym == CALL:
         SC.getSym()
 
-        name = expr()
+        if SC.sym == IDENT:
+            name = SC.val
+        else:
+            SC.mark('{0} expected identifier, got {1}'.format(SC.lineInfo(),SC.sym))
 
-        if type(name) != Func:
-            _logger.error('{0} attempt call non-function, got {1}'.format(SC.lineInfo(),name))
+        base = indexed()
+        if type(base) != Func:
+            _logger.error('{0} expected call of function, got {1}'.format(SC.lineInfo(),base))
             SC.setError()
 
         while SC.sym == PARAM:
