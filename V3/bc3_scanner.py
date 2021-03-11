@@ -173,7 +173,7 @@ FOLLOW_INDEXED = set({CAST}) | FOLLOW_ELEMENT
 FOLLOW_ATOM = set({LBRAK}) | FOLLOW_INDEXED
 
 
-STRONGSYMS = set({LINEEND, NEWLINE}) | FIRST_STMT
+STRONGSYMS = set({EOF, LINEEND, NEWLINE}) | FIRST_STMT
 WEAKSYMS   = set({LINEEND, NEWLINE, COLON, CAST, RPAREN, RBRAK, RCURLY, BACKQUOTE, COMMA, TILDE})
 
 
@@ -241,7 +241,7 @@ class Scanner:
     def mark(self, msg=None, level='error'):
         # Marks an error and sets error flag to true
         if level in set({'error','critical'}):
-            self.error = True
+            self.setError()
 
         if not self.suppress and msg != None:
             if self.lastline > self.errline or self.lastpos > self.errpos:
@@ -255,6 +255,9 @@ class Scanner:
             if level == 'critical':     self.logger.critical('{0} {1}'.format(self.lineInfo(),msg))
 
             self.errline, self.errpos = self.lastline, self.lastpos
+
+    def setError(self,level=True):
+        self.error = level
 
     def setGoto(self, line):
         # Sets a specific line to jump to when the current line is fully parsed

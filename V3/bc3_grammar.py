@@ -1,8 +1,7 @@
 # NGL Bytecode 3.0 Grammar Skeleton
 
 from bc3_scanner import Scanner
-from bc3_scanner import ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, NOT, CAST, VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES
-from bc3_scanner import FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_TYPE, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG
+from bc3_scanner import ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, NOT, CAST, APPEND,  VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES, FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_TYPE, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG, FIRST_INDEX, LAST_INDEX, FOLLOW_INDEX
 import bc3_symboltable as ST
 
 from bc3_logging import getLogger
@@ -17,7 +16,7 @@ def prog():
     global SC
     if SC.sym not in FIRST_PROG:
         _logger.error('{0} attempt to parse {1} as PROG'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_PROG:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return
@@ -29,7 +28,7 @@ def line():
     global SC
     if SC.sym not in FIRST_LINE:
         _logger.error('{0} attempt to parse {1} as LINE'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_LINE:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return
@@ -85,7 +84,7 @@ def stmt():
     global SC, missing
     if SC.sym not in FIRST_STMT:
         _logger.error('{0} attempt to parse {1} as STMT'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_STMT:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return
@@ -114,9 +113,9 @@ def stmt():
         if SC.sym in FIRST_EXPR:
             exprType = expr()
 
-            if base != exprType:
+            if base != exprType and type(base) != Lst:
                 _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
-                SC.mark()
+                SC.setError()
 
             else: # Known compatibility
 
@@ -150,7 +149,7 @@ def stmt():
 
         if base != exprType:
             _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),constType,exprType))
-            SC.mark()
+            SC.setError()
 
         else: # Known compatibility
 
@@ -198,7 +197,7 @@ def stmt():
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
         elif SC.sym in FIRST_TYPE | set({CAST}):
-            SC.mark('type not needed for set','warning');
+            SC.mark('type not required for set','warning');
             if SC.sym == CAST: SC.getSym()
             if SC.sym in FIRST_TYPE: typ()
         else:
@@ -207,19 +206,19 @@ def stmt():
 
         if not ST.hasSym(name):
             _logger.error('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
-            SC.mark()
+            SC.setError()
             return # can return since at the grammar stage since the types have to match at grammar stage
 
         base = ST.getSym(name) # get type of identifier
 
         if base.const:
             _logger.error('{0} constants cannot be reassigned, got {1}'.format(SC.lineInfo(),name))
-            SC.mark()
+            SC.setError()
             return
 
         elif base != exprType:
-            _logger.error('{0} variable type mismatch, needed {1} got {2}'.format(SC.lineInfo(),base,exprType))
-            SC.mark()
+            _logger.error('{0} variable type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
+            SC.setError()
             return
 
         if type(exprType) == Ref and exprType.sub == 'ident':
@@ -370,7 +369,7 @@ def stmt():
 def expr():
     if SC.sym not in FIRST_EXPR:
         _logger.error('{0} attempt to parse {1} as EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -383,7 +382,7 @@ def expr():
     if inv:
         if type(base) not in set({Bool,Ref}):
             _logger.error('{0} incompatible expression negation type, got {1}'.format(SC.lineInfo(),base))
-            SC.mark()
+            SC.setError()
         base = Bool()
 
     return base
@@ -391,7 +390,7 @@ def expr():
 def cjn_expr():
     if SC.sym not in FIRST_CJN_EXPR:
         _logger.error('{0} attempt to parse {1} as CJN_EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_CJN_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -428,7 +427,7 @@ def cjn_expr():
 def dis_expr():
     if SC.sym not in FIRST_DIS_EXPR:
         _logger.error('{0} attempt to parse {1} as DIS_EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_DIS_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -465,7 +464,7 @@ def dis_expr():
 def eq_expr():
     if SC.sym not in FIRST_EQ_EXPR:
         _logger.error('{0} attempt to parse {1} as EQ_EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_EQ_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -485,7 +484,7 @@ def eq_expr():
 def cmp_expr():
     if SC.sym not in FIRST_CMP_EXPR:
         _logger.error('{0} attempt to parse {1} as CMP_EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_CMP_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -515,7 +514,7 @@ def cmp_expr():
 def add_expr():
     if SC.sym not in FIRST_ADD_EXPR:
         _logger.error('{0} attempt to parse {1} as ADD_EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_ADD_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -533,8 +532,9 @@ def add_expr():
 
             mod = mult_expr()
 
-            if type(mod) not in set({Int,Float,Str,Ref}):
-                _logger.warning('{0} incompatible additive arg type, got {1}'.format(SC.lineInfo(),mod))
+            if type(base) != type(mod) or type(mod) == Ref:
+                #type(mod) not in set({Int,Float,Str,Ref}):
+                _logger.warning('{0} incompatible additive arg type, expected {1} got {2}'.format(SC.lineInfo(),base,mod))
 
             # REMOVE goes against the philosophy of no type conversions
             # if type(base) == Int and type(mod) == Float:
@@ -545,7 +545,7 @@ def add_expr():
 def mult_expr():
     if SC.sym not in FIRST_MULT_EXPR:
         _logger.error('{0} attempt to parse {1} as MULT_EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_MULT_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -561,8 +561,9 @@ def mult_expr():
 
             mod = exp_expr()
 
-            if type(mod) not in set({Int,Float,Ref}):
-                _logger.warning('{0} incompatible multiplicitive arg type, got {1}'.format(SC.lineInfo(),mod))
+            if type(base) != type(mod) or type(mod) == Ref:
+            # if type(mod) not in set({Int,Float,Ref}):
+                _logger.warning('{0} incompatible multiplicitive arg type, expected {1} got {2}'.format(SC.lineInfo(),base,mod))
 
             # REMOVE goes against the philosophy of no type conversions
             # if type(base) == Int and type(mod) == Float:
@@ -601,7 +602,7 @@ def exp_expr():
 def un_expr():
     if SC.sym not in FIRST_UN_EXPR:
         _logger.error('{0} attempt to parse {1} as UN_EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_UN_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -623,7 +624,7 @@ def un_expr():
 def element():
     if SC.sym not in FIRST_ELEMENT:
         _logger.error('{0} attempt to parse {1} as ELEMENT'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_ELEMENT:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -642,7 +643,7 @@ def element():
 def indexed():
     if SC.sym not in FIRST_INDEXED:
         _logger.error('{0} attempt to parse {1} as INDEXED'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_INDEXED:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -711,7 +712,7 @@ def indexed():
 def atom():
     if SC.sym not in FIRST_ATOM:
         _logger.error('{0} attempt to parse {1} as ATOM'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_ATOM:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
@@ -732,7 +733,7 @@ def atom():
         name = SC.val
         SC.getSym()
         if ST.hasSym(name): base = ST.getSym(name).clone() # dont return actual b/c of aliasing
-        else: # FIX non-existant vairbales dont throw error
+        else: # FIX non-existant variables dont throw error
             # _logger.error('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
             base = Ref('ident')
 
@@ -743,7 +744,7 @@ def atom():
 
         if type(name) != Func:
             _logger.error('{0} attempt call non-function, got {1}'.format(SC.lineInfo(),name))
-            SC.mark()
+            SC.setError()
 
         while SC.sym == PARAM:
             SC.getSym()
@@ -859,7 +860,7 @@ def atom():
 def typ():
     if SC.sym not in FIRST_TYPE:
         _logger.error('{0} attempt to parse {1} as TYPE'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_TYPE:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
