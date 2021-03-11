@@ -27,8 +27,9 @@ def execute(filename, log=True):
     if not _initialized: raise Exception('proprocessor not initialized')
 
     src = "".join(open(filename).readlines()) # Create complete string representing code
+    pre_logger.debug('sucessfully read source')
 
-    pre_logger.info('starting initialization')
+    pre_logger.info('starting scanner')
     SC = Scanner(filename,src,log)
     ST.updateLink(SC)
     _passOne(SC, log=log)
