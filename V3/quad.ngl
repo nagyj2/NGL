@@ -1,0 +1,20 @@
+// Computes the roots of a quadratic
+
+var a::float argv[0]; // take inputs
+var b::float argv[1];
+var c::float argv[2];
+var rootp::float; // holds results
+var rootn::float;
+
+out `a` +' '+ `b` +' '+ `c`;
+
+
+try set rootp (-b+(b**2f-4f*a*c)**0.5)/(2f*a) ->
+try set rootn (-b-(b**2f-4f*a*c)**0.5)/(2f*a) ->
+
+set retv {rootp, rootn}
+retn 0;
+
+<-
+out 'negative descriminant';
+retn 1;
