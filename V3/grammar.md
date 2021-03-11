@@ -21,6 +21,11 @@ This section is dedicated to potential changes to the grammar.
 - `load` function for _reti_, _retv_, _argv_, etc...?
 - `log` statement can print to a specific file **implemented**
 - Move backquotes, function call to a higher precedence
+- Change list literal format -> causes problems for malformed index
+- Rethink incl format
+    - Some way to import file x as string y
+    - If possible, have way to import multiple in one statement
+    - maybe use comma?
 
 ### Productions
 Below is the list of productions in the 3rd version of NGL. Above each production will be a small description of what that production will match and three bullet points. The first bullet is the set of terminals which can begin the production, the second is the set of terminals which can end the production and the last is the set of terminals which can follow the production. When referencing other productions in follows, they refer to the first set. The start symbol is `PROG`.
