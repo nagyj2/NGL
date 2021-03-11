@@ -378,7 +378,8 @@ class Scanner:
             self.getChar()
             if self.ch == '<': self.getChar(); self.sym = ENOT
             else: self.sym = GT
-        elif self.ch == '@': self.getChar(); self.sym = PARAM
+        elif self.ch == '@': self.getChar(); self.sym = CALL
+        elif self.ch == '#': self.getChar(); self.sym = PARAM
         elif self.ch == '|':
             self.getChar()
             if self.ch == '|': self.getChar(); self.sym = UNION

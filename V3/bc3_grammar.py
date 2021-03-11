@@ -668,6 +668,7 @@ def indexed():
         elif type(base) in set({Str}):      base = Str()
         elif type(base) in set({Arr}):      base = base.sub
         elif type(base) in set({Lst}):      base = Ref('list')
+        elif type(base) == Ref:             pass
         else:
             _logger.error('{0} invalid type for indexing, got {1}'.format(SC.lineInfo(),base))
             SC.setError()
@@ -728,6 +729,8 @@ def atom():
 
         if SC.sym == CALLEND:
             SC.getSym()
+
+        base = Ref('func')
 
     elif SC.sym == LPAREN:
         SC.getSym()
