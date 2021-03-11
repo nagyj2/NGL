@@ -39,19 +39,16 @@ NGL is different from other assembly languages in that expressions are construct
 
 | No.  | Operation Name (Descending Precedence)   | Display character(s) |
 |------|------------------------------------------|----------------------|
-| 12   | Indexing                                 | `[ ]`                |
-| 11   | Type Casting                             | `::`                 |
-| 10   | Unary Addition/ Subtraction, Logical NOT | `+`, `-`, `!`        |
-| 09   | Exponentiation                           | `^`                  |
-| 08   | Multiplicative Operations                | `*`, `/`, `\`, `%`   |
-| 07   | Additive Operations                      | `+`, `-`             |
-| 06   | Inequality                               | `<`, `>`             |
-| 05   | Equality                                 | `=`, `<>`, ::=       |
-| 04.5 | Intersection                             | `&&`                 |
-| 04   | Union                                    | `\|\|`               |
-| 03.5 | Logical AND                              | `&`                  |
-| 03   | Logical OR                               | `\|`                 |
-| 02   | Function call                            | `@` and `,`          |
+| 11   | Indexing                                 | `[ ]`                |
+| 10   | Type Casting                             | `::`                 |
+| 09   | Unary Addition/ Subtraction, Logical NOT | `+`, `-`, `!`        |
+| 08   | Exponentiation                           | `**`                 |
+| 07   | Multiplicative Operations                | `*`, `/`, `\`, `%`   |
+| 06   | Additive Operations                      | `+`, `-`             |
+| 05   | Inequality                               | `<`, `>`             |
+| 04   | Equality                                 | `=`, `<>`, `::=`     |
+| 03   | Logical AND and intersection             | `&`, `&&`            |
+| 02   | Logical OR and union                     | `\|, \|\|`           |
 | 01   | Equation NOT                             | `><`                 |
 
 ###### Indexing
@@ -64,7 +61,7 @@ In NGL, there is an intentional lack of automatic type casting, so the type cast
 Unary addition (`+`) and subtraction (`-`) are for use with integers and floats. Unary subtraction can be used to denote a negative value. Logical NOT (`!`) is used to invert the value of a boolean value.
 
 ###### Exponentiation
-Exponentiation will raise some integer or float to the power of another integer or float.
+Exponentiation will raise some integer or float to the power of another integer or float. This operation will always return a float.
 
 ###### Multiplicative Operators
 These operators are mostly used with integer or float values. the multiplication operator (`*`) will multiply two numbers whereas the division operator (`/`) will divide two numbers. The integer division operator (`\`) will divide two numbers but return only the whole integer result. The modulo operator (`%`) will divide two numbers and return the remainder.
@@ -78,17 +75,11 @@ The inequality operator will compare two values and return a boolean result depe
 ###### Equalities
 Equalities will check if the two arguments have the same values. Similar to inequalities, equalities can be string into one large comparison.
 
-###### Intersection
-Intersection is used to combining elements of arrays and lists together. The operation compares the two arguments and creates a new data structure of all the elements they share. If the two arguments are array types of the same subtype, the output is an array of that subtype. Otherwise, the output is a list.
+###### Logical AND and Intersection
+Logical AND takes two boolean arguments and returns true if both arguments are true. Otherwise it returns false. Intersection is used to combining elements of arrays and lists together. The operation compares the two arguments and creates a new data structure of all the elements they share. If the two arguments are array types of the same subtype, the output is an array of that subtype. Otherwise, the output is a list.
 
-###### Union
-Union is similar to intersection but instead it creates a new data structure of all the elements in either argument. If both inputs are array of the same subtype, the output is the same. Otherwise it is a list.
-
-###### Logical AND
-Logical AND takes two boolean arguments and returns true if both arguments are true. Otherwise it returns false.
-
-###### Logical OR
-Logical OR takes two boolean arguments and returns true if either argument is true. Otherwise it returns false.
+###### Logical OR and Union
+Logical OR takes two boolean arguments and returns true if either argument is true. Otherwise it returns false. Union is similar to intersection but instead it creates a new data structure of all the elements in either argument. If both inputs are array of the same subtype, the output is the same. Otherwise it is a list.
 
 ###### Expression NOT
 Expression NOT is the lowest precedence and has the function of negating the result of the entire expression. In if statements, jumps are executed on true, so the intention of the expression NOT is to have an easily identifiable and writable method of modifying if statements so they instead jump on a false value.
