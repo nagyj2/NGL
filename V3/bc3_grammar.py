@@ -56,23 +56,29 @@ def label():
     # TODO: check for arow desination existance
     if SC.sym not in FIRST_LABEL:
         _logger.error('{0} attempt to parse {1} as LABEL'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_LABEL:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return
 
     if SC.sym in ({TILDE,GOARROW1,GOARROW2}):
-        while SC.sym == TILDE: SC.getSym()
+        back = 0
+        while SC.sym == TILDE: SC.getSym(); back += 1
 
-        if SC.sym in set({GOARROW1,GOARROW2}):
-            SC.getSym()
-        else:
+        if SC.sym not in set({GOARROW1,GOARROW2}):
             SC.mark('expected arrow, got {0}'.format(SC.sym))
+        else:
+            arrow = SC.sym
+            SC.getSym()
+
+            # line = ST.getNextArrow(arrow,SC.line,back) # cannot jump to future arrows b/c they arent parsed
 
     elif SC.sym in set({RETARROW1,RETARROW2}):
+        arrow, back = SC.sym, 0
         SC.getSym()
-        while SC.sym == TILDE: SC.getSym()
-        # TODO: verify jump exists
+        while SC.sym == TILDE: SC.getSym(); back += 1
+
+        # line = ST.getNextArrow(arrow,SC.line,back)
 
     elif SC.sym == IDENT:
         SC.getSym()
@@ -574,12 +580,16 @@ def mult_expr():
 def exp_expr():
     if SC.sym not in FIRST_EXP_EXPR:
         _logger.error('{0} attempt to parse {1} as EXP_EXPR'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_EXP_EXPR:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return Ref('null')
 
     base = un_expr()
+
+    if SC.sym == APPEND:
+        SC.mark('{0} exponentiation uses \'**\', not \'^\''.format(SC.lineInfo(),base),'warning')
+        SC.sym = EXP
 
     if SC.sym == EXP:
         if type(base) not in set({Int,Float}):
@@ -660,44 +670,10 @@ def indexed():
         elif type(base) in set({Lst}):      base = Ref('list')
         else:
             _logger.error('{0} invalid type for indexing, got {1}'.format(SC.lineInfo(),base))
-            SC.mark()
+            SC.setError()
             base = Ref('null')
 
-        # if SC.sym == BACK: # match end of collection
-        #     SC.getSym()
-
-            # if SC.sym == TILDE:
-            #     SC.getSym()
-            #     _logger.error('{0} cannot declare range starting from $'.format(SC.lineInfo()))
-            #     if SC.sym in FIRST_EXPR:sub = expr()
-            #     elif SC.sym == BACK:    SC.getSym()
-            #     else:                   SC.mark('expected range end, got {0}'.format(SC.sym))
-
-        if SC.sym in FIRST_EXPR:
-            low = expr()
-            if type(low) not in set({Int,Ref}):
-                _logger.error('{0} invalid index type, got {1}'.format(SC.lineInfo(),low))
-                SC.mark()
-
-            if SC.sym == TILDE:
-                SC.getSym()
-
-                if SC.sym == BACK:
-                    SC.getSym()
-                elif SC.sym in FIRST_EXPR:
-                    top = expr()
-                    if type(top) not in set({Int,Ref}):
-                        _logger.error('{0} invalid index type, got {1}'.format(SC.lineInfo(),top))
-                        SC.mark()
-                else:
-                    SC.mark('expected expression or $, got {0}'.format(top))
-                    while SC.sym not in set({RBRAK}) | STRONGSYMS | FOLLOW_INDEXED:
-                        _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
-
-        else:
-            SC.mark('expected expression or $, got {0}'.format(SC.sym))
-            while SC.sym not in set({RBRAK}) | STRONGSYMS | FOLLOW_INDEXED:
-                _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
+        sub = index()
 
         if SC.sym == RBRAK:
             SC.getSym()
@@ -779,46 +755,45 @@ def atom():
     elif SC.sym == LCURLY:
         SC.getSym()
 
-        base = typ()
-        # REMOVE `::array` is optional
-        if type(base) != Arr:
-            base = Arr(base)
+        if SC.sym in FIRST_TYPE:
+            # REMOVE `::array` is optional
+            base = typ()
+            if type(base) != Arr:
+                base = Arr(base)
 
-        if type(base) not in set({Arr}):
-            _logger.error('{0} invalid collection type, got {1}'.format(SC.lineInfo(),base))
-            return Ref('null')
-
-        if SC.sym == COLON:     SC.getSym()
-        elif SC.sym == CAST:    SC.mark('expected colon, not cast'.format(SC.sym))
+            if SC.sym == COLON:
+                SC.getSym()
+            else:
+                SC.mark('expected colon, got {0}'.format(SC.sym))
+                while SC.sym not in set({COLON}) | STRONGSYMS | FOLLOW_ATOM:
+                    _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
+                return Ref('null')
         else:
-            SC.mark('expected colon, got {0}'.format(SC.sym))
-            while SC.sym not in set({COLON}) | STRONGSYMS | FOLLOW_ATOM:
-                _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
-            return Ref('null')
+            base = Lst()
 
         if SC.sym in FIRST_EXPR:
             sub = expr() # subtype
 
             if SC.sym == COMMA:
 
-                if base.sub != sub:
-                    _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base,sub))
-                    SC.mark()
+                if type(base) in set({Arr}) and base.sub != sub:
+                    _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base.sub,sub))
+                    SC.setError()
 
                 while SC.sym == COMMA:
                     SC.getSym()
                     sub = expr()
 
-                    if base.sub != sub:
-                        _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base,sub))
-                        SC.mark()
+                    if type(base) in set({Arr}) and base.sub != sub:
+                        _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base.sub,sub))
+                        SC.setError()
 
-            elif SC.sym == COLON:
+            elif SC.sym == TILDE:
                 SC.getSym()
 
                 if type(sub) not in set({Int,Ref}):
                     _logger.error('{0} lower bound must be integer, got {1}'.format(SC.lineInfo(),sub))
-                    SC.mark()
+                    SC.setError()
 
                 top = expr()
 
@@ -829,25 +804,6 @@ def atom():
             SC.getSym()
         else:
             SC.mark('expected closing curly brace, got {0}'.format(SC.sym))
-            while SC.sym not in STRONGSYMS | FOLLOW_ATOM:
-                _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
-
-    elif SC.sym == LBRAK:
-        SC.getSym()
-
-        base = Lst()
-
-        if SC.sym in FIRST_EXPR:
-            sub = expr() # subtype
-
-            while SC.sym == COMMA:
-                SC.getSym()
-                sub = expr()
-
-        if SC.sym == RBRAK:
-            SC.getSym()
-        else:
-            SC.mark('expected closing bracket, got {0}'.format(SC.sym))
             while SC.sym not in STRONGSYMS | FOLLOW_ATOM:
                 _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
 
@@ -904,10 +860,45 @@ def typ():
 
     return base
 
+def index():
+    if SC.sym not in FIRST_INDEX:
+        _logger.error('{0} attempt to parse {1} as INDEX'.format(SC.lineInfo(),SC.sym))
+        SC.setError()
+        while SC.sym not in STRONGSYMS | FOLLOW_INDEX:
+            _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
+        return Ref('null')
+
+    add = False
+    if SC.sym == APPEND: add = True; SC.getSym()
+
+    if SC.sym == BACK:
+        SC.getSym()
+        base = Int()
+
+    elif SC.sym in FIRST_EXPR:
+        base = expr()
+        if type(base) not in set({Int,Ref}):
+            _logger.error('{0} non-integer index, got {1}'.format(SC.lineInfo(),base))
+            base = Ref('null')
+
+        if SC.sym == TILDE:
+            SC.getSym()
+
+            if add: _logger.warning('{0} cannot append over slice'.format(SC.lineInfo(),base))
+
+            if SC.sym == BACK:
+                SC.getSym()
+            else: # if SC.sym in FIRST_EXPR:
+                top = expr()
+                if type(top) not in set({Int,Ref}):
+                    _logger.error('{0} non-integer upper index, got {1}'.format(SC.lineInfo(),top))
+
+    return base
+
 def lineend():
     if SC.sym not in FIRST_LINEEND:
         _logger.error('{0} attempt to parse {1} as LINEEND'.format(SC.lineInfo(),SC.sym))
-        SC.mark()
+        SC.setError()
         while SC.sym not in FIRST_STMT:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
 

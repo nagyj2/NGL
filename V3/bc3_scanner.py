@@ -28,6 +28,7 @@ CALLEND = 21 # \\
 TE = 22 # ::=
 BACK = 23 # $
 BACKQUOTE = 24 # `
+APPEND = 25 # ^
 
 # Keywords
 VAR = 30 # var
@@ -105,8 +106,8 @@ LAST_CAST  = LAST_TYPE
 FIRST_LINEEND = set({LINEEND, NEWLINE})
 LAST_LINEEND  = FIRST_LINEEND
 
-FIRST_ATOM = set({NUMBER, DECIMAL, IDENT, STRING, LPAREN, LCURLY, LBRAK, BACKQUOTE, CALL})
-LAST_ATOM  = set({NUMBER, DECIMAL, IDENT, STRING, RPAREN, RCURLY, LBRAK, BACKQUOTE, CALLEND})
+FIRST_ATOM = set({NUMBER, DECIMAL, IDENT, STRING, LPAREN, LCURLY, BACKQUOTE, CALL})
+LAST_ATOM  = set({NUMBER, DECIMAL, IDENT, STRING, RPAREN, RCURLY, BACKQUOTE, CALLEND})
 
 FIRST_INDEXED = FIRST_ATOM
 LAST_INDEXED  = set({RBRAK}) | LAST_ATOM
@@ -144,6 +145,9 @@ LAST_ENT_EXPR  = LAST_CJN_EXPR
 FIRST_EXPR = set({ENOT}) | FIRST_ENT_EXPR
 LAST_EXPR  = LAST_ENT_EXPR
 
+FIRST_INDEX = set({APPEND, BACK}) | FIRST_EXPR
+LAST_INDEX = set({BACK}) | LAST_EXPR
+
 FIRST_STMT = set({VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG})
 LAST_STMT  = set({QUIT, RETURN, IDENT}) | LAST_CAST | LAST_EXPR | LAST_LABEL
 
@@ -158,6 +162,7 @@ FOLLOW_IDENT = FIRST_LINEEND
 FOLLOW_STMT = FIRST_LINEEND
 FOLLOW_TYPE = set({LINEEND}) | FIRST_EXPR
 FOLLOW_PROG = set({EOF})
+FOLLOW_INDEX = set({RBRAK})
 
 FOLLOW_EXPR = FIRST_LINEEND | FIRST_LABEL | FIRST_EXPR
 FOLLOW_CJN_EXPR = FOLLOW_EXPR
@@ -426,6 +431,7 @@ class Scanner:
             if self.ch == '.': self.getChar(); self.sym = RANGE
             else: self.sym = PERIOD
         elif self.ch == '~': self.getChar(); self.sym = TILDE
+        elif self.ch == '^': self.getChar(); self.sym = APPEND
         elif self.ch == '(': self.getChar(); self.sym = LPAREN
         elif self.ch == ')': self.getChar(); self.sym = RPAREN
         elif self.ch == '[': self.getChar(); self.sym = LBRAK
