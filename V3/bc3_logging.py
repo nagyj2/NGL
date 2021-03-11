@@ -27,7 +27,7 @@ def _initLogger(category,masterLevel,fileLevel,streamLevel,filename):
     # Creates and sets up a logging object and then returns it
     logger = logging.getLogger(category)
     logger.setLevel(masterLevel)
-    mode = 'w' if len(open) == 0 else 'a' # for debugging, easier to have 1 log
+    mode = 'a' if len(open) == 0 else 'a' # for debugging, easier to have 1 log
     fh = logging.FileHandler('_{0}.log'.format(filename),mode) # handler for log file
     fh.setLevel(fileLevel)
     sh = logging.StreamHandler() # handler for console stream
