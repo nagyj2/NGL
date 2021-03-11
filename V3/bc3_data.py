@@ -6,8 +6,8 @@ from copy import deepcopy
 
 class Value:
     strrep = 'null'
-    sub = None
-    val = None
+    sub = None # holds any subtype
+    data = None # holds any extra data
     def __init__(self,const=False):
         self.const = const
     def clone(self):
@@ -15,7 +15,7 @@ class Value:
     def __eq__(self,other):
         return type(self) == type(other) or type(other) == Ref
     def __str__(self):
-        return '{0}{1}{2}{3}'.format('const ' if self.const == True else '', self.strrep, ' of {0}'.format(self.sub.strrep) if self.sub != None else '', ' ({0})'.format(self.val) if self.val != None else '')
+        return '{0}{1}{2}{3}'.format('const ' if self.const == True else '', self.strrep, ' of {0}'.format(self.sub.strrep) if self.sub != None else '', ' ({0})'.format(self.data) if self.data != None else '')
 
 class Int(Value):
     # Represents an integer
@@ -36,16 +36,16 @@ class Bool(Value):
 class Func(Value):
     # Represents a function: can be converted to the full runtime version
     strrep = 'func'
-    def __init__(self,value=None,const=False):
+    def __init__(self,data=None,const=False):
         super().__init__(const)
-        self.val = value # represents file name
+        self.data = data # represents file name
 
 class Lab(Value):
     # Represents a label: can be converted to the full runtime version
     strrep = 'label'
-    def __init__(self,value=None,const=False):
+    def __init__(self,data=None,const=False):
         super().__init__(const)
-        self.val = value # represents jump destination
+        self.data = data # represents jump destination
 
 class Arr(Value):
     strrep = 'array'
