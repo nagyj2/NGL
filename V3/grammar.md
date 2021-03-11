@@ -144,7 +144,7 @@ ATOM      ::= NUMBER
             | DECIMAL
             | STRING
             | IDENT
-            | '@' IDENT {'#' EXPR} ['\\']
+            | '@' INDEXED {'#' EXPR} ['\\']
             | '(' EXPR ')'
             | '`' EXPR '`'
             | '{' [PRIME ':'] [ EXPR [({',' EXPR} | '~' EXPR)] ] '}'
