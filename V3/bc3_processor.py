@@ -34,9 +34,9 @@ def execute_main_grammar(filename, log=True):
     pre_logger.info('starting grammar check of {0}'.format(scan.fname))
     state = PG.execute(scan, log)
 
-    # print('==={0}==='.format(filename))
-    # for key,val in state.items(): print(key)
 
+    print('===={0}===='.format(filename))
+    # for key,val in state.items(): print(key)
     ST.printTab(['sym'])
     # ST.collapse() # TODO: Alter state for pass 2
     # ST.load(state)
@@ -57,9 +57,9 @@ def execute_function_grammar(filename, state, log=True):
     state = PG.execute(scan, log)
     savedStates[filename] = ST.export()
 
-    # print('==={0}==='.format(filename))
-    # for key,val in savedStates.items(): print(key)
 
+    print('===={0}===='.format(filename))
+    # for key,val in savedStates.items(): print(key)
     ST.printTab(['sym'])
     ST.collapse('function') # TODO: Alter state for pass 2
     # state = ST.export()

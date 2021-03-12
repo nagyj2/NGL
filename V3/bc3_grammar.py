@@ -1,16 +1,20 @@
 # NGL Bytecode 3.0 Grammar Skeleton
-
+from copy import deepcopy
 from bc3_scanner import Scanner
-from bc3_scanner import ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, NOT, CAST, APPEND,  VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES, FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_TYPE, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG, FIRST_INDEX, LAST_INDEX, FOLLOW_INDEX
+from bc3_scanner import ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, CAST, APPEND,  VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES, FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_TYPE, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG, FIRST_INDEX, LAST_INDEX, FOLLOW_INDEX
 import bc3_symboltable as ST
+import bc3_processor as PP
 
 from bc3_logging import getLogger
 from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Arr, Lst
 
 # TODO: update logging to inform of check results
+# CHANGE type to have a basic and complex version
 
-missing = [] # track variables missing values (Have ref @ end)
+missing = set({}) # track variables missing values (Have ref @ end)
+checked = set({}) # track files which have been grammar checked
 _logger = getLogger('dummy')
+islog = False
 
 def prog():
     global SC
@@ -625,7 +629,7 @@ def un_expr():
         return Ref('null')
 
     op = None
-    if SC.sym in set({PLUS,MINUS,NOT}): op = SC.sym; SC.getSym()
+    if SC.sym in set({PLUS,MINUS,TILDE}): op = SC.sym; SC.getSym()
 
     base = element()
 
@@ -633,7 +637,7 @@ def un_expr():
         _logger.warning('{0} incompatible unary addition type, got {1}'.format(SC.lineInfo(),base))
     elif op == MINUS and type(base) not in set({Int,Float,Ref}):
         _logger.warning('{0} incompatible unary subtraction type, got {1}'.format(SC.lineInfo(),base))
-    elif op == NOT and type(base) not in set({Bool,Ref}):
+    elif op == TILDE and type(base) not in set({Bool,Ref}):
         _logger.warning('{0} incompatible logical NOT type, got {1}'.format(SC.lineInfo(),base))
 
     return base
@@ -814,7 +818,7 @@ def atom():
                         _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base.sub,sub))
                         SC.setError()
 
-            elif SC.sym == TILDE:
+            elif SC.sym == COLON:
                 SC.getSym()
 
                 if type(sub) not in set({Int,Ref}):
@@ -909,7 +913,7 @@ def index():
             _logger.error('{0} non-integer index, got {1}'.format(SC.lineInfo(),base))
             base = Ref('null')
 
-        if SC.sym == TILDE:
+        if SC.sym == COLON:
             SC.getSym()
 
             if add: _logger.warning('{0} cannot append over slice'.format(SC.lineInfo(),base))

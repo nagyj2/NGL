@@ -2,6 +2,7 @@
 # Designed so that there can be multiple scanners being used simultaneously
 
 from bc3_logging import getLogger
+from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 # Operators
 ENOT = 1 # ><
@@ -21,7 +22,7 @@ DIV = 14 # /
 INTDIV = 15 # \
 MOD = 16 # %
 EXP = 17 # **
-NOT = 18 # !
+# MISSING NOT -> USE TILDE
 CAST = 19 # ::
 PARAM = 20 # #
 CALLEND = 21 # \\
@@ -52,7 +53,7 @@ GOARROW1 = 60 # ->
 GOARROW2 = 61 # =>
 RETARROW1 = 62 # <-
 RETARROW2 = 63 # <=
-TILDE = 64 # ~
+TILDE = 64 # ~ ARROWSHAFT / NOT
 
 # Brackets
 LPAREN = 70 # (
@@ -115,7 +116,7 @@ LAST_INDEXED  = set({RBRAK}) | LAST_ATOM
 FIRST_ELEMENT = FIRST_INDEXED
 LAST_ELEMENT  = LAST_CAST | LAST_INDEXED
 
-FIRST_UN_EXPR = set({PLUS, MINUS, NOT}) | FIRST_ELEMENT
+FIRST_UN_EXPR = set({PLUS, MINUS, TILDE}) | FIRST_ELEMENT
 LAST_UN_EXPR  = LAST_ELEMENT
 
 FIRST_EXP_EXPR = FIRST_UN_EXPR
@@ -199,7 +200,7 @@ class Scanner:
     def __init__(self,fname, src=None, log=True):
         # Initializes a scanner for new source code
 
-        if log: self.logger = getLogger('scanner_{0}'.format(fname))
+        if log: self.logger = getLogger('scanner_{0}'.format(fname),fileLevel=DEBUG)
         else:   self.logger = getLogger('dummy')
 
         if src == None: self.src = open(fname).readlines()
@@ -419,7 +420,7 @@ class Scanner:
         elif self.ch == '%': self.getChar(); self.sym = MOD
         elif self.ch == '$': self.getChar(); self.sym = BACK
         elif self.ch == '`': self.getChar(); self.sym = BACKQUOTE
-        elif self.ch == '!': self.getChar(); self.sym = NOT
+        # elif self.ch == '!': self.getChar(); self.sym = NOT
         elif self.ch == ':':
             self.getChar();
             if self.ch == ':':
