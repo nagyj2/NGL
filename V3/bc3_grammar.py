@@ -105,8 +105,9 @@ def stmt():
             SC.mark('expected identifier, got {0}'.format(SC.sym))
             name = '_'
 
-        if ST.hasSym(name): # cannot error because of potential gotos
-            _logger.warning('variable already exists, got {0}'.format(name))
+        # ST handles all database and identifier controls, so let it call errors
+        # if ST.hasSym(name): # cannot error because of potential gotos
+        #     _logger.warning('variable already exists, got {0}'.format(name))
 
         base = element() # get ident with optional cast, index
         if type(base) == Ref and type(base.sub) == Ref.Ident:
@@ -115,7 +116,7 @@ def stmt():
         if SC.sym in FIRST_EXPR:
             exprType = expr()
 
-            if base != exprType and type(base) != Lst:
+            if base != exprType and type(base) not in set({Lst,Ref}) and type(exprType) not in set({Ref}):
                 _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
                 SC.setError()
 
@@ -347,6 +348,8 @@ def stmt():
             SC.mark('expected expression, got {0}'.format(SC.sym))
             exprType = Ref('null')
 
+        # ST.setSym('reti',exprType)
+
     elif SC.sym == LOG:
         SC.getSym()
 
@@ -368,6 +371,7 @@ def stmt():
             _logger.warning('{0} expected str type, got {1}'.format(SC.lineInfo(),exprType))
 
 def expr():
+    global SC
     if SC.sym not in FIRST_EXPR:
         _logger.error('{0} attempt to parse {1} as EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -389,6 +393,7 @@ def expr():
     return base
 
 def cjn_expr():
+    global SC
     if SC.sym not in FIRST_CJN_EXPR:
         _logger.error('{0} attempt to parse {1} as CJN_EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -426,6 +431,7 @@ def cjn_expr():
     return base
 
 def dis_expr():
+    global SC
     if SC.sym not in FIRST_DIS_EXPR:
         _logger.error('{0} attempt to parse {1} as DIS_EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -463,6 +469,7 @@ def dis_expr():
     return base
 
 def eq_expr():
+    global SC
     if SC.sym not in FIRST_EQ_EXPR:
         _logger.error('{0} attempt to parse {1} as EQ_EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -483,6 +490,7 @@ def eq_expr():
     return base
 
 def cmp_expr():
+    global SC
     if SC.sym not in FIRST_CMP_EXPR:
         _logger.error('{0} attempt to parse {1} as CMP_EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -513,6 +521,7 @@ def cmp_expr():
     return base
 
 def add_expr():
+    global SC
     if SC.sym not in FIRST_ADD_EXPR:
         _logger.error('{0} attempt to parse {1} as ADD_EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -544,6 +553,7 @@ def add_expr():
     return base
 
 def mult_expr():
+    global SC
     if SC.sym not in FIRST_MULT_EXPR:
         _logger.error('{0} attempt to parse {1} as MULT_EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -573,6 +583,7 @@ def mult_expr():
     return base
 
 def exp_expr():
+    global SC
     if SC.sym not in FIRST_EXP_EXPR:
         _logger.error('{0} attempt to parse {1} as EXP_EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -605,6 +616,7 @@ def exp_expr():
     return base
 
 def un_expr():
+    global SC
     if SC.sym not in FIRST_UN_EXPR:
         _logger.error('{0} attempt to parse {1} as UN_EXPR'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -627,6 +639,7 @@ def un_expr():
     return base
 
 def element():
+    global SC
     if SC.sym not in FIRST_ELEMENT:
         _logger.error('{0} attempt to parse {1} as ELEMENT'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -646,6 +659,7 @@ def element():
     return base
 
 def indexed():
+    global SC
     if SC.sym not in FIRST_INDEXED:
         _logger.error('{0} attempt to parse {1} as INDEXED'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -682,6 +696,7 @@ def indexed():
     return base
 
 def atom():
+    global SC, checked, _logger, missing, islog
     if SC.sym not in FIRST_ATOM:
         _logger.error('{0} attempt to parse {1} as ATOM'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -729,11 +744,20 @@ def atom():
         if SC.sym == CALLEND:
             SC.getSym()
 
+        if base.data not in checked:
+            checked.add(base.data)
+            # b/c vars global, the reference is overwritten by call. need to save
+            oldSC, old_logger = SC, _logger
+            oldmissing = missing
+            PP.execute_function_grammar(base.data,PP.savedStates,islog)
+            SC, _logger = oldSC, old_logger
+            missing = oldmissing
+            ST.updateLink(SC)
+
         base = Ref('func')
 
     elif SC.sym == LPAREN:
         SC.getSym()
-
         base = expr()
         if SC.sym == RPAREN:
             SC.getSym()
@@ -816,6 +840,7 @@ def atom():
     return base
 
 def typ():
+    global SC
     if SC.sym not in FIRST_TYPE:
         _logger.error('{0} attempt to parse {1} as TYPE'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -863,6 +888,7 @@ def typ():
     return base
 
 def index():
+    global SC
     if SC.sym not in FIRST_INDEX:
         _logger.error('{0} attempt to parse {1} as INDEX'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -898,10 +924,11 @@ def index():
     return base
 
 def lineend():
+    global SC
     if SC.sym not in FIRST_LINEEND:
         _logger.error('{0} attempt to parse {1} as LINEEND'.format(SC.lineInfo(),SC.sym))
         SC.setError()
-        while SC.sym not in FIRST_STMT:
+        while SC.sym not in STRONGSYMS | FIRST_STMT:
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
 
     if SC.sym == LINEEND:
@@ -918,9 +945,9 @@ def lineend():
 def execute(scanner, log=True):
     # Parse the program held in scanner SC
     from time import time
-    global SC, _logger
+    global SC, _logger, islog
 
-    SC = scanner
+    SC, islog = scanner, log
     if log:     _logger = getLogger('grammar_{0}'.format(SC.fname))
 
     # Add default variables
@@ -936,7 +963,11 @@ def execute(scanner, log=True):
     start = time()
     prog()
     end = time()
-
+#
     _logger.info('grammar parse complete')
     _logger.info('elapsed time {0}s'.format(end-start))
     _logger.info('encountered error {0}'.format(SC.error))
+
+    # TODO: Better way to communicate state of program with preprocessor
+    #   maybe json?
+    return deepcopy(PP.savedStates)
