@@ -15,7 +15,7 @@ linked = ScannerDummy()
     # labels -> line number
 
 _CONSTANT = set({'true','false','__file','__main'})
-_SPECIAL  = set({'argv','retv','reti'})
+_SPECIAL  = set({'argv','retv','reti'}) # filtered through scope collapse with 'special'
 
 def init(log=True):
     # Sets up the module to work. Also resets the module to its initial state
@@ -198,15 +198,20 @@ def getNextArrow(name, currline, back=0, level=-1):
     return currline
 
 def collapse(symType='drop', spcType='drop'):
-    # TODO: Implement type -> need DROP, MERGE and OVERWRITE
+    # TODO: type is one of:
+        # drop -> simply forget scope
+        # merge -> add new elements only if there is no name conflict
+        # overwrite -> move all new elements to previous scope, overwriting conflicts
+        # function -> move over values ONLY if they are in _SPECIAL
     global symTab, spcTab, size, linked
     if size <= 1: _logger.warning('cannot collapse last scope'); return
 
+    _logger.debug('{0} symTab, {1} spcTab'.format(symType,spcType))
     _collapseTab(symType, symTab)
     _collapseTab(spcType, spcTab) # FIX: The arrows should merge or drop and sort
 
     _delScope()
-    _logger.debug('deleted scope')
+    _logger.info('removed scope')
 
 def _delScope():
     global symTab, spcTab, size
@@ -218,8 +223,11 @@ def _collapseTab(type, table):
     # CollapseType will determine how name conflicts will be determined
     if type == 'drop': return
     for name, elem in table[-1].items(): # for elements in tab
-        if name in table[-2]: # name conflict
+        if name in table[-2] or type in set({'function'}): # name conflict
+            _logger.debug('name conflict {0}: {1}'.format(name,format))
             if type == 'override':
+                table[-2][name] = elem
+            elif type == 'special' and name in _SPECIAL:
                 table[-2][name] = elem
         else: # add element to previous table
             table[-2][name] = elem
