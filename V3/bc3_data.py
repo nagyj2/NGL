@@ -4,6 +4,7 @@ from copy import deepcopy
 
 # Simple Types
 
+# TODO: add flag for 'system val' and 'global'
 class Value:
     strrep = 'null'
     sub = None # holds any subtype

@@ -1,5 +1,8 @@
 // Computes the roots of a quadratic
 
+incl length
+if (@length#argv) < 3 | (@length#argv) > 3 =>
+
 var a::float argv[0]; // take inputs
 var b::float argv[1];
 var c::float argv[2];
@@ -15,6 +18,10 @@ try set rootn (-b-(b**2f-4f*a*c)**0.5)/(2f*a) ->
 set retv {rootp, rootn}
 retn 0;
 
-<-
-out 'negative descriminant';
+<=
+out 'require three arguments';
 retn 1;
+
+<-
+out 'negative discriminant';
+retn 2;

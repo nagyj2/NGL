@@ -1,6 +1,6 @@
 
-incl quad;
 
+incl quad;
 var positives::float::array {float:};
 var negatives::float::array {float:};
 
@@ -14,3 +14,11 @@ set positives[^$] (@quad#1#-2#1)[0];
 set negatives[^$] (@quad#1#-2#1)[1];
 
 out `positives` + '\n' + `negatives`;
+
+out `~true`
+out `false & ~true`
+out `argv[0:$]`
+out `argv[1:$]`
+out `argv[$]`
+out `argv[^0]`
+out `argv[^$]`
