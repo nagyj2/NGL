@@ -142,7 +142,7 @@ Type casting to a primitive or collection.
 FIRST  = { NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }
 LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
 FOLLOW = { **, *, /, \, %, +, -, >, <, =, <>, ::=, &, &&, |, || } | (LINEEND) | (LABEL) | (EXPR)
-ELEMENT   ::= INDEXED ['::' TYPE]
+ELEMENT   ::= INDEXED {'::' INDEXED}
 
 Indexing. Available for strings, integers and floats
 FIRST  = { NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }
@@ -161,23 +161,7 @@ ATOM      ::= NUMBER
             | '@' INDEXED {'#' EXPR} ['\\']
             | '(' EXPR ')'
             | '`' EXPR '`'
-            | '{' [PRIME ':'] [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
-
-States a basic type or collection type.
-FIRST  = {int, float, str, bool, func, label, list}
-LAST   = {int, float, str, bool, func, label, list, array}
-FOLLOW = (EXPR) | (LINEEND)
-TYPE      ::= PRIME ['::' COLLECT]
-
-PRIME     ::= 'int'
-            | 'float'
-            | 'str'
-            | 'bool'
-            | 'func'
-            | 'label'
-            | 'list')
-
-COLLECT   ::= 'array'
+            | '{' [ELEMENT ':'] [ EXPR [({',' EXPR} | ':' EXPR)] ] '}'
 
 Definition of a valid index
 FIRST  = { ^, $ } | (EXPR)
@@ -203,3 +187,20 @@ Delineates lines.
 LINEEND ::= ';' ['\n']
           | '\n'
 ```
+
+
+<!-- States a basic type or collection type.
+FIRST  = {int, float, str, bool, func, label, list}
+LAST   = {int, float, str, bool, func, label, list, array}
+FOLLOW = (EXPR) | (LINEEND)
+TYPE      ::= PRIME ['::' COLLECT]
+
+PRIME     ::= 'int'
+            | 'float'
+            | 'str'
+            | 'bool'
+            | 'func'
+            | 'label'
+            | 'list')
+
+COLLECT   ::= 'array' -->

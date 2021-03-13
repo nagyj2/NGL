@@ -71,14 +71,14 @@ PERIOD = 78 # .
 RANGE = 79 # ..
 
 # Types
-INT = 80 # int
-FLOAT = 81 # float
-STR = 82 # str
-BOOL = 83 # bool
-ARRAY = 84 # array
-LIST = 85 # list
-FUNC = 86 # func
-LABEL = 87 # label
+# INT = 80 # int
+# FLOAT = 81 # float
+# STR = 82 # str
+# BOOL = 83 # bool
+# ARRAY = 84 # array
+# LIST = 85 # list
+# FUNC = 86 # func
+# LABEL = 87 # label
 NONE = 88 # null (TBD)
 
 # Literals
@@ -94,16 +94,16 @@ EOF = 99 # end of file marker
 
 # Symbol sets
 ARROWS = (GOARROW1, GOARROW2, RETARROW1, RETARROW2)
-TYPES = (INT, FLOAT, STR, BOOL)
+# TYPES = (INT, FLOAT, STR, BOOL)
 
 FIRST_LABEL = set({TILDE, GOARROW1, GOARROW2, RETARROW1, RETARROW2, IDENT})
 LAST_LABEL  = FIRST_LABEL
 
-FIRST_TYPE = set({INT, FLOAT, STR, BOOL, FUNC, LABEL, LIST})
-LAST_TYPE  = set({ARRAY}) | FIRST_TYPE
+# FIRST_TYPE = set({INT, FLOAT, STR, BOOL, FUNC, LABEL, LIST})
+# LAST_TYPE  = set({ARRAY}) | FIRST_TYPE
 
-FIRST_CAST = set({CAST})
-LAST_CAST  = LAST_TYPE
+# FIRST_CAST = set({CAST})
+# LAST_CAST  = LAST_TYPE
 
 FIRST_LINEEND = set({LINEEND, NEWLINE})
 LAST_LINEEND  = FIRST_LINEEND
@@ -115,7 +115,7 @@ FIRST_INDEXED = FIRST_ATOM
 LAST_INDEXED  = set({RBRAK}) | LAST_ATOM
 
 FIRST_ELEMENT = FIRST_INDEXED
-LAST_ELEMENT  = LAST_CAST | LAST_INDEXED
+LAST_ELEMENT  = LAST_INDEXED
 
 FIRST_UN_EXPR = set({PLUS, MINUS, TILDE}) | FIRST_ELEMENT
 LAST_UN_EXPR  = LAST_ELEMENT
@@ -151,7 +151,7 @@ FIRST_INDEX = set({APPEND, BACK}) | FIRST_EXPR
 LAST_INDEX = set({BACK}) | LAST_EXPR
 
 FIRST_STMT = set({VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG})
-LAST_STMT  = set({QUIT, RETURN, IDENT}) | LAST_CAST | LAST_EXPR | LAST_LABEL
+LAST_STMT  = set({QUIT, RETURN, IDENT}) | LAST_EXPR | LAST_LABEL
 
 FIRST_LINE = set({GOARROW1, GOARROW2, RETARROW1, RETARROW2, IDENT}) | FIRST_LINEEND | FIRST_STMT
 LAST_LINE  = set({GOARROW1, GOARROW2, RETARROW1, RETARROW2, COLON}) | FIRST_LINEEND | LAST_LINEEND
@@ -162,7 +162,7 @@ LAST_PROG  = FIRST_PROG
 FOLLOW_LINE = FIRST_LINE
 FOLLOW_IDENT = FIRST_LINEEND
 FOLLOW_STMT = FIRST_LINEEND
-FOLLOW_TYPE = set({LINEEND}) | FIRST_EXPR
+# FOLLOW_TYPE = set({LINEEND}) | FIRST_EXPR
 FOLLOW_PROG = set({EOF})
 FOLLOW_INDEX = set({RBRAK})
 
@@ -184,11 +184,12 @@ STRONGSYMS = set({EOF, LINEEND, NEWLINE}) | FIRST_STMT
 WEAKSYMS   = set({LINEEND, NEWLINE, COLON, CAST, RPAREN, RBRAK, RCURLY, BACKQUOTE, COMMA, TILDE})
 
 
-KEYWORDS = {'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STR,
-    'array': ARRAY, 'list': LIST, 'func': FUNC, 'label': LABEL, 'null': NONE,
-    'var': VAR, 'const': CONST, 'in': READ, 'set': SET, 'del': DEL,
+KEYWORDS = {'var': VAR, 'const': CONST, 'in': READ, 'set': SET, 'del': DEL,
     'goto': GOTO, 'if': IF, 'try': TRY, 'cmp': EXEC,  'out': PRINT,
     'incl': INCLUDE, 'quit': QUIT, 'retn': RETURN, 'log': LOG}
+
+# 'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STR,
+# 'array': ARRAY, 'list': LIST, 'func': FUNC, 'label': LABEL, 'null': NONE,
 
 # Used as a placeholder for those who need a scanner but will be assigned one later
 class ScannerDummy:

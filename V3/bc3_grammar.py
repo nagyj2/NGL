@@ -1,11 +1,11 @@
 # NGL Bytecode 3.0 Grammar Skeleton
 from copy import deepcopy
-from bc3_scanner import Scanner, ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, CAST, APPEND, BURROW,  VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES, FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_TYPE, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG, FIRST_INDEX, LAST_INDEX, FOLLOW_INDEX
+from bc3_scanner import Scanner, ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, CAST, APPEND, BURROW, VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, FIRST_LABEL, LAST_LABEL, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG, FIRST_INDEX, LAST_INDEX, FOLLOW_INDEX
 import bc3_symboltable as ST
 import bc3_processor as PP
 
 from bc3_logging import getLogger
-from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Arr, Lst
+from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Arr, Lst, Type
 
 # TODO: update logging to inform of check results
 # CHANGE type to have a basic and complex version
@@ -124,14 +124,15 @@ def stmt():
         if SC.sym in FIRST_EXPR:
             exprType = expr()
 
-            if base != exprType and type(base) not in set({Lst,Ref}) and type(exprType) not in set({Ref}):
+            # TODO: improve
+            if base != exprType and type(base) not in set({Lst,Ref}) and type(exprType) not in set({Ref}) and type(exprType) != Type and exprType.sub != base:
                 _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
                 SC.setError()
 
             else: # Known compatibility
 
                 # Copy metadata
-                if type(base) == Lab == type(exprType) or type(base) == Func == type(exprType) or type(base) == Ref and type(base.sub) == Ref.Ident:
+                if type(base) == Lab == type(exprType) or type(base) == Func == type(exprType) or type(exprType) == Type or type(base) == Ref and type(base.sub) == Ref.Ident:
                     base = exprType
 
         if type(base) == Ref and type(base.sub) == Ref.Ident:
@@ -165,15 +166,18 @@ def stmt():
             SC.mark('expected expression, got {0}'.format(SC.sym))
             exprType = Ref('null')
 
-        if base != exprType:
-            _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),constType,exprType))
-            SC.setError()
+        if base != exprType and type(base) not in set({Lst,Ref}) and type(exprType) not in set({Ref}) and type(exprType) != Type and exprType.sub != base:
+                _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
+                SC.setError()
+        # if base != exprType:
+        #     _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),constType,exprType))
+        #     SC.setError()
 
         else: # Known compatibility
 
             # Copy metadata
-            if type(base) == Lab:     base = exprType
-            elif type(base) == Func:  base = exprType
+            if type(base) == Lab == type(exprType) or type(base) == Func == type(exprType) or type(exprType) == Type or type(base) == Ref and type(base.sub) == Ref.Ident:
+                base = exprType
 
         if type(base) == Ref and type(base.sub) == Ref.Ident:
             missing.append(name)
@@ -215,10 +219,10 @@ def stmt():
         base = indexed() # get ident with optional cast, index
 
         if SC.sym in FIRST_EXPR:    exprType = expr()
-        elif SC.sym in FIRST_TYPE | set({CAST}):
+        elif SC.sym == CAST:
             SC.mark('type not required for set','warning');
-            if SC.sym == CAST: SC.getSym()
-            if SC.sym in FIRST_TYPE: typ()
+            if SC.sym == CAST:          SC.getSym()
+            if SC.sym in FIRST_INDEXED: indexed()
             exprType = expr()
         else:
             SC.mark('expected expression, got {0}'.format(SC.sym))
@@ -660,13 +664,29 @@ def element():
         return Ref('null')
 
     base = indexed()
-
-    if SC.sym in set({CAST}):
+    lastbase = Ref('null')
+    # if SC.sym in set({CAST}):
+    #     base = typ()
+    #     lastbase = Ref('null')
+    while SC.sym in set({CAST}):
         SC.getSym()
-        # if SC.sym in FIRST_TYPE:
-        base = typ()
-        # else:
-        #     SC.mark('{0} expected type, got {1}'.format(SC.lineInfo(),SC.sym))
+        # base = typ()
+        cast = indexed()
+        if type(cast) == Type:
+            if type(lastbase) == Type and type(cast.sub) == Arr:
+                base = Arr(lastbase.sub)
+            elif type(lastbase) == Arr and type(cast.sub) == Arr:
+                base =  Arr(base)
+            # elif type(lastbase) == Arr: # string of collection types broken by non collection type
+            #     base =  Arr(base)
+            #     _logger.error('{0} only collection type chains can exist, got {1}'.format(SC.lineInfo(),cast))
+            #     SC.setError() # IDEA: FIX? int::array::array::int would be int array array -> int
+            else:
+                base = cast
+        else:
+            _logger.error('{0} expected type literal, got {1}'.format(SC.lineInfo(),cast))
+            SC.setError()
+        lastbase = base
 
     return base
 
@@ -736,7 +756,7 @@ def atom():
         else:                   burrow = False
 
         if ST.hasSym(name, burrow=burrow):
-            base = ST.getSym(name, burrow=burrow).clone() # dont return actual b/c of aliasing
+            base = ST.getSym(name,burrow=burrow).clone() # dont return actual b/c of aliasing
         else:
             # FIX non-existant variables dont throw error
             _logger.warning('{0} variable {1} does not exist'.format(SC.lineInfo(),name))

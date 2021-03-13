@@ -2,7 +2,7 @@
 # Designed so that there is only one symbol table for a single execution
 
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
-from bc3_scanner import ScannerDummy, INT, FLOAT, BOOL, STR, FUNC, LABEL, NONE, ARRAY, LIST, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWS, IDENT
+from bc3_scanner import ScannerDummy, NONE, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWS, IDENT
 from bc3_logging import getLogger
 from bc3_data import Int, Float, Str, Bool, Arr, Lst, Type, Func, Lab, Ref, Value
 from copy import deepcopy
@@ -33,6 +33,15 @@ def init(log=True):
     # Add global constants
     newSym('true',Bool(True))    # add boolean constants
     newSym('false',Bool(True))
+
+    newSym('int',Type(Int(),True))    # add type constants
+    newSym('float',Type(Float(),True))
+    newSym('str',Type(Str(),True))
+    newSym('bool',Type(Bool(),True))
+    newSym('array',Type(Arr(),True))
+    newSym('list',Type(Lst(),True))
+    newSym('label',Type(Lab(),True))
+    newSym('func',Type(Func(),True))
 
     if log: _logger = getLogger('symboltable')
 
