@@ -36,14 +36,14 @@ This section is dedicated to potential changes to the grammar.
     - don't need ? to call back
 - allow more slicing
     - second back: arr[$-1]
-- Separate type constants from type() and make them expression literals in expressions
+- Separate type constants from type() and make them expression literals in expressions **implemented**
     - allows recursive casts
         - collection type must be after a base type
     - variables can take type values
     - types can be stored in ST
-- nested collections
+- nested collections **implemented**
     - how to handle collection as input to function?
-    - nested indexing
+    - nested indexing **_needed_**
 
 ### Productions
 Below is the list of productions in the 3rd version of NGL. Above each production will be a small description of what that production will match and three bullet points. The first bullet is the set of terminals which can begin the production, the second is the set of terminals which can end the production and the last is the set of terminals which can follow the production. When referencing other productions in follows, they refer to the first set. The start symbol is `PROG`.
