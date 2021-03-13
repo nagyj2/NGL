@@ -219,16 +219,18 @@ def stmt():
             SC.mark('type not required for set','warning');
             if SC.sym == CAST: SC.getSym()
             if SC.sym in FIRST_TYPE: typ()
+            exprType = expr()
         else:
             SC.mark('expected expression, got {0}'.format(SC.sym))
-            base = Ref('null')
+            exprType = Ref('null')
 
         if base.const:
             _logger.error('{0} constants cannot be reassigned, got {1}'.format(SC.lineInfo(),name))
             SC.setError()
             return
 
-        elif base != exprType:
+        if base != exprType:
+            # print(base,type(base),exprType,type(exprType),base==exprType,issubclass(type(exprType),Value))
             _logger.error('{0} variable type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
             SC.setError()
             return
@@ -970,8 +972,6 @@ def execute(scanner, log=True):
     ST.newSym('__file',Str())   # file name
     ST.newSym('__main',Bool())  # is a function call (false for main, true for func call)
 
-    ST.newSym('true',Bool(True))    # add boolean constants
-    ST.newSym('false',Bool(True))
     ST.newSym('argv',Lst())         # Argument list
     ST.newSym('retv',Lst())         # Return list
     ST.newSym('reti',Ref('spc'))    # Return element

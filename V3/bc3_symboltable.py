@@ -2,8 +2,9 @@
 # Designed so that there is only one symbol table for a single execution
 
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
-from bc3_scanner import ScannerDummy, INT, FLOAT, BOOL, STR, NONE, ARRAY, LIST, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWS, IDENT
+from bc3_scanner import ScannerDummy, INT, FLOAT, BOOL, STR, FUNC, LABEL, NONE, ARRAY, LIST, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWS, IDENT
 from bc3_logging import getLogger
+from bc3_data import Int, Float, Str, Bool, Arr, Lst, Type, Func, Lab, Ref, Value
 from copy import deepcopy
 
 _logger = getLogger('dummy')
@@ -14,9 +15,12 @@ linked = ScannerDummy()
     # variables -> reference by default (value can be called when needed)
     # functions -> file to call
     # labels -> line number
+    # TODO
+    # types
+# lvl 0 (lowest) has globals, like true, false, type constants
 
-_CONSTANT = set({'true','false','__file','__main'})
-_SPECIAL  = set({'argv','retv','reti'}) # filtered through scope collapse with 'special'
+_CONSTANT = set({'true','false'})
+_SPECIAL  = set({'__file','__main','argv','retv','reti'}) # filtered through scope collapse with 'special'
 
 def init(log=True):
     # Sets up the module to work. Also resets the module to its initial state
@@ -25,6 +29,10 @@ def init(log=True):
     spcTab = [] # Special Symbols, Arrow Jumps, Function arguments -> System
     size = 0 # Depth of symbol table
     newScope()
+
+    # Add global constants
+    newSym('true',Bool(True))    # add boolean constants
+    newSym('false',Bool(True))
 
     if log: _logger = getLogger('symboltable')
 
@@ -82,12 +90,11 @@ def newScope():
 def __validateLevel(level):
     global size, linked
     # Ensure given level is valid. Convert it as needed
-    # -1 is highest level, -2 second highest, ... , -size is lowest
-    if level > 0: level *= -1 # Convert to negative if needed
+    # -1 is highest level, -2 second highest, ... , -size / 0 is lowest
     if abs(level) > size:
         _logger.warning('level does not exist, returned {0}'.format(-1))
         return -1
-    return level
+    return -abs(level) # Convert to negative if needed
 
 def newSym(name, value, level=-1):
     global symTab, linked
@@ -104,9 +111,14 @@ def setSym(name, value, level=-1, burrow=False):
     global symTab, size, linked
     level = __validateLevel(level)
 
+    if name in _CONSTANT:
+        _logger.warning('protected symbol, got {0}'.format(name))
+        return
+
     if name not in symTab[level]:
-        if abs(level) == size:  _logger.warning('symbol not declared, got {0}'.format(name))
-        elif burrow:            _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); setSym(name,value,level-1,burrow)
+        if abs(level) in set({0,size}): _logger.warning('symbol not declared, got {0}'.format(name))
+        elif burrow:                    _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); setSym(name,value,level-1,burrow)
+        else:                           setSym(name,value,0,burrow)
     else:
         symTab[level][name] = value
         _logger.debug('set symbol {0} to {1}'.format(name,value))
@@ -116,8 +128,9 @@ def getSym(name, level=-1, burrow=False):
     level = __validateLevel(level)
 
     if name not in symTab[level]:
-        if abs(level) == size:  _logger.error('symbol not declared, got {0}'.format(name))
-        elif burrow:            _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); return getSym(name,level-1,burrow)
+        if abs(level) in set({0,size}): _logger.error('symbol not declared, got {0}'.format(name)); return Ref('null')
+        elif burrow:                    _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); return getSym(name,level-1,burrow)
+        else:                           return getSym(name,0,burrow)
     else:
         _logger.debug('returned symbol {0} as {1}'.format(name,symTab[level][name]))
         return symTab[level][name]
@@ -127,8 +140,9 @@ def hasSym(name, level=-1, burrow=False):
     level = __validateLevel(level)
 
     if name not in symTab[level]:
-        if abs(level) == size:  return False
-        elif burrow:            return hasSym(name,level-1,burrow)
+        if abs(level) in set({0,size}): return False
+        elif burrow:                    return hasSym(name,level-1,burrow)
+        else:                           return hasSym(name,0,burrow)
 
     # if no burrow, return True or False
     return name in symTab[level]
@@ -142,8 +156,9 @@ def delSym(name, level=-1, burrow=False):
         return
 
     if name not in symTab[level]:
-        if abs(level) == size:  _logger.mark('symbol not declared, got {0}'.format(name))
-        elif burrow:            _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); getSym(name,level-1,burrow)
+        if abs(level) in set({0,size}): _logger.mark('symbol not declared, got {0}'.format(name))
+        elif burrow:                    _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); delSym(name,level-1,burrow)
+        else:                           delSym(name,0,burrow)
     else:
         del symTab[level][name]
         _logger.debug('deleted symbol {0}'.format(name))

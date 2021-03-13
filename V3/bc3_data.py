@@ -15,6 +15,8 @@ class Value:
         return deepcopy(self)
     def __eq__(self,other):
         return type(self) == type(other) or type(other) == Ref
+    def __ne__(self,other):
+        return not ( self == other )
     def __str__(self):
         return '{0}{1}{2}{3}'.format('const ' if self.const == True else '', self.strrep, ' of {0}'.format(self.sub.strrep) if self.sub != None else '', ' ({0})'.format(self.data) if self.data != None else '')
 
@@ -48,8 +50,6 @@ class Lst(Value):
     strrep = 'list'
     def __init__(self,const=False):
         super().__init__(const)
-    def __eq__(self,other):
-        return type(self) == type(other)
 
 class Func(Value):
     # Represents a function: can be converted to the full runtime version

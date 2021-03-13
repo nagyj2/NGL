@@ -8,7 +8,7 @@ This section is dedicated to potential changes to the grammar.
 - Use of backquotes to additionally convert expression results to a string. **implemented**
 - Modify `@` operation to ATOM level **implemented**
     - Use of pound, `#`, to represent parameters to the function call operator
-    - `#` is the second lowest precidence and `@` is the highest _half implemented_
+    - `#` is the second lowest precidence and `@` is the highest **_half implemented_**
     - `@`'s argument is an identifier or another defined function
 - Use of `::=` for type equality. **implemented**
 - ~~Inline, ternary if statements with `? EXPR_L8 EXPR : EXPR `~~
@@ -31,14 +31,19 @@ This section is dedicated to potential changes to the grammar.
     - logical not uses tilde too
 - Allow mathematical operators to work with int and float
     - Return type is the first one used
+- use ? suffix for burrow **implemented**
+- use ! prefix for global declaration? -> goes to lvl 0 from anywhere **_half implemented_**
+    - don't need ? to call back
+- allow more slicing
+    - second back: arr[$-1]
+- Separate type constants from type() and make them expression literals in expressions
+    - allows recursive casts
+        - collection type must be after a base type
+    - variables can take type values
+    - types can be stored in ST
 - nested collections
     - how to handle collection as input to function?
     - nested indexing
-- global variable/ const declaration and burrow lookup using ! ident prefix
-- use ? suffix for burrow **implemented**
-- use ! prefix for
-- allow more slicing
-    - second back: arr[$-1]
 
 ### Productions
 Below is the list of productions in the 3rd version of NGL. Above each production will be a small description of what that production will match and three bullet points. The first bullet is the set of terminals which can begin the production, the second is the set of terminals which can end the production and the last is the set of terminals which can follow the production. When referencing other productions in follows, they refer to the first set. The start symbol is `PROG`.

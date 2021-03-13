@@ -26,7 +26,10 @@ def execute_main_grammar(filename, log=True):
     global pre_logger, initialized, savedStates
 
     if log: pre_logger = getLogger('preprocessor')
+
     ST.init() # IDEA put specials on lvl 0 and then every level from there increases?
+
+    ST.newScope()
 
     scan = _pre_execute(filename,log)
 
