@@ -47,6 +47,7 @@ INCLUDE = 40 # incl
 QUIT = 41 # quit
 RETURN = 42 # retn (TBD)
 # RAISE = 43 # flag (Shelved)
+GLOBAL = 43 # glob
 LOG = 44 # log (TBD)
 
 # Arrows
@@ -150,7 +151,7 @@ LAST_EXPR  = LAST_ENT_EXPR
 FIRST_INDEX = set({APPEND, BACK}) | FIRST_EXPR
 LAST_INDEX = set({BACK}) | LAST_EXPR
 
-FIRST_STMT = set({VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG})
+FIRST_STMT = set({VAR, CONST, GLOBAL, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG})
 LAST_STMT  = set({QUIT, RETURN, IDENT}) | LAST_EXPR | LAST_LABEL
 
 FIRST_LINE = set({GOARROW1, GOARROW2, RETARROW1, RETARROW2, IDENT}) | FIRST_LINEEND | FIRST_STMT
@@ -186,7 +187,7 @@ WEAKSYMS   = set({LINEEND, NEWLINE, COLON, CAST, RPAREN, RBRAK, RCURLY, BACKQUOT
 
 KEYWORDS = {'var': VAR, 'const': CONST, 'in': READ, 'set': SET, 'del': DEL,
     'goto': GOTO, 'if': IF, 'try': TRY, 'cmp': EXEC,  'out': PRINT,
-    'incl': INCLUDE, 'quit': QUIT, 'retn': RETURN, 'log': LOG}
+    'incl': INCLUDE, 'quit': QUIT, 'retn': RETURN, 'log': LOG, 'glob': GLOBAL}
 
 # 'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STR,
 # 'array': ARRAY, 'list': LIST, 'func': FUNC, 'label': LABEL, 'null': NONE,

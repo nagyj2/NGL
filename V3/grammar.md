@@ -32,7 +32,7 @@ This section is dedicated to potential changes to the grammar.
 - Allow mathematical operators to work with int and float
     - Return type is the first one used
 - use ? suffix for burrow **implemented**
-- use ! prefix for global declaration? -> goes to lvl 0 from anywhere **_half implemented_**
+- use _glob_ command for global declaration? -> goes to lvl 0 from anywhere **implemented**
     - don't need ? to call back
 - allow more slicing
     - second back: arr[$-1]
@@ -71,6 +71,7 @@ LAST   = { quit } | (EXPR) | (LABEL)
 FOLLOW = (LINEEND)
 STMT    ::= 'var'   ELEMENT [EXPR]    // Create new variable with optional initial value
           | 'const' ELEMENT EXPR      // Create new constant
+          | 'glob'  ELEMENT [EXPR]    // Create new global identifier. If an expression is given, it is a constant; otherwise a variable
           | 'in'    ELEMENT           // Assign input to a var
           | 'set'   INDEXED EXPR      // Set a new variable value
           | 'del'   INDEXED {INDEXED} // Delete a variable's record
