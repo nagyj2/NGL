@@ -1,6 +1,7 @@
 # NGL Bytecode 3.0 Symbol Table
 # Designed so that there is only one symbol table for a single execution
 
+from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from bc3_scanner import ScannerDummy, INT, FLOAT, BOOL, STR, NONE, ARRAY, LIST, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROWS, IDENT
 from bc3_logging import getLogger
 from copy import deepcopy
@@ -105,7 +106,7 @@ def setSym(name, value, level=-1, burrow=False):
 
     if name not in symTab[level]:
         if abs(level) == size:  _logger.warning('symbol not declared, got {0}'.format(name))
-        elif burrow:            _logger.info('symbol not found on level {0}, burrowing...'.format(name)); setSym(name,value,level-1,burrow)
+        elif burrow:            _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); setSym(name,value,level-1,burrow)
     else:
         symTab[level][name] = value
         _logger.debug('set symbol {0} to {1}'.format(name,value))
@@ -116,7 +117,7 @@ def getSym(name, level=-1, burrow=False):
 
     if name not in symTab[level]:
         if abs(level) == size:  _logger.error('symbol not declared, got {0}'.format(name))
-        elif burrow:            _logger.info('symbol not found on level {0}, burrowing...'.format(name)); return getSym(name,level-1,burrow)
+        elif burrow:            _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); return getSym(name,level-1,burrow)
     else:
         _logger.debug('returned symbol {0} as {1}'.format(name,symTab[level][name]))
         return symTab[level][name]
@@ -129,6 +130,7 @@ def hasSym(name, level=-1, burrow=False):
         if abs(level) == size:  return False
         elif burrow:            return hasSym(name,level-1,burrow)
 
+    # if no burrow, return True or False
     return name in symTab[level]
 
 def delSym(name, level=-1, burrow=False):
@@ -141,7 +143,7 @@ def delSym(name, level=-1, burrow=False):
 
     if name not in symTab[level]:
         if abs(level) == size:  _logger.mark('symbol not declared, got {0}'.format(name))
-        elif burrow:            _logger.info('symbol not found on level {0}, burrowing...'.format(name)); getSym(name,level-1,burrow)
+        elif burrow:            _logger.info('symbol {0} not found on level {1}, burrowing...'.format(level,name)); getSym(name,level-1,burrow)
     else:
         del symTab[level][name]
         _logger.debug('deleted symbol {0}'.format(name))
@@ -166,7 +168,7 @@ def getSpc(name, level=-1, burrow=False):
 
     if name not in spcTab[level]:
         if abs(level) == size:  linked.mark('special symbol not declared, got {0}'.format(name),logger=_logger)
-        elif burrow:            _logger.info('special symbol not found on level {0}, burrowing...'.format(name)); return getSpc(name,level-1,burrow)
+        elif burrow:            _logger.info('special symbol {0} not found on level {1}, burrowing...'.format(level,name)); return getSpc(name,level-1,burrow)
     else:
         _logger.debug('returned special symbol {0} as {1}'.format(name,spcTab[level][name]))
         return spcTab[level][name]

@@ -23,6 +23,7 @@ INTDIV = 15 # \
 MOD = 16 # %
 EXP = 17 # **
 # MISSING NOT -> USE TILDE
+BURROW = 18 # ?
 CAST = 19 # ::
 PARAM = 20 # #
 CALLEND = 21 # \\
@@ -108,7 +109,7 @@ FIRST_LINEEND = set({LINEEND, NEWLINE})
 LAST_LINEEND  = FIRST_LINEEND
 
 FIRST_ATOM = set({NUMBER, DECIMAL, IDENT, STRING, LPAREN, LCURLY, BACKQUOTE, CALL})
-LAST_ATOM  = set({NUMBER, DECIMAL, IDENT, STRING, RPAREN, RCURLY, BACKQUOTE, CALLEND})
+LAST_ATOM  = set({NUMBER, DECIMAL, IDENT, STRING, RPAREN, RCURLY, BACKQUOTE, CALLEND, BURROW})
 
 FIRST_INDEXED = FIRST_ATOM
 LAST_INDEXED  = set({RBRAK}) | LAST_ATOM
@@ -434,6 +435,7 @@ class Scanner:
             else: self.sym = PERIOD
         elif self.ch == '~': self.getChar(); self.sym = TILDE
         elif self.ch == '^': self.getChar(); self.sym = APPEND
+        elif self.ch == '?': self.getChar(); self.sym = BURROW
         elif self.ch == '(': self.getChar(); self.sym = LPAREN
         elif self.ch == ')': self.getChar(); self.sym = RPAREN
         elif self.ch == '[': self.getChar(); self.sym = LBRAK

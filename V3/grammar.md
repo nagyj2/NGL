@@ -26,14 +26,17 @@ This section is dedicated to potential changes to the grammar.
     - Some way to import file x as string y
     - If possible, have way to import multiple in one statement
     - maybe use comma?
-- Function command?
+- ~~Function command?~~
 - Slices and array ranges use colon instead of tilde **implemented**
-    - NOT uses tilde too
+    - logical not uses tilde too
 - Allow mathematical operators to work with int and float
     - Return type is the first one used
 - nested collections
     - how to handle collection as input to function?
+    - nested indexing
 - global variable/ const declaration and burrow lookup using ! ident prefix
+- use ? suffix for burrow **implemented**
+- use ! prefix for
 - allow more slicing
     - second back: arr[$-1]
 
@@ -144,12 +147,12 @@ INDEXED   ::= ATOM [ '[' INDEX ']' ]
 
 The highest precidence. Elements are numbers, identifiers, raw strings, parentheses and collections.
 FIRST  = { NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }
-LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ` }
+LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, `, ? }
 FOLLOW = { [, **, *, /, \, %, +, -, >, <, =, <>, ::=, &, &&, |, ||, :: } | (LINEEND) | (LABEL) | (EXPR)
 ATOM      ::= NUMBER
             | DECIMAL
             | STRING
-            | IDENT
+            | IDENT ['?']
             | '@' INDEXED {'#' EXPR} ['\\']
             | '(' EXPR ')'
             | '`' EXPR '`'

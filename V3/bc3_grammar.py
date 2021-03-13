@@ -1,7 +1,6 @@
 # NGL Bytecode 3.0 Grammar Skeleton
 from copy import deepcopy
-from bc3_scanner import Scanner
-from bc3_scanner import ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, CAST, APPEND,  VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES, FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_TYPE, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG, FIRST_INDEX, LAST_INDEX, FOLLOW_INDEX
+from bc3_scanner import Scanner, ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, CAST, APPEND, BURROW,  VAR, CONST, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, INT, FLOAT, STR, BOOL, ARRAY, LIST, FUNC, LABEL, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, TYPES, FIRST_LABEL, LAST_LABEL, FIRST_TYPE, LAST_TYPE, FIRST_CAST, LAST_CAST, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_TYPE, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG, FIRST_INDEX, LAST_INDEX, FOLLOW_INDEX
 import bc3_symboltable as ST
 import bc3_processor as PP
 
@@ -10,6 +9,8 @@ from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Arr, Lst
 
 # TODO: update logging to inform of check results
 # CHANGE type to have a basic and complex version
+# FIX: using ? in 'var' is not allowed -> ensure var declared level = current level
+    # variables must have the level they were declared at
 
 missing = set({}) # track variables missing values (Have ref @ end)
 checked = set({}) # track files which have been grammar checked
@@ -109,6 +110,9 @@ def stmt():
             SC.mark('expected identifier, got {0}'.format(SC.sym))
             name = '_'
 
+        # Create symbol for referencing
+        ST.newSym(name,Ref('null'))
+
         # ST handles all database and identifier controls, so let it call errors
         # if ST.hasSym(name): # cannot error because of potential gotos
         #     _logger.warning('variable already exists, got {0}'.format(name))
@@ -134,7 +138,8 @@ def stmt():
             missing.append(name)
 
         base.const = False # ignore if expr was constant
-        ST.newSym(name,base)
+        # Assign type
+        ST.setSym(name,base)
 
     elif SC.sym == CONST:
         # TODO: log var, type and val if present
@@ -146,8 +151,11 @@ def stmt():
             SC.mark('expected identifier, got {0}'.format(SC.sym))
             name = '_'
 
-        if ST.hasSym(name):
-            _logger.warning('variable already exists, got {0}'.format(name))
+        # Create symbol for referencing
+        ST.newSym(name,Ref('null'))
+
+        # if ST.hasSym(name):
+        #     _logger.warning('variable already exists, got {0}'.format(name))
 
         base = element() # get ident with optional cast, index
 
@@ -169,8 +177,9 @@ def stmt():
 
         if type(base) == Ref and type(base.sub) == Ref.Ident:
             missing.append(name)
+
         base.const = True
-        ST.newSym(name,base)
+        ST.setSym(name,base)
 
     elif SC.sym == READ:
         # TODO: complete
@@ -213,9 +222,6 @@ def stmt():
         else:
             SC.mark('expected expression, got {0}'.format(SC.sym))
             base = Ref('null')
-
-        if not ST.hasSym(name):
-            _logger.warning('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
 
         if base.const:
             _logger.error('{0} constants cannot be reassigned, got {1}'.format(SC.lineInfo(),name))
@@ -723,9 +729,15 @@ def atom():
     elif SC.sym == IDENT:
         name = SC.val
         SC.getSym()
-        if ST.hasSym(name): base = ST.getSym(name).clone() # dont return actual b/c of aliasing
-        else: # FIX non-existant variables dont throw error
-            # _logger.error('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
+
+        if SC.sym == BURROW:    burrow = True; SC.getSym()
+        else:                   burrow = False
+
+        if ST.hasSym(name, burrow=burrow):
+            base = ST.getSym(name, burrow=burrow).clone() # dont return actual b/c of aliasing
+        else:
+            # FIX non-existant variables dont throw error
+            _logger.warning('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
             base = Ref('ident')
 
     elif SC.sym == CALL:
