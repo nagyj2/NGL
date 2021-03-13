@@ -1,0 +1,94 @@
+//test_type.ngl
+// Tests various tests for errors
+
+var fake_int::int int;
+var fake_float::float float;
+var fake_str::str str;
+var fake_bool::bool bool;
+var fake_list::list list;
+var intarray::int::array int::array;
+
+var a1::int   1;
+var a2::float 1f;
+var a3::str   '1';
+var a4::bool  true;
+var a5::list  { 1, 1f, '1', true };
+
+var b1::fake_int   1;
+var b2::fake_float 1f;
+var b3::fake_str   '1';
+var b4::fake_bool  true;
+var b5::fake_list  { 1, 1f, '1', true };
+
+var c1::int::array    {int:   1};
+var c2::float::array  {float: 1f};
+var c3::str::array    {str:   '1'};
+var c4::bool::array   {bool:  true};
+var c5::list::array   {list:  {1,1f,'1',true}};
+
+var d1::int::array    {int:   1, 2};
+var d2::float::array  {float: 1f, 2f};
+var d3::str::array    {str:   '1', '2'};
+var d4::bool::array   {bool:  true, false};
+var d5::list::array   {list:  {1,1f,'1',true}, {2,2f,'2',false}};
+
+var e1::int::array::array    {int::array:   {int:}, {int:}};
+var e2::float::array::array  {float::array:   {float:}, {float:}};
+var e3::str::array::array    {str::array:   {str:}, {str:}};
+var e4::bool::array::array   {bool::array:   {bool:}, {bool:}};
+var e5::list::array   {list:  {1,1f,'1',true}, {2,2f,'2',false}};
+
+var f1::fake_int::array::array {int::array: {int: 1}, {int: 2}, {int: 3}}
+var f2::intarray {int::array: {int: 1}, {int: 2}}
+var f3::str::array
+var f4::int::array::array
+var f5::list::array::array
+
+var g1::list {}
+var g2::int::array::array e1
+
+
+const cfake_int::int int;
+const cfake_float::float float;
+const cfake_str::str str;
+const cfake_bool::bool bool;
+const cfake_list::list list;
+const cintarray::int::array int::array;
+
+const h1::int   1;
+const h2::float 1f;
+const h3::str   '1';
+const h4::bool  true;
+const h5::list  { 1, 1f, '1', true };
+
+const i1::fake_int   1;
+const i2::fake_float 1f;
+const i3::fake_str   '1';
+const i4::fake_bool  true;
+const i5::fake_list  { 1, 1f, '1', true };
+
+const j1::int::array    {int:   1};
+const j2::float::array  {float: 1f};
+const j3::str::array    j3
+const j4::bool::array   {bool:  true};
+const j5::list::array   {list:  {1,1f,'1',true}};
+
+const k1::int::array    {int:   1, 2};
+const k2::float::array  {float: 1f, 2f};
+const k3::str::array    {str:   '1', '2'};
+const k4::bool::array   {bool:  true, false};
+const k5::list::array   {list:  {1,1f,'1',true}, {2,2f,'2',false}};
+
+const l1::int::array::array    {int::array:   {int:}, {int:}};
+const l2::float::array::array  {float::array:   {float:}, {float:}};
+const l3::str::array::array    {str::array:   {str:}, {str:}};
+const l4::bool::array::array   {bool::array:   {bool:}, {bool:}};
+const l5::list::array   {list:  {1,1f,'1',true}, {2,2f,'2',false}};
+
+const m1::fake_int::array::array {int::array: {int: 1}, {int: 2}, {int: 3}}
+const m2::intarray {int::array: {int: 1}, {int: 2}}
+const m3::str::array k3
+const m4::int::array::array e1
+const m5::list::array l5
+
+const n1::list {}

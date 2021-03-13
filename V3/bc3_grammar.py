@@ -113,13 +113,11 @@ def stmt():
         # Create symbol for referencing
         ST.newSym(name,Ref('null'))
 
-        # ST handles all database and identifier controls, so let it call errors
-        # if ST.hasSym(name): # cannot error because of potential gotos
-        #     _logger.warning('variable already exists, got {0}'.format(name))
-
         base = element() # get ident with optional cast, index
-        if type(base) == Ref and type(base.sub) == Ref.Ident:
+        if type(base) != Type: #== Ref and type(base.sub) == Ref.Ident:
             _logger.warning('expected type, got {0}'.format(base))
+        else: # consume the type
+            base = base.sub
 
         if SC.sym in FIRST_EXPR:
             exprType = expr()
@@ -155,26 +153,20 @@ def stmt():
         # Create symbol for referencing
         ST.newSym(name,Ref('null'))
 
-        # if ST.hasSym(name):
-        #     _logger.warning('variable already exists, got {0}'.format(name))
-
         base = element() # get ident with optional cast, index
+        if type(base) != Type: #== Ref and type(base.sub) == Ref.Ident:
+            _logger.warning('expected type, got {0}'.format(base))
+        else: # consume the type
+            base = base.sub
 
-        if SC.sym in FIRST_EXPR:
-            exprType = expr()
-        else:
-            SC.mark('expected expression, got {0}'.format(SC.sym))
-            exprType = Ref('null')
+        exprType = expr()
 
+        # TODO: improve
         if base != exprType and type(base) not in set({Lst,Ref}) and type(exprType) not in set({Ref}) and type(exprType) != Type and exprType.sub != base:
-                _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
-                SC.setError()
-        # if base != exprType:
-        #     _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),constType,exprType))
-        #     SC.setError()
+            _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
+            SC.setError()
 
         else: # Known compatibility
-
             # Copy metadata
             if type(base) == Lab == type(exprType) or type(base) == Func == type(exprType) or type(exprType) == Type or type(base) == Ref and type(base.sub) == Ref.Ident:
                 base = exprType
@@ -182,7 +174,8 @@ def stmt():
         if type(base) == Ref and type(base.sub) == Ref.Ident:
             missing.append(name)
 
-        base.const = True
+        base.const = True # ignore if expr was constant
+        # Assign type
         ST.setSym(name,base)
 
     elif SC.sym == READ:
@@ -664,28 +657,29 @@ def element():
         return Ref('null')
 
     base = indexed()
-    lastbase = Ref('null')
-    # if SC.sym in set({CAST}):
-    #     base = typ()
-    #     lastbase = Ref('null')
+    lastbase = Type(Ref('null') if type(base) != Type else base.sub)
+
     while SC.sym in set({CAST}):
         SC.getSym()
         # base = typ()
         cast = indexed()
         if type(cast) == Type:
             if type(lastbase) == Type and type(cast.sub) == Arr:
-                base = Arr(lastbase.sub)
+                base = Type(Arr(lastbase.sub))
             elif type(lastbase) == Arr and type(cast.sub) == Arr:
-                base =  Arr(base)
+                base = Type(Arr(base))
             # elif type(lastbase) == Arr: # string of collection types broken by non collection type
             #     base =  Arr(base)
             #     _logger.error('{0} only collection type chains can exist, got {1}'.format(SC.lineInfo(),cast))
             #     SC.setError() # IDEA: FIX? int::array::array::int would be int array array -> int
             else:
-                base = cast
+                # FIX kinda cheating
+                if type(cast) == Type: cast = cast.sub
+                base = Type(cast)
         else:
             _logger.error('{0} expected type literal, got {1}'.format(SC.lineInfo(),cast))
             SC.setError()
+
         lastbase = base
 
     return base
@@ -819,50 +813,66 @@ def atom():
     elif SC.sym == LCURLY:
         SC.getSym()
 
-        if SC.sym in FIRST_TYPE:
-            # REMOVE `::array` is optional
-            base = typ()
-            if type(base) != Arr:
-                base = Arr(base)
+        if SC.sym in FIRST_EXPR:
+            base = expr()
+            lastbase = Type(Ref('null') if type(base) == Type else base)
 
             if SC.sym == COLON:
                 SC.getSym()
+                # if type(base) != Type:
+                #     _logger.error('{0} expected type literal, got {1}'.format(SC.lineInfo(),base))
+                #     SC.setError()
+                #     base = Ref('null')
+
+                base = Arr(base.sub)
+                # if type(base.sub) == Arr:
+                #     _logger.warning('{0} expected non-array type literal, got {1}'.format(SC.lineInfo(),base))
+                #     base = Ref('null')
+
+                if SC.sym in FIRST_EXPR:    sub = expr()
+                else:                       sub = None
+
             else:
-                SC.mark('expected colon, got {0}'.format(SC.sym))
-                while SC.sym not in set({COLON}) | STRONGSYMS | FOLLOW_ATOM:
-                    _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
-                return Ref('null')
-        else:
-            base = Lst()
+                sub = base
+                base = Lst()
 
-        if SC.sym in FIRST_EXPR:
-            sub = expr() # subtype
+            if sub != None:
 
-            if SC.sym == COMMA:
+                if type(base) == Arr:
+                    # extract the raw type
+                    if type(sub) == Type: sub = sub.sub
 
-                if type(base) in set({Arr}) and base.sub != sub:
-                    _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base.sub,sub))
-                    SC.setError()
-
-                while SC.sym == COMMA:
-                    SC.getSym()
-                    sub = expr()
-
-                    if type(base) in set({Arr}) and base.sub != sub:
+                    if type(base) not in set({Ref}) and base.sub != sub:
                         _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base.sub,sub))
                         SC.setError()
 
-            elif SC.sym == COLON:
-                SC.getSym()
+                if SC.sym == COMMA:
+                    if type(base) in set({Arr,Ref}) and base.sub != sub:
+                        _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base.sub,sub))
+                        SC.setError()
 
-                if type(sub) not in set({Int,Ref}):
-                    _logger.error('{0} lower bound must be integer, got {1}'.format(SC.lineInfo(),sub))
-                    SC.setError()
+                    while SC.sym == COMMA:
+                        SC.getSym()
+                        sub = expr()
 
-                top = expr()
+                        if type(base) in set({Arr,Ref}) and base.sub != sub:
+                            _logger.error('{0} collection-element type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base.sub,sub))
+                            SC.setError()
 
-                if type(top) not in set({Int,Ref}):
-                    _logger.error('{0} upper bound must be integer, got {1}'.format(SC.lineInfo(),top))
+                elif SC.sym == COLON:
+                    SC.getSym()
+
+                    if type(sub) not in set({Int,Ref}):
+                        _logger.error('{0} lower bound must be integer, got {1}'.format(SC.lineInfo(),sub))
+                        SC.setError()
+
+                    top = expr()
+
+                    if type(top) not in set({Int,Ref}):
+                        _logger.error('{0} upper bound must be integer, got {1}'.format(SC.lineInfo(),top))
+
+        else:
+            base = Lst()
 
         if SC.sym == RCURLY:
             SC.getSym()
@@ -874,54 +884,6 @@ def atom():
     else:
         SC.mark('unknown atom, got {0}'.format(SC.sym))
         base = None
-
-    return base
-
-def typ():
-    global SC
-    if SC.sym not in FIRST_TYPE:
-        _logger.error('{0} attempt to parse {1} as TYPE'.format(SC.lineInfo(),SC.sym))
-        SC.setError()
-        while SC.sym not in STRONGSYMS | FOLLOW_TYPE:
-            _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
-        return Ref('null')
-
-    if SC.sym == INT:
-        base = Int()
-    elif SC.sym == FLOAT:
-        base = Float()
-    elif SC.sym == STR:
-        base = Str()
-    elif SC.sym == BOOL:
-        base = Bool()
-    elif SC.sym == FUNC:
-        base = Func() # Ref('func')
-    elif SC.sym == LABEL:
-        base = Lab() # Ref('label')
-    elif SC.sym == LIST:
-        base = Lst()
-    else:
-        if SC.sym in set({ARRAY}):
-            SC.mark('unexpected collection type, got {0}'.format(SC.sym))
-        else:
-            SC.mark('unknown primitive type, got {0}'.format(SC.sym))
-        base = Ref('null')
-
-    SC.getSym()
-
-    if SC.sym in set({CAST}):
-        SC.getSym()
-
-        if SC.sym == ARRAY:
-            base = Arr(base)
-        else:
-            if SC.sym in set({INT, FLOAT, STR, BOOL, FUNC, LABEL}):
-                SC.mark('unexpected primitive type, got {0}'.format(SC.sym))
-            else:
-                SC.mark('unknown collection type, got {0}'.format(SC.sym))
-            base = Ref('null')
-
-        SC.getSym()
 
     return base
 
