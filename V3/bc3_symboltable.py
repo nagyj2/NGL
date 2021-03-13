@@ -109,7 +109,7 @@ def newSym(name, value, level=-1):
     global symTab, linked
     level = __validateLevel(level)
 
-    if name in symTab[level]:
+    if name in symTab[level] or name in symTab[0]:
         _logger.warning('symbol already declared, got {0}'.format(name))
         return
 
