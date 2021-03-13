@@ -4,11 +4,11 @@ from copy import deepcopy
 
 # Simple Types
 
-# TODO: add flag for 'system val' and 'global'
+# TODO: add flag for 'system val', 'global' and original level
 class Value:
     strrep = 'null'
     sub = None # holds any subtype
-    data = None # holds any extra data
+    data = None # holds any extra data (used by Lab and Func)
     def __init__(self,const=False):
         self.const = const
     def clone(self):
@@ -34,20 +34,6 @@ class Bool(Value):
     # Represents a boolean
     strrep = 'bool'
 
-class Func(Value):
-    # Represents a function: can be converted to the full runtime version
-    strrep = 'func'
-    def __init__(self,data=None,const=False):
-        super().__init__(const)
-        self.data = data # represents file name
-
-class Lab(Value):
-    # Represents a label: can be converted to the full runtime version
-    strrep = 'label'
-    def __init__(self,data=None,const=False):
-        super().__init__(const)
-        self.data = data # represents jump destination
-
 class Arr(Value):
     strrep = 'array'
     def __init__(self,subtyp,const=False):
@@ -65,6 +51,20 @@ class Lst(Value):
     def __eq__(self,other):
         return type(self) == type(other)
 
+class Func(Value):
+    # Represents a function: can be converted to the full runtime version
+    strrep = 'func'
+    def __init__(self,data=None,const=False):
+        super().__init__(const)
+        self.data = data # represents file name
+
+class Lab(Value):
+    # Represents a label: can be converted to the full runtime version
+    strrep = 'label'
+    def __init__(self,data=None,const=False):
+        super().__init__(const)
+        self.data = data # represents jump line number destination
+
 class Ref(Value):
     # Represents a variable or function call where the type is not know at compile time
     strrep = 'ref'
@@ -81,7 +81,8 @@ class Ref(Value):
         elif typ == 'null':      self.sub = Ref.Error()
         else:                   raise Exception('unknown ref type')
     def __eq__(self,other):
-        if type(other) in set({Int,Float,Str,Bool,Func,Lab}) or type(other) == Ref:
+        # if type(other) in set({Int,Float,Str,Bool,Arr,Lst,Func,Lab,Ref}):
+        if issubclass(type(other), Value):
             return True
         return False
 
