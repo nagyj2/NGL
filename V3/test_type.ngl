@@ -92,3 +92,19 @@ const m4::int::array::array e1
 const m5::list::array l5
 
 const n1::list {}
+
+
+glob o1::int 1;
+glob o2::float::array  {float: 1f, 2f, 3f};
+glob o3::str::array::array    {str::array:   {str:}, {str:}};
+glob o4::bool;
+glob o5::list::array;
+
+glob p1::fake_int::array::array {int::array: {int: 1}, {int: 2}, {int: 3}}
+glob p2::intarray {int::array: {int: 1}, {int: 2}}
+glob p3::str::array
+glob p4::int::array::array
+glob p5::list::array::array
+
+glob q1::list {}
+glob q2::int::array::array e1

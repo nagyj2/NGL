@@ -66,7 +66,7 @@ LABEL   ::= IDENT
           | {'~'} ('->' | '=>')
           | ('<-' | '<=') {'~'}
 
-FIRST  = { var, const, in, set, del, goto, if, cmp, try, out, incl, quit, retn, log }
+FIRST  = { var, const, glob, in, set, del, goto, if, cmp, try, out, incl, quit, retn, log }
 LAST   = { quit } | (EXPR) | (LABEL)
 FOLLOW = (LINEEND)
 STMT    ::= 'var'   ELEMENT [EXPR]    // Create new variable with optional initial value
