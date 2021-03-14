@@ -514,7 +514,7 @@ def add_expr():
 
             mod = mult_expr()
 
-            if type(base) != type(mod) or type(mod) == Ref:
+            if type(base) != type(mod) and type(base) != Ref and type(mod) != Ref:
                 #type(mod) not in set({Int,Float,Str,Ref}):
                 _logger.warning('{0} incompatible additive arg type, expected {1} got {2}'.format(SC.lineInfo(),base,mod))
 
@@ -544,7 +544,7 @@ def mult_expr():
 
             mod = exp_expr()
 
-            if type(base) != type(mod) or type(mod) == Ref:
+            if type(base) != type(mod) and type(base) != Ref and type(mod) != Ref:
             # if type(mod) not in set({Int,Float,Ref}):
                 _logger.warning('{0} incompatible multiplicitive arg type, expected {1} got {2}'.format(SC.lineInfo(),base,mod))
 
@@ -570,7 +570,7 @@ def exp_expr():
         SC.sym = EXP
 
     if SC.sym == EXP:
-        if type(base) not in set({Int,Float}):
+        if type(base) not in set({Int,Float,Ref}):
             _logger.warning('{0} incompatible exponentiation type, got {1}'.format(SC.lineInfo(),base))
 
         while SC.sym == EXP:
@@ -578,7 +578,7 @@ def exp_expr():
 
             mod = un_expr()
 
-            if type(base) not in set({Int,Float}):
+            if type(mod) not in set({Int,Float,Ref}):
                 _logger.warning('{0} incompatible exponentiation arg type, got {1}'.format(SC.lineInfo(),base))
 
             # REMOVE goes against the philosophy of no type conversions?
@@ -663,7 +663,7 @@ def indexed():
 
     base = atom()
 
-    if SC.sym in set({LBRAK}):
+    while SC.sym in set({LBRAK}):
         # Int, Float can be indexed for digits, string for chars, Lists and Arrays for elements
         SC.getSym()
 
@@ -671,7 +671,7 @@ def indexed():
         elif type(base) in set({Str}):      base = Str()
         elif type(base) in set({Arr}):      base = base.sub
         elif type(base) in set({Lst}):      base = Ref('list')
-        elif type(base) == Ref:             pass
+        elif type(base) in set({Ref}):      pass
         else:
             _logger.error('{0} invalid type for indexing, got {1}'.format(SC.lineInfo(),base))
             SC.setError()

@@ -42,8 +42,7 @@ This section is dedicated to potential changes to the grammar.
     - variables can take type values
     - types can be stored in ST
 - nested collections **implemented**
-    - how to handle collection as input to function?
-    - nested indexing **_needed_**
+    - nested indexing
 
 ### Productions
 Below is the list of productions in the 3rd version of NGL. Above each production will be a small description of what that production will match and three bullet points. The first bullet is the set of terminals which can begin the production, the second is the set of terminals which can end the production and the last is the set of terminals which can follow the production. When referencing other productions in follows, they refer to the first set. The start symbol is `PROG`.
@@ -149,7 +148,7 @@ Indexing. Available for strings, integers and floats
 FIRST  = { NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }
 LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
 FOLLOW = { **, *, /, \, %, +, -, >, <, =, <>, ::=, &, &&, |, ||, :: } | (LINEEND) | (LABEL) | (EXPR)
-INDEXED   ::= ATOM [ '[' INDEX ']' ]
+INDEXED   ::= ATOM { '[' INDEX ']' }
 
 The highest precidence. Elements are numbers, identifiers, raw strings, parentheses and collections.
 FIRST  = { NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }
