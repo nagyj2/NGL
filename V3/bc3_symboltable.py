@@ -19,7 +19,7 @@ linked = ScannerDummy()
     # types
 # lvl 0 (lowest) has globals, like true, false, type constants
 
-_CONSTANT = set({'true','false'})
+_CONSTANT = set({'true','false','length'})
 _SPECIAL  = set({'__file','__main','argv','retv','reti'}) # filtered through scope collapse with 'special'
 
 def init(log=True):
@@ -43,6 +43,8 @@ def init(log=True):
     newSym('label',Type(Lab(),True))
     newSym('func',Type(Func(),True))
     newSym('type',Type(Func(),True))
+
+    newSym('length',Func('length.ngl'),True)
 
     if log: _logger = getLogger('symboltable')
 
