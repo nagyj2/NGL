@@ -1,0 +1,20 @@
+//avg.ngl
+//  integer version
+
+incl isCollect length;
+try cmp @isCollect#argv[0] noncollect;
+
+var i::int 0;
+var s::int 0;
+var l::int @length#argv[0];
+loop:
+if i > l | i = l end;
+set s s+argv[i];
+goto loop;
+
+end:
+retn s / l;
+
+noncollect:
+out 'non-collection provided';
+retn false;

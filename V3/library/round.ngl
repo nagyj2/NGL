@@ -1,0 +1,7 @@
+//round.ngl
+//  used only on floats
+
+if argv[0]%10 < 0.5 lower;
+retn argv[0]::int + 1
+lower:
+retn argv[0]::int

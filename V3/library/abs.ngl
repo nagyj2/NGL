@@ -1,0 +1,7 @@
+//abs.ngl
+//  integer version
+
+if >< argv[0] < 0 skip;
+set argv[0] -1*argv[0];
+skip:
+retn argv[0];

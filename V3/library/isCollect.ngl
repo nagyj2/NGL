@@ -1,0 +1,3 @@
+//isCollect.ngl
+
+retn argv[0] ::= list | argv[0] ::= array;

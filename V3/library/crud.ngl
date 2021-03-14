@@ -1,0 +1,4 @@
+
+set integer 10;
+
+out 'i am here'

@@ -1,0 +1,23 @@
+//max.ngl
+//  integer version
+
+incl isCollect length;
+try cmp @isCollect#argv[0] noncollect;
+
+var i::int 1;
+var m::int argv[0];
+var l::int @length#argv[0];
+loop:
+if i > l | i = l end;
+if >< m < argv[i] inci;
+set m argv[i];
+inci:
+set i i+1;
+goto loop;
+
+end:
+retn m;
+
+noncollect:
+out 'non-collection provided';
+retn false;

@@ -1,39 +1,17 @@
 // find length of input list/array
 
-incl crud;
-
-cmp @crud
-
-if >< argv[0] ::= {int:} =>
-
-  if >< argv[0] ::= 1 ->
-  var hold::int::array argv[0]
-  goto start;
-  if >< argv[0] ::= 1f ->
-  var hold::float::array argv[0]
-  goto start;
-  if >< argv[0] ::= '1' ->
-  var hold::str::array argv[0]
-  goto start;
-  <-
-  var hold::bool::array argv[0]
-  goto start;
-
-<=
-if >< argv[0] ::= {int:} =>
-var hold::list argv[0]
-
-start:
+if >< argv[0] ::= list | argv[0] ::= array error;
 
 var i::int 0;
-->
-try cmp argv[i] ->
+loop:
+try cmp argv[0][i] end;
 set i i+1;
-goto <-;
+goto loop;
 
+end:
 retn i;
 
 
-<=
+error:
 out 'input isnt collection type';
 retn -1;

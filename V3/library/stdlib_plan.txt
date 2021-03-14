@@ -1,0 +1,18 @@
+isCollect
+
+math:
+  funcs:
+    max
+    min
+    avg
+    abs
+    log
+    ln
+    exp
+    cos
+    sin
+    tan
+    round
+  glob:
+    e
+    pi

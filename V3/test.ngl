@@ -1,24 +1,28 @@
-
+// compute some quadratic solutions
 
 incl quad;
+
 var positives::float::array {float:};
 var negatives::float::array {float:};
 
-set positives[^$] (@quad#1#0#-1)[0];
-set negatives[^$] (@quad#1#0#-1)[1];
+var contain::list @quad#1#0#-1
+if >< contain[0] ::= 1 error
+set positives[^$] contain[0];
+set negatives[^$] contain[1];
 
-set positives[^$] (@quad#2#0#-2)[0];
-set negatives[^$] (@quad#2#0#-2)[1];
+set contain @quad#2#0#-2
+if >< contain[0] ::= 1 error
+set positives[^$] contain[0];
+set negatives[^$] contain[1];
 
-set positives[^$] (@quad#1#-2#1)[0];
-set negatives[^$] (@quad#1#-2#1)[1];
+set contain @quad#1#-2#1
+if >< contain[0] ::= 1 error
+set positives[^$] contain[0];
+set negatives[^$] contain[1];
 
 out `positives` + '\n' + `negatives`;
+retn 0
 
-out `~true`
-out `false & ~true`
-out `argv[0:$]`
-out `argv[1:$]`
-out `argv[$]`
-out `argv[^0]`
-out `argv[^$]`
+error:
+out 'got an invalid solution'
+retn 1

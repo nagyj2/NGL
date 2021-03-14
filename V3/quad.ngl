@@ -11,7 +11,6 @@ var rootn::float;
 
 out `a` +' '+ `b` +' '+ `c`;
 
-
 try set rootp (-b+(b**2f-4f*a*c)**0.5)/(2f*a) ->
 try set rootn (-b-(b**2f-4f*a*c)**0.5)/(2f*a) ->
 

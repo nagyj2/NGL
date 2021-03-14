@@ -1,0 +1,7 @@
+//math.ngl
+//  library of math functions
+
+incl max min avg abs round;
+
+glob e 2.7182818285;
+glob pi 3.1415926536;
