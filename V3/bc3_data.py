@@ -101,7 +101,7 @@ class Lab(Value):
 
 class Type(Value):
     strrep = 'type'
-    def __init__(self,subtyp,const=False):
+    def __init__(self,subtyp=Ref('null'),const=False):
         super().__init__(const)
         self.sub = subtyp
     def __eq__(self,other):

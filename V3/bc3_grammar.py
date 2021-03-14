@@ -113,32 +113,30 @@ def stmt():
             name = '_'
 
         # Create symbol for referencing
-        ST.newSym(name,Ref('null'),level)
+        ST.newSym(name,Ref('ident'),level)
 
         base = element() # get ident with optional cast, index
         if type(base) != Type: #== Ref and type(base.sub) == Ref.Ident:
-            _logger.warning('expected type, got {0}'.format(base))
-        else: # consume the type
+            _logger.warning('{0} expected type, got {1}'.format(SC.lineInfo(),base))
+        else: # consume the Type wrapper
             base = base.sub
 
         assigned = False
         if SC.sym in FIRST_EXPR or constant:
-            exprType = expr()
             assigned = True
+            exprType = expr()
 
             # TODO: improve
             if base != exprType and type(base) not in set({Lst,Ref}) and type(exprType) not in set({Ref}) and type(exprType) != Type and exprType.sub != base:
                 _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
                 SC.setError()
 
-            else: # Known compatibility
-
-                # Copy metadata
-                if type(base) == Lab == type(exprType) or type(base) == Func == type(exprType) or type(exprType) == Type or type(base) == Ref and type(base.sub) == Ref.Ident:
-                    base = exprType
+            else: # Known compatibility - Copy metadata
+                # if type(base) == Lab == type(exprType) or type(base) == Func == type(exprType) or type(exprType) == Type or type(base) == Ref and type(base.sub) == Ref.Ident:
+                base = exprType
 
         if type(base) == Ref and type(base.sub) == Ref.Ident:
-            missing.append(name)
+            missing.add(name)
 
         base.const = assigned if level == 0 else constant
         # Assign 'real' type
@@ -193,13 +191,12 @@ def stmt():
             return
 
         if base != exprType:
-            # print(base,type(base),exprType,type(exprType),base==exprType,issubclass(type(exprType),Value))
             _logger.error('{0} variable type mismatch, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
             SC.setError()
             return
 
-        if type(exprType) == Ref and exprType.sub == 'ident':
-            missing.append(name)
+        if type(exprType) == Ref and type(exprType.sub) == Ref.Ident:
+            missing.add(name)
 
         exprType.const = False
         ST.setSym(name,exprType)
@@ -623,25 +620,30 @@ def element():
         return Ref('null')
 
     base = indexed()
-    lastbase = Type(Ref('null') if type(base) != Type else base.sub)
+    lastbase = base
 
     while SC.sym in set({CAST}):
         SC.getSym()
-        # base = typ()
         cast = indexed()
+
         if type(cast) == Type:
-            if type(lastbase) == Type and type(cast.sub) == Arr:
-                base = Type(Arr(lastbase.sub))
-            elif type(lastbase) == Arr and type(cast.sub) == Arr:
-                base = Type(Arr(base))
-            # elif type(lastbase) == Arr: # string of collection types broken by non collection type
-            #     base =  Arr(base)
-            #     _logger.error('{0} only collection type chains can exist, got {1}'.format(SC.lineInfo(),cast))
-            #     SC.setError() # IDEA: FIX? int::array::array::int would be int array array -> int
-            else:
-                # FIX kinda cheating
-                if type(cast) == Type: cast = cast.sub
-                base = Type(cast)
+            if type(lastbase) in set({Type,Arr}) or type(base.sub) == Ref.Ident:
+                if type(lastbase) == Arr: # collection (array::array)
+                    base = Type(Arr(lastbase.sub))
+                elif type(lastbase) == Type: # type on type (int::array) or (int::str)
+                    # NOTE: sematically, Arr is the only type allowed to do this
+                    if type(cast.sub) == Arr: # collection types are special
+                        base = Type(Arr(lastbase.sub))
+                    else:
+                        base = Type(cast.sub)
+                else: # new var (ident::int)
+                    base = Type(cast.sub)
+            else: # simple cast (42::str) or (10f::int::str)
+                if type(cast.sub) == Arr: # collection types are special
+                    base = Arr(lastbase)
+                else:
+                    base = cast.sub
+
         else:
             _logger.error('{0} expected type literal, got {1}'.format(SC.lineInfo(),cast))
             SC.setError()
@@ -681,7 +683,6 @@ def indexed():
             SC.getSym()
         else:
             SC.mark('expected closing bracket, got {0}'.format(SC.sym))
-            # print(SC.sym,RBRAK,SC.sym not in set({RBRAK}) | STRONGSYMS | FOLLOW_INDEXED)
             while SC.sym not in STRONGSYMS | FOLLOW_INDEXED:
                 _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
 
@@ -720,7 +721,7 @@ def atom():
         else:
             # FIX non-existant variables dont throw error
             _logger.warning('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
-            base = Ref('ident')
+            base = Ref('null')
 
     elif SC.sym == CALL:
         SC.getSym()
@@ -781,19 +782,10 @@ def atom():
 
         if SC.sym in FIRST_EXPR:
             base = expr()
-            lastbase = Type(Ref('null') if type(base) == Type else base)
 
             if SC.sym == COLON:
                 SC.getSym()
-                # if type(base) != Type:
-                #     _logger.error('{0} expected type literal, got {1}'.format(SC.lineInfo(),base))
-                #     SC.setError()
-                #     base = Ref('null')
-
                 base = Arr(base.sub)
-                # if type(base.sub) == Arr:
-                #     _logger.warning('{0} expected non-array type literal, got {1}'.format(SC.lineInfo(),base))
-                #     base = Ref('null')
 
                 if SC.sym in FIRST_EXPR:    sub = expr()
                 else:                       sub = None

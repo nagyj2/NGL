@@ -1,12 +1,12 @@
 //test_type.ngl
 // Tests various tests for errors
 
-var fake_int::int int;
-var fake_float::float float;
-var fake_str::str str;
-var fake_bool::bool bool;
-var fake_list::list list;
-var intarray::int::array int::array;
+var fake_int::type int;
+var fake_float::type float;
+var fake_str::type str;
+var fake_bool::type bool;
+var fake_list::type list;
+var intarray::type int::array;
 
 var a1::int   1;
 var a2::float 1f;
@@ -44,9 +44,11 @@ var f3::str::array
 var f4::int::array::array
 var f5::list::array::array
 
-var g1::list {}
-var g2::int::array::array e1
-
+var g1::int::array::array {int::array: {int:}};
+var g2::list {}
+var g3::int::array::array g1
+var g4::str 42::str
+var g5::bool 1::str::bool
 
 const cfake_int::int int;
 const cfake_float::float float;
@@ -91,8 +93,12 @@ const m3::str::array k3
 const m4::int::array::array e1
 const m5::list::array l5
 
-const n1::list {}
-
+const n1::int::bool true;
+const n2::float::int 1f::int
+const n3::bool::str true::str::int::str
+const n4::int::array {1,2,3}::int::array
+const n5::list::array::array {list::array: {list:}}
+const n6::list {{{{}}}}
 
 glob o1::int 1;
 glob o2::float::array  {float: 1f, 2f, 3f};

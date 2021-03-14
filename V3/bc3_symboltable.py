@@ -42,6 +42,7 @@ def init(log=True):
     newSym('list',Type(Lst(),True))
     newSym('label',Type(Lab(),True))
     newSym('func',Type(Func(),True))
+    newSym('type',Type(Func(),True))
 
     if log: _logger = getLogger('symboltable')
 
