@@ -69,20 +69,20 @@ LABEL   ::= IDENT
 FIRST  = { var, const, glob, in, set, del, goto, if, cmp, try, out, incl, quit, retn, log }
 LAST   = { quit } | (EXPR) | (LABEL)
 FOLLOW = (LINEEND)
-STMT    ::= ['glob] 'var'   ELEMENT [EXPR]  // Create new variable with optional initial value (optional global)
-          | ['glob] 'const' ELEMENT EXPR    // Create new constant (optional global)
-          | 'in'    ELEMENT                 // Assign input to a var
-          | 'set'   INDEXED EXPR            // Set a new variable value
-          | 'del'   INDEXED {INDEXED}       // Delete a variable's record
-          | 'goto'  LABEL                   // Jump to the corresponding label
-          | 'if'    EXPR  LABEL             // Evaluate boolean expression and jump to label if true
-          | 'cmp'   EXPR                    // Evaluates an expression
-          | 'try'   STMT  LABEL             // Evaluate a statement and if there is an error, jump to label
-          | 'out'   EXPR                    // Outputs an expression result to stdout
-          | 'incl'  IDENT {IDENT}           // Imports file(s) as an executable function
-          | 'quit'                          // Stops execution of entire trace
-          | 'retn'  EXPR                    // Stops execution of the subfile and returns a value
-          | 'log'   EXPR EXPR               // Outputs an expression result (2nd) to a specified file (1st)
+STMT    ::= ['glob'] 'var'   ELEMENT [EXPR]     // Create new variable with optional initial value (optional global)
+          | ['glob'] 'const' ELEMENT EXPR       // Create new constant (optional global)
+          | 'in'    ELEMENT                     // Assign input to a var
+          | 'set'   INDEXED EXPR                // Set a new variable value
+          | ['glob'] 'del'   INDEXED {INDEXED}  // Delete a variable's record
+          | 'goto'  LABEL                       // Jump to the corresponding label
+          | 'if'    EXPR  LABEL                 // Evaluate boolean expression and jump to label if true
+          | 'cmp'   EXPR                        // Evaluates an expression
+          | 'try'   STMT  LABEL                 // Evaluate a statement and if there is an error, jump to label
+          | 'out'   EXPR                        // Outputs an expression result to stdout
+          | ['glob'] 'incl'  IDENT {IDENT}      // Imports file(s) as an executable function
+          | 'quit'                              // Stops execution of entire trace
+          | 'retn'  EXPR                        // Stops execution of the subfile and returns a value
+          | 'log'   EXPR EXPR                   // Outputs an expression result (2nd) to a specified file (1st)
 
 Function calls are the next lowest. They are so low because the EXPR children should be able to compute calculations of their own.
 FIRST  = { ><, +, -, ~, NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }

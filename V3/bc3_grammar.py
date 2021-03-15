@@ -106,7 +106,7 @@ def stmt():
     if SC.sym == GLOBAL:    glob = True; SC.getSym()
     else:                   glob = False
 
-    if glob and SC.sym not in set({VAR,CONST}):
+    if glob and SC.sym not in set({VAR,CONST,DEL,INCLUDE}):
         _logger.error('{0} only \'var\' and \'const\' can be global'.format(SC.lineInfo()))
         SC.setError()
         while SC.sym not in STRONGSYMS | FOLLOW_STMT:
@@ -216,6 +216,7 @@ def stmt():
 
     elif SC.sym == DEL:
         SC.getSym()
+        level = 0 if glob else -1
 
         if SC.sym == IDENT:
 
@@ -223,7 +224,7 @@ def stmt():
                 name = SC.val # protected by while loop
                 base = indexed() # base isnt used
 
-                if ST.hasSym(name): ST.delSym(name)
+                if ST.hasSym(name): ST.delSym(name,level)
                 else: _logger.warning('{0} variable {1} does not exist'.format(SC.lineInfo(),name))
 
             if SC.sym not in FOLLOW_STMT:
@@ -301,13 +302,14 @@ def stmt():
 
     elif SC.sym == INCLUDE:
         SC.getSym()
+        level = 0 if glob else -1
 
         if SC.sym == IDENT:
             name = SC.val; SC.getSym()
-            ST.newSym(name,Func('{0}.ngl'.format(name)))
+            ST.newSym(name,Func('{0}.ngl'.format(name)),level)
             while SC.sym == IDENT:
                 name = SC.val; SC.getSym()
-                ST.newSym(name,Func('{0}.ngl'.format(name)))
+                ST.newSym(name,Func('{0}.ngl'.format(name)),level)
 
             if SC.sym not in FOLLOW_STMT:
                 SC.mark('expected end of statement, got {0}'.format(SC.sym))
