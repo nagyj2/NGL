@@ -2,7 +2,7 @@
 from copy import deepcopy
 from bc3_scanner import Scanner, ENOT, CALL, BACK, CALLEND, PARAM, PERIOD, RANGE, TE, BACKQUOTE, OR, UNION, AND, INTER, EQ, NE, LT, GT, PLUS, MINUS, MULT, DIV, INTDIV, MOD, EXP, CAST, APPEND, BURROW, VAR, CONST, GLOBAL, READ, SET, DEL, GOTO, IF, TRY, EXEC, PRINT, INCLUDE, QUIT, RETURN, LOG, GOARROW1, GOARROW2, RETARROW1, RETARROW2, TILDE, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, COMMA, COLON, NONE, NUMBER, DECIMAL, STRING, IDENT, LINEEND, NEWLINE, EOF, ARROWS, FIRST_LABEL, LAST_LABEL, FIRST_LINEEND, LAST_LINEEND, FIRST_ATOM, LAST_ATOM, FIRST_INDEXED, LAST_INDEXED, FIRST_ELEMENT, LAST_ELEMENT, FIRST_UN_EXPR, LAST_UN_EXPR, FIRST_EXP_EXPR, LAST_EXP_EXPR, FIRST_MULT_EXPR, LAST_MULT_EXPR, FIRST_ADD_EXPR, LAST_ADD_EXPR, FIRST_CMP_EXPR, LAST_CMP_EXPR, FIRST_EQ_EXPR, LAST_EQ_EXPR, FIRST_DIS_EXPR, LAST_DIS_EXPR, FIRST_CJN_EXPR, LAST_CJN_EXPR, FIRST_ENT_EXPR, LAST_ENT_EXPR, FIRST_EXPR, LAST_EXPR, FIRST_STMT, LAST_STMT, FIRST_LINE, LAST_LINE, FIRST_PROG, LAST_PROG, STRONGSYMS, WEAKSYMS, FOLLOW_LINE, FOLLOW_IDENT, FOLLOW_STMT, FOLLOW_EXPR, FOLLOW_CJN_EXPR, FOLLOW_DIS_EXPR, FOLLOW_EQ_EXPR, FOLLOW_CMP_EXPR, FOLLOW_ADD_EXPR, FOLLOW_MULT_EXPR, FOLLOW_EXP_EXPR, FOLLOW_UN_EXPR, FOLLOW_ELEMENT, FOLLOW_INDEXED, FOLLOW_ATOM, FOLLOW_PROG, FIRST_INDEX, LAST_INDEX, FOLLOW_INDEX
 import bc3_symboltable as ST
-import bc3_processor as PP
+from bc3_processor import execute_function_grammar
 
 from bc3_logging import getLogger
 from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Arr, Lst, Type
@@ -18,6 +18,7 @@ missing = set({}) # track variables missing values (Have ref @ end)
 checked = set({}) # track files which have been grammar checked
 _logger = getLogger('dummy')
 islog = False
+instate = {}
 
 def prog():
     global SC
@@ -701,7 +702,7 @@ def indexed():
     return base
 
 def atom():
-    global SC, checked, _logger, missing, islog
+    global SC, checked, _logger, missing, islog, state
     if SC.sym not in FIRST_ATOM:
         _logger.error('{0} attempt to parse {1} as ATOM'.format(SC.lineInfo(),SC.sym))
         SC.setError()
@@ -760,7 +761,7 @@ def atom():
             # b/c vars global, the reference is overwritten by call. need to save
             oldSC, old_logger = SC, _logger
             oldmissing = missing
-            PP.execute_function_grammar(base.data,PP.savedStates,islog)
+            execute_function_grammar(base.data,state,islog)
             SC, _logger = oldSC, old_logger
             missing = oldmissing
             ST.updateLink(SC)
@@ -912,12 +913,12 @@ def lineend():
     else:
         SC.mark('unknown lineend, got {0}'.format(SC.sym))
 
-def execute(scanner, log=True):
+def execute(scanner, instate={}, log=True):
     # Parse the program held in scanner SC
     from time import time
-    global SC, _logger, islog
+    global SC, _logger, islog, state
 
-    SC, islog = scanner, log
+    SC, islog, state = scanner, log, instate
     if log:     _logger = getLogger('grammar_{0}'.format(SC.fname))
 
     # Add default variables
@@ -938,4 +939,4 @@ def execute(scanner, log=True):
 
     # TODO: Better way to communicate state of program with preprocessor
     #   maybe json?
-    return deepcopy(PP.savedStates)
+    # return deepcopy(PP.savedStates)

@@ -19,8 +19,10 @@ linked = ScannerDummy()
     # types
 # lvl 0 (lowest) has globals, like true, false, type constants
 
-_CONSTANT = set({'true','false','length'})
+_CONSTANT = set({'true','false','int','float','str','bool','array','list','label','func','type','length'})
 _SPECIAL  = set({'__file','__main','argv','retv','reti'}) # filtered through scope collapse with 'special'
+
+_SAVES = {} # Stored symbol tables, indexed by filename
 
 def init(log=True):
     # Sets up the module to work. Also resets the module to its initial state
@@ -42,18 +44,37 @@ def init(log=True):
     newSym('list',Type(Lst(),True))
     newSym('label',Type(Lab(),True))
     newSym('func',Type(Func(),True))
-    newSym('type',Type(Func(),True))
+    newSym('type',Type(const=True))
 
     newSym('length',Func('length.ngl'),True)
 
     if log: _logger = getLogger('symboltable')
 
-def export():
+def save(name):
+    global _SAVES
+    # Saves the top level scope
+    if name in _SAVES:
+        _logger.warning('duplicate saved state name, got {0}'.format(name))
+    _SAVES[name] = _export()
+
+def load(name):
+    global _SAVES
+    if name not in _SAVES:
+        _logger.error('saved state does not exist, got {0}'.format(name))
+        return
+    state = _SAVES[name]
+    _reload(state)
+
+def saveNames():
+    global _SAVES
+    return [x for x in _SAVES]
+
+def _export():
     # Returns current scope only
     global symTab, spcTab
     return (deepcopy(symTab[-1]),deepcopy(spcTab[-1]))
 
-def load(tabs):
+def _reload(tabs):
     # Overrides current scope
     global symTab, spcTab
     symTab[-1] = tabs[0]
