@@ -11,6 +11,8 @@ from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Arr, Lst, Type
 # CHANGE type to have a basic and complex version
 # FIX: using ? in 'var' is not allowed -> ensure var declared level = current level
     # variables must have the level they were declared at
+# TODO: create utility functions for similar functions
+    # error function
 
 missing = set({}) # track variables missing values (Have ref @ end)
 checked = set({}) # track files which have been grammar checked
@@ -100,10 +102,20 @@ def stmt():
             _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
         return
 
-    if SC.sym in set({VAR,CONST,GLOBAL}):
+    if SC.sym == GLOBAL:    glob = True; SC.getSym()
+    else:                   glob = False
+
+    if glob and SC.sym not in set({VAR,CONST}):
+        _logger.error('{0} only \'var\' and \'const\' can be global'.format(SC.lineInfo()))
+        SC.setError()
+        while SC.sym not in STRONGSYMS | FOLLOW_STMT:
+            _logger.info('consumed {0}'.format(SC.sym)); SC.getSym()
+        return
+
+    if SC.sym in set({VAR,CONST}):
         # TODO: log var, type and val if present
         constant = True if SC.sym == CONST else False
-        level = 0 if SC.sym == GLOBAL else -1
+        level = 0 if glob else -1
         SC.getSym()
 
         if SC.sym == IDENT:
@@ -138,7 +150,7 @@ def stmt():
         if type(base) == Ref and type(base.sub) == Ref.Ident:
             missing.add(name)
 
-        base.const = assigned if level == 0 else constant
+        base.const = constant
         # Assign 'real' type
         ST.setSym(name,base,level)
 

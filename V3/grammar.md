@@ -43,6 +43,7 @@ This section is dedicated to potential changes to the grammar.
     - types can be stored in ST
 - nested collections **implemented**
     - nested indexing
+- global declaration uses glob before var or const **implemented**
 
 ### Productions
 Below is the list of productions in the 3rd version of NGL. Above each production will be a small description of what that production will match and three bullet points. The first bullet is the set of terminals which can begin the production, the second is the set of terminals which can end the production and the last is the set of terminals which can follow the production. When referencing other productions in follows, they refer to the first set. The start symbol is `PROG`.
@@ -68,21 +69,20 @@ LABEL   ::= IDENT
 FIRST  = { var, const, glob, in, set, del, goto, if, cmp, try, out, incl, quit, retn, log }
 LAST   = { quit } | (EXPR) | (LABEL)
 FOLLOW = (LINEEND)
-STMT    ::= 'var'   ELEMENT [EXPR]    // Create new variable with optional initial value
-          | 'const' ELEMENT EXPR      // Create new constant
-          | 'glob'  ELEMENT [EXPR]    // Create new global identifier. If an expression is given, it is a constant; otherwise a variable
-          | 'in'    ELEMENT           // Assign input to a var
-          | 'set'   INDEXED EXPR      // Set a new variable value
-          | 'del'   INDEXED {INDEXED} // Delete a variable's record
-          | 'goto'  LABEL             // Jump to the corresponding label
-          | 'if'    EXPR  LABEL       // Evaluate boolean expression and jump to label if true
-          | 'cmp'   EXPR              // Evaluates an expression
-          | 'try'   STMT  LABEL       // Evaluate a statement and if there is an error, jump to label
-          | 'out'   EXPR              // Outputs an expression result to stdout
-          | 'incl'  IDENT {IDENT}     // Imports file(s) as an executable function
-          | 'quit'                    // Stops execution of entire trace
-          | 'retn'  EXPR              // Stops execution of the subfile and returns a value
-          | 'log'   EXPR EXPR         // Outputs an expression result (2nd) to a specified file (1st)
+STMT    ::= ['glob] 'var'   ELEMENT [EXPR]  // Create new variable with optional initial value (optional global)
+          | ['glob] 'const' ELEMENT EXPR    // Create new constant (optional global)
+          | 'in'    ELEMENT                 // Assign input to a var
+          | 'set'   INDEXED EXPR            // Set a new variable value
+          | 'del'   INDEXED {INDEXED}       // Delete a variable's record
+          | 'goto'  LABEL                   // Jump to the corresponding label
+          | 'if'    EXPR  LABEL             // Evaluate boolean expression and jump to label if true
+          | 'cmp'   EXPR                    // Evaluates an expression
+          | 'try'   STMT  LABEL             // Evaluate a statement and if there is an error, jump to label
+          | 'out'   EXPR                    // Outputs an expression result to stdout
+          | 'incl'  IDENT {IDENT}           // Imports file(s) as an executable function
+          | 'quit'                          // Stops execution of entire trace
+          | 'retn'  EXPR                    // Stops execution of the subfile and returns a value
+          | 'log'   EXPR EXPR               // Outputs an expression result (2nd) to a specified file (1st)
 
 Function calls are the next lowest. They are so low because the EXPR children should be able to compute calculations of their own.
 FIRST  = { ><, +, -, ~, NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }
