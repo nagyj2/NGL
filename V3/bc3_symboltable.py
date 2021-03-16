@@ -44,9 +44,9 @@ def init(log=True):
     newSym('list',Type(Lst(),True))
     newSym('label',Type(Lab(),True))
     newSym('func',Type(Func(),True))
-    newSym('type',Type(const=True))
+    newSym('type',Type(const=True)) # can take any value
 
-    newSym('length',Func('length.ngl'),True)
+    newSym('length',Func('length.ngl'),True) # add default functions
 
     if log: _logger = getLogger('symboltable')
 

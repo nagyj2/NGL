@@ -131,22 +131,28 @@ def stmt():
         base = element() # get ident with optional cast, index
         if type(base) != Type: #== Ref and type(base.sub) == Ref.Ident:
             _logger.warning('{0} expected type, got {1}'.format(SC.lineInfo(),base))
-        else: # consume the Type wrapper
+        else: # Peel back type for checking
             base = base.sub
 
-        assigned = False
+        # auto = True if type(base.sub) == Ref.Auto else False
+        # else: # consume the Type wrapper
+        #     base = base.sub
+
         if SC.sym in FIRST_EXPR or constant:
-            assigned = True
             exprType = expr()
+            if type(exprType) == Type:
+                isType = True
+                exprType = exprType.sub # peel back type if present
+            else:
+                isType = False
 
             # TODO: improve
-            if base != exprType and type(base) not in set({Lst,Ref}) and type(exprType) not in set({Ref}) and type(exprType) != Type and exprType.sub != base:
+            if type(base.sub) in set({Lst,Ref}) or type(exprType) in set({Ref}) or base == exprType or base == exprType:
+                # Known compatibility - Copy any metadata
+                base = Type(exprType) if isType else exprType
+            else:
                 _logger.error('{0} incorrect expression type, expected {1} got {2}'.format(SC.lineInfo(),base,exprType))
                 SC.setError()
-
-            else: # Known compatibility - Copy metadata
-                # if type(base) == Lab == type(exprType) or type(base) == Func == type(exprType) or type(exprType) == Type or type(base) == Ref and type(base.sub) == Ref.Ident:
-                base = exprType
 
         if type(base) == Ref and type(base.sub) == Ref.Ident:
             missing.add(name)
