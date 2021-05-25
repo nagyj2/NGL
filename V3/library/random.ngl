@@ -1,0 +1,25 @@
+//random.ngl
+//  generate random integer
+
+/*
+bound =100
+r = 41
+a = 16807
+c = 11
+m = 65535
+r = (a * r + c) % m
+rand = int(r / bound)
+print(rand)
+*/
+
+try cmp >< _rand_s generate;
+
+missing:
+glob var _rand_s::int 42;
+glob var _rand_a::int 16811;
+glob var _rand_c::int 13;
+glob var _rand_m::int 65535;
+
+generate:
+set _rand_s (_rand_a * _rand_r + _rand_c) % _rand_m;
+retn _rand_s // argv[0]::int

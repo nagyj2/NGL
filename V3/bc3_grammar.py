@@ -16,9 +16,9 @@ from bc3_data import Int, Float, Str, Bool, Func, Lab, Ref, Arr, Lst, Type
 
 missing = set({}) # track variables missing values (Have ref @ end)
 checked = set({}) # track files which have been grammar checked
-_logger = getLogger('dummy')
-islog = False
-instate = {}
+_logger = getLogger('dummy') # Dummy logger
+islog = False # Is logging enabled
+instate = {} # Intitial state
 
 def prog():
     global SC

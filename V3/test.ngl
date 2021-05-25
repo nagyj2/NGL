@@ -1,9 +1,14 @@
 // compute some quadratic solutions
 
-incl quad;
+var faketype::int int;
+glob incl crud;
+cmp @crud;
 
-var positives::float::array {float:};
+glob var positives::float::array {float:};
 var negatives::float::array {float:};
+
+
+var complex::type int::array;
 
 var contain::list @quad#1#0#-1
 if >< contain[0] ::= 1 error

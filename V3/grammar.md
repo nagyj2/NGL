@@ -18,7 +18,7 @@ This section is dedicated to potential changes to the grammar.
     - Use of additional `^` for appending **implemented**
 - Modify higher end of precedence level to clarify identifiers can have casts and sequencing **implemented**
 - `retn` must take a return value **implemented**
-- `load` function for _reti_, _retv_, _argv_, etc...?
+- ~~`load` function for _reti_, _retv_, _argv_, etc...?~~
 - `log` statement can print to a specific file **implemented**
 - ~~Move backquotes, function call to a higher precedence~~
 - Change list literal format -> causes problems for malformed index **implemented**

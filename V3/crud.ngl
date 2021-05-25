@@ -1,0 +1,6 @@
+
+set positives? {float: 3f, 4f};
+
+var jebedia::int 1;
+
+out 'i am here'
