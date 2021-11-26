@@ -1,6 +1,6 @@
 # NGL Speed Assembler
 
-from ngl_s_sc import PLUS, MINUS, MULT, DIV, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, EOF, mark
+from ngl_s_sc import PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, EOF, mark
 import ngl_s_ast as AST
 import ngl_s_t as TS
 
@@ -133,6 +133,8 @@ def createAssignLine(node):
         prefix = var + ' -'
     elif node.op == MULT:
         prefix = var + ' *'
+    elif node.op == MOD:
+        prefix = var + ' %'
     elif node.op == DIV:
         prefix = var + ' /'
     else:

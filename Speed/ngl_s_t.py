@@ -1,7 +1,7 @@
 # NGL Speed Transcompiler
 
 import ngl_s_sc as SC
-from ngl_s_sc import PLUS, MINUS, MULT, DIV, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
+from ngl_s_sc import PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast as AST
 
 # TODO: atoms beside each other in expressions are multipled/ appended
@@ -36,6 +36,8 @@ FOLLOWLINES = {LINEEND}
 FIRSTPROGRAM  = FIRSTLINES
 FOLLOWPROGRAM = FOLLOWLINES
 
+STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF}
+
 def program():
     if SC.sym not in FIRSTPROGRAM:
         mark('expected valid program start')
@@ -56,6 +58,9 @@ def lines():
 
         if SC.sym == LINEEND:
             getSym()
+        elif SC.sym in STRONGSYMS:
+            # Probably not a good idea to allow a poorly formatted program
+            pass
         else:
             mark('expected semicolon')
 
@@ -73,20 +78,13 @@ def stmt():
     if SC.sym not in FIRSTSTMT:
         mark('expected valid stmt start')
 
+    #. V2
     if SC.sym == IDENT:
         # Set variable
         name = [AST.Node(IDENT,SC.val)]
         getSym()
 
-        while SC.sym == COMMA:
-            getSym()
-            if SC.sym == IDENT:
-                name.append(AST.Node(IDENT,SC.val))
-                getSym()
-            else:
-                mark('expected identifier')
-
-        if SC.sym in {EQ,PLUS,MINUS,MULT,DIV}:
+        if SC.sym in {EQ,PLUS,MINUS,MULT,DIV,MOD}:
             op = SC.sym
             getSym()
         else:
@@ -95,17 +93,64 @@ def stmt():
 
         value = [expr()]
 
-        while SC.sym == COMMA:
+        while SC.sym == IDENT:
+            name.append(AST.Node(IDENT,SC.val))
             getSym()
-            value.append(expr())
 
-        if len(name) != len(value):
-            mark('number of identifiers must equal number of expressions')
+            if SC.sym in {EQ,PLUS,MINUS,MULT,DIV,MOD}:
+                op = SC.sym
+                getSym()
+            else:
+                op = EQ # Assume regular assignment
+                # mark('expected assignment operator')
+
+            if SC.sym in FIRSTEXPR:
+                value.append(expr())
+            else:
+                mark('expected expression')
+                value.append(AST.Node(INT,0))
 
         if len(name) == len(value) == 1:
             val = AST.AssignNode(name[0],op,value[0])
         else:
             val = AST.SepNode(name,op,value)
+    
+    #. V1
+    # if SC.sym == IDENT:
+    #     # Set variable
+    #     name = [AST.Node(IDENT,SC.val)]
+    #     getSym()
+
+    #     while SC.sym == COMMA or SC.sym == IDENT:
+    #         if SC.sym == COMMA: 
+    #             getSym()
+    #         if SC.sym == IDENT:
+    #             name.append(AST.Node(IDENT,SC.val))
+    #             getSym()
+    #         else:
+    #             mark('expected identifier')
+
+    #     if SC.sym in {EQ,PLUS,MINUS,MULT,DIV,MOD}:
+    #         op = SC.sym
+    #         getSym()
+    #     else:
+    #         op = EQ # Assume regular assignment
+    #         # mark('expected assignment operator')
+
+    #     value = [expr()]
+
+    #     while SC.sym == COMMA or SC.sym == FIRSTEXPR:
+    #         if SC.sym == COMMA: 
+    #             getSym()
+    #         value.append(expr())
+
+    #     if len(name) != len(value):
+    #         mark('number of identifiers must equal number of expressions')
+
+    #     if len(name) == len(value) == 1:
+    #         val = AST.AssignNode(name[0],op,value[0])
+    #     else:
+    #         val = AST.SepNode(name,op,value)
 
     elif SC.sym == IF:
         # if statement
@@ -252,7 +297,7 @@ def expr_l3():
 
     val = expr_l4()
 
-    while SC.sym in {MULT, DIV}:
+    while SC.sym in {MULT, DIV, MOD}:
         op = SC.sym
         getSym()
         mod = expr_l4()
@@ -345,7 +390,7 @@ def atom():
 
 def _readsource(fname):
     src = ''
-    with open(fname+'.ngls','r') as reader:
+    with open(fname,'r') as reader:
         for line in reader.readlines():
             src += line
     return src

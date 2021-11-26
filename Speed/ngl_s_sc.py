@@ -29,6 +29,7 @@ INT = 33 # #
 FLOAT = 34 # %
 STRING = 35 # %
 BOOLEAN = 36 # ^
+MOD = 37 # %
 
 IF = 50; # ?
 ELSE = 51; # ~?
@@ -124,7 +125,11 @@ def getSym():
         else: sym = NOT
     elif ch == '|': getChar(); sym = OR
     elif ch == '&': getChar(); sym = AND
-    elif ch == '<': getChar(); sym = LT
+    # elif ch == '<': getChar(); sym = LT
+    elif ch == '<':
+        getChar()
+        if ch == '>': getChar(); sym = MOD
+        else: sym = LT
     elif ch == '>': getChar(); sym = GT
     elif ch == '=': getChar(); sym = EQ
 

@@ -2,7 +2,7 @@
 # Holds nodes which can be used to construct the program
 
 from enum import Enum
-from ngl_s_sc import PLUS, MINUS, MULT, DIV, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, EOF, mark
+from ngl_s_sc import PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, EOF, mark
 
 INT, FLOAT, STRING, BOOL, IDENT
 binop = { PLUS: [[INT, FLOAT, None ,None, INT],
@@ -22,6 +22,12 @@ binop = { PLUS: [[INT, FLOAT, None ,None, INT],
                  [STRING, None, STRING ,None, IDENT],
                  [None, None, None, None, None],
                  [INT, FLOAT, IDENT, None, IDENT]],
+
+          MOD: [[INT, None, None ,None, INT],
+                 [None, None, None ,None, None],
+                 [None, None, None ,None, IDENT],
+                 [None, None, None, None, None],
+                 [INT, None, IDENT, None, IDENT]],
 
           DIV: [[FLOAT, FLOAT, None ,None, FLOAT],
                  [FLOAT, FLOAT, None ,None, FLOAT],
@@ -130,6 +136,8 @@ class BinOp:
             toRet += '-'
         elif self.op == MULT:
             toRet += '*'
+        elif self.op == MOD:
+            toRet += '%'
         elif self.op == DIV:
             toRet += '/'
         elif self.op == EQ:
@@ -158,6 +166,8 @@ class BinOp:
             toRet += '-'
         elif self.op == MULT:
             toRet += '*'
+        elif self.op == MOD:
+            toRet += '%'
         elif self.op == DIV:
             toRet += '/'
         elif self.op == EQ:
@@ -376,6 +386,8 @@ class AssignNode:
             toRet += '-'
         elif self.op == MULT:
             toRet += '*'
+        elif self.op == MOD:
+            toRet += '%'
         elif self.op == DIV:
             toRet += '/'
         elif self.op == EQ:
