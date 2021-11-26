@@ -210,7 +210,8 @@ def createIfLine(node):
         if node.stmt_false != None:
             stmt_false = assemble([node.stmt_false]) + '\n'
 
-    line += 'if' +' '+ str(node.cond) +'::bool '+ 'true'+str(loc_i) +';\n'
+    cond = str(node.cond)
+    line += 'if' +' '+ (cond if cond[-5:] == 'bool)' else cond + '::bool') +' true'+str(loc_i) +';\n'
     if node.stmt_false != None:
         line += stmt_false
 
@@ -296,6 +297,8 @@ def createLoopLine(node):
 
 def convert(fname):
     lst = TS.translate(fname) # Get AST
+    for node in lst:
+        print(node.ast_print())
     src = assemble_init(lst) # Get NGL source code
     return src
 

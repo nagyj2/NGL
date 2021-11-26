@@ -87,7 +87,7 @@ class Node:
             toRet += 'ERROR:'+str(self.typ)+':'+str(self.val)
         return toRet
 
-    def str_old(self):
+    def ast_print(self):
         toRet = '' + self.indent * '| '
         if self.typ == INPUT:
             toRet += 'READ'
@@ -98,7 +98,7 @@ class Node:
         elif self.typ == RAW_STRING:
             toRet += '\'' + str(self.val) + '\''
         elif self.typ == BLOCK:
-            toRet += self.val.str_old()
+            toRet += self.val.ast_print()
         else:
             mark('unknown assignment type')
             toRet += 'ERROR:'+str(self.typ)+':'+str(self.val)
@@ -156,9 +156,9 @@ class BinOp:
         toRet += str(self.arg2) + ')'
         return toRet
 
-    def str_old(self):
+    def ast_print(self):
         toRet = '' + self.indent * '| '
-        toRet += '(' + self.arg1.str_old()
+        toRet += '(' + self.arg1.ast_print()
 
         if self.op == PLUS:
             toRet += '+'
@@ -183,7 +183,7 @@ class BinOp:
         else:
             mark('unknown binary operation')
 
-        toRet += self.arg2.str_old() + ')'
+        toRet += self.arg2.ast_print() + ')'
         return toRet
 
     def eval(self):
@@ -236,22 +236,29 @@ class UnOp:
 
     def __str__(self):
         toRet = '' + self.indent * '| '
+        force_bool = False
         if self.op in {NOT, MINUS}:
             if self.op == NOT:
-                toRet += '!'
+                # toRet += '!'
+                force_bool = True
             elif self.op == MINUS:
                 toRet += '-'
             else:
                 mark('unknown unary operation 1')
-            toRet += str(self.arg1)
+            if force_bool:
+                toRet += '!((' + str(self.arg1) + ')::bool)'
+            else:
+                toRet += str(self.arg1)
         elif self.op in {INT, FLOAT, STRING, BOOLEAN}:
-            if self.op == INT:
+            val = str(self.arg1)
+            # Ignore redundant casts
+            if self.op == INT and val[-4:] != "int)":
                 toRet += '(' + str(self.arg1) + ')::int'
-            elif self.op == FLOAT:
+            elif self.op == FLOAT and val[-6:] != "float)":
                 toRet += '(' + str(self.arg1) + ')::float'
-            elif self.op == STRING:
+            elif self.op == STRING and val[-4:] != "str)":
                 toRet += '(' + str(self.arg1) + ')::str'
-            elif self.op == BOOLEAN:
+            elif self.op == BOOLEAN and val[-5:] != "bool)":
                 toRet += '(' + str(self.arg1) + ')::bool'
             else:
                 mark('unknown unary operation 2')
@@ -261,7 +268,7 @@ class UnOp:
 
         return toRet
 
-    def str_old(self):
+    def ast_print(self):
         toRet = '' + self.indent * '| '
 
         if self.op in {NOT, MINUS}:
@@ -272,7 +279,7 @@ class UnOp:
             else:
                 mark('unknown unary operation 1')
 
-            toRet += self.arg1.str_old()
+            toRet += self.arg1.ast_print()
 
         elif self.op in {INT, FLOAT, STRING, BOOLEAN}:
             if self.op == INT:
@@ -313,11 +320,11 @@ class SepNode:
         for i in range(len(lhs)):
             self.stmts.append(AssignNode(lhs[i],op,rhs[i]))
 
-    def str_old(self):
+    def ast_print(self):
         toRet = '' + self.indent * '| '
-        toRet += self.stmts[0].str_old()
+        toRet += self.stmts[0].ast_print()
         for expr in self.stmts[1:]:
-            toRet += '\n' + (self.indent + 1) * '| ' + expr.str_old()
+            toRet += '\n' + (self.indent + 1) * '| ' + expr.ast_print()
         return toRet
 
 class IfNode:
@@ -328,16 +335,16 @@ class IfNode:
         self.stmt_true  = stmt_true
         self.stmt_false = stmt_false
 
-    def str_old(self):
+    def ast_print(self):
         toRet = self.indent * '| '
 
         if self.stmt_true.typ == BLOCK:
             self.stmt_true.indent = self.indent
-        toRet += 'if ' + self.cond.str_old() + ' then ' + self.stmt_true.str_old()
+        toRet += 'if ' + self.cond.ast_print() + ' then ' + self.stmt_true.ast_print()
         if self.stmt_false != None:
             if self.stmt_false.typ == BLOCK:
                 self.stmt_false.indent = self.indent
-            toRet += '\n' + (self.indent * '| ') + 'else ' + self.stmt_false.str_old()
+            toRet += '\n' + (self.indent * '| ') + 'else ' + self.stmt_false.ast_print()
         return toRet
 
 class PrintNode:
@@ -345,9 +352,9 @@ class PrintNode:
         self.typ, self.indent = PRINT, 0
         self.expr = expr
 
-    def str_old(self):
+    def ast_print(self):
         toRet = self.indent * '| '
-        toRet += 'print ' + self.expr.str_old()
+        toRet += 'print ' + self.expr.ast_print()
         return toRet
 
 class LoopNode:
@@ -358,16 +365,16 @@ class LoopNode:
         self.loop_end = loop_end
         self.loop_body = loop_body
 
-    def str_old(self):
+    def ast_print(self):
         toRet = self.indent * '| '
-        toRet += 'for ( ' + self.loop_start.str_old() + ' ; ' + self.cond.str_old() + ' ; ' + self.loop_end.str_old() + ') do '
+        toRet += 'for ( ' + self.loop_start.ast_print() + ' ; ' + self.cond.ast_print() + ' ; ' + self.loop_end.ast_print() + ') do '
         if self.loop_body != None:
             if self.loop_body.typ != BLOCK:
                 self.loop_body.indent = self.indent + 1
                 toRet += '\n'
             else:
                 self.loop_body.indent = self.indent
-        toRet += self.loop_body.str_old()
+        toRet += self.loop_body.ast_print()
         return toRet
 
 class AssignNode:
@@ -377,8 +384,8 @@ class AssignNode:
         self.op = op
         self.val = val
 
-    def str_old(self):
-        toRet = self.indent * '| ' + self.var.str_old() + ' '
+    def ast_print(self):
+        toRet = self.indent * '| ' + self.var.ast_print() + ' '
 
         if self.op == PLUS:
             toRet += '+'
@@ -395,13 +402,13 @@ class AssignNode:
         else:
             mark('unknown assignment subtype')
 
-        toRet += '= ' + self.val.str_old()
+        toRet += '= ' + self.val.ast_print()
         return toRet
 
 class ExitNode:
     def __init__(self):
         self.typ, self.indent = EXIT, 0
-    def str_old(self):
+    def ast_print(self):
         return self.indent * '| ' + 'EXIT'
 
 class BlockNode:
@@ -409,11 +416,11 @@ class BlockNode:
         self.typ, self.indent = BLOCK, 0
         self.block = block
 
-    def str_old(self):
+    def ast_print(self):
         toRet =  '{\n'
         for line in self.block:
             line.indent = self.indent + 1
-            toRet += line.str_old() + '\n'
+            toRet += line.ast_print() + '\n'
         toRet += (self.indent * '| ') + '}'
 
         return toRet

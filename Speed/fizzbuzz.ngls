@@ -1,0 +1,42 @@
+n20i0f'Fizz'b'Buzz'$(i<n|i=n):i1:i+1:{?i<>15=0!f+b~?{?~(i<>3)!f?~(i<>5)!b}};
+
+#n20;
+#i0;
+#$ (i<n | i=n) : i1 : i+1 : {
+#	? i<>15=0 !'FizzBuzz'
+#	~? {
+#		? i<>3=0 !'Fizz';
+#		? i<>5=0 !'Buzz';
+#	};
+#};
+
+#
+#
+#Fizz
+#
+#Buzz
+#Fizz
+#
+#
+#Fizz
+#Buzz
+#
+#Fizz
+#
+#
+#FizzBuzz
+#
+#
+#Fizz
+#
+#Buzz
+#Fizz
+#
+#
+#Fizz
+#Buzz
+#
+#Fizz
+#
+#
+#FizzBuzz
