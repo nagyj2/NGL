@@ -23,7 +23,7 @@ EXPR           := '![' ('#' | '%' | '@' | '^') ':' [IDENT {IDENT}] ':' PROGRAM '
                 
 EXPR_L0        := EXPR_L1 {('&' | '|') EXPR_L1}
 
-EXPR_L1        := EXPR_L2 {('=' | '>' | '<') EXPR_L2}
+EXPR_L1        := EXPR_L2 {('=' | '>' | '<' | '<|' | '|>') EXPR_L2}
 
 EXPR_L2        := EXPR_L3 {('+' | '-') EXPR_L3}
 
@@ -42,3 +42,4 @@ ATOM           := IDENT
 
 IDENT          := '`' [A-Za-z_] [A-Za-z0-9_]* '`'
                 | [A-Za-z]
+ 
