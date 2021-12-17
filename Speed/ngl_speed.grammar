@@ -5,36 +5,36 @@
 # compile the old grammar into the new NGL v2.1 language.
 
 TOFIX = Compound statements
-      = Quit
 
-PROGRAM       ::= {LINES}
+PROGRAM        := {LINES}
 
-LINES         ::= STMT ';'
+LINES          := STMT ';'
 
-STMT          ::= <V1> IDENT {[','] IDENT} ['+' | '-' | '*' | '/' | '='] EXPR {[','] EXPR}
-                | <V2> IDENT ['+' | '-' | '*' | '/' | '='] EXPR {IDENT ['+' | '-' | '*' | '/' | '='] EXPR }
+STMT           := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR}
                 | '?' EXPR STMT ['~?' STMT]
                 | '!' EXPR
                 | '$' EXPR ':' STMT ':' STMT ':' STMT
-                | '\'
+                | '\' ('\' | EXPR)
                 | '{' {LINES} '}'
 
-EXPR          ::= EXPR_L1 {('&' | '|') EXPR_L1}
+EXPR           := '![' ('#' | '%' | '@' | '^') ':' [IDENT {IDENT}] ':' PROGRAM ']'
+                | EXPR_L0
+                
+EXPR_L0        := EXPR_L1 {('&' | '|') EXPR_L1}
 
-EXPR_L1       ::= EXPR_L2 {('=' | '>' | '<') EXPR_L2}
+EXPR_L1        := EXPR_L2 {('=' | '>' | '<') EXPR_L2}
 
-EXPR_L2       ::= ['+' | '-'] EXPR_L3 {('+' | '-') EXPR_L3}
+EXPR_L2        := EXPR_L3 {('+' | '-') EXPR_L3}
 
-EXPR_L3       ::= EXPR_L4 {('*' | '/' | '<>') EXPR_L4}
+EXPR_L3        := EXPR_L4 {('*' | '/' | '<>') EXPR_L4}
 
-EXPR_L4       ::= ['~'] SUBATOM
+EXPR_L4        := ['~' | '+' | '-'] SUBATOM
 
-SUBATOM       ::= ['#' | '%' | '@' | '^'] ATOM
+SUBATOM        := ['#' | '%' | '@' | '^'] ATOM
 
-ATOM          ::= IDENT
+ATOM           := IDENT
                 | '_'
                 | RAW_STRING
                 | '(' EXPR ')'
                 | '.'
-
-# n20i0f'Fizz'b'Buzz'$(i<n|i=n):i1:i+1:{?i<>15=0!f+b~?{?~(i<>3)!f?~(i<>5)!b}};
+                | '?[' IDENT ':' [EXPR  {[','] EXPR }] ']'

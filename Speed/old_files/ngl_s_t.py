@@ -1,12 +1,12 @@
 # NGL Speed Transcompiler
 
 import ngl_s_sc as SC
-from ngl_s_sc import PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast as AST
 
 # TODO: atoms beside each other in expressions are multipled/ appended
 
-FIRSTATOM  = {IDENT, NUMBER, BOOL, RAW_STRING, LPAREN, INPUT}
+FIRSTATOM  = {IDENT, NUMBER, BOOL, RAW_STRING, LPAREN, INPUT, FUNC_DEF, FUNC_CALL}
 FOLLOWATOM = {IDENT, NUMBER, BOOL, RAW_STRING, RPAREN, INPUT}
 
 FIRSTSUBATOM  = {INT, FLOAT, STRING, BOOLEAN} | FIRSTATOM
@@ -36,9 +36,12 @@ FOLLOWLINES = {LINEEND}
 FIRSTPROGRAM  = FIRSTLINES
 FOLLOWPROGRAM = FOLLOWLINES
 
-STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF}
+STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, FUNC_END}
+
+in_func = False
 
 def program():
+    global in_func
     if SC.sym not in FIRSTPROGRAM:
         mark('expected valid program start')
 
@@ -46,6 +49,8 @@ def program():
 
     while SC.sym in FIRSTPROGRAM:
         prog.append(lines())
+        if in_func and SC.sym == FUNC_END:
+            break
 
     return prog
 
@@ -56,13 +61,17 @@ def lines():
     if SC.sym in FIRSTSTMT:
         val = stmt()
 
-        if SC.sym == LINEEND:
-            getSym()
-        elif SC.sym in STRONGSYMS:
+        if SC.sym in STRONGSYMS:
+            # If a lineend, consume. If not, dont worry!
             # Probably not a good idea to allow a poorly formatted program
-            pass
+            if SC.sym == LINEEND:
+                getSym()
         else:
-            mark('expected semicolon')
+            # If a lineend, consume. If not, PANIC!
+            if SC.sym == LINEEND:
+                getSym()
+            else:
+                mark('expected semicolon')
 
         if SC.sym in FOLLOWLINES:
             mark('warning: empty line')
@@ -116,41 +125,41 @@ def stmt():
             val = AST.SepNode(name,op,value)
     
     #. V1
-    # if SC.sym == IDENT:
-    #     # Set variable
-    #     name = [AST.Node(IDENT,SC.val)]
-    #     getSym()
+        # if SC.sym == IDENT:
+        #     # Set variable
+        #     name = [AST.Node(IDENT,SC.val)]
+        #     getSym()
 
-    #     while SC.sym == COMMA or SC.sym == IDENT:
-    #         if SC.sym == COMMA: 
-    #             getSym()
-    #         if SC.sym == IDENT:
-    #             name.append(AST.Node(IDENT,SC.val))
-    #             getSym()
-    #         else:
-    #             mark('expected identifier')
+        #     while SC.sym == COMMA or SC.sym == IDENT:
+        #         if SC.sym == COMMA: 
+        #             getSym()
+        #         if SC.sym == IDENT:
+        #             name.append(AST.Node(IDENT,SC.val))
+        #             getSym()
+        #         else:
+        #             mark('expected identifier')
 
-    #     if SC.sym in {EQ,PLUS,MINUS,MULT,DIV,MOD}:
-    #         op = SC.sym
-    #         getSym()
-    #     else:
-    #         op = EQ # Assume regular assignment
-    #         # mark('expected assignment operator')
+        #     if SC.sym in {EQ,PLUS,MINUS,MULT,DIV,MOD}:
+        #         op = SC.sym
+        #         getSym()
+        #     else:
+        #         op = EQ # Assume regular assignment
+        #         # mark('expected assignment operator')
 
-    #     value = [expr()]
+        #     value = [expr()]
 
-    #     while SC.sym == COMMA or SC.sym == FIRSTEXPR:
-    #         if SC.sym == COMMA: 
-    #             getSym()
-    #         value.append(expr())
+        #     while SC.sym == COMMA or SC.sym == FIRSTEXPR:
+        #         if SC.sym == COMMA: 
+        #             getSym()
+        #         value.append(expr())
 
-    #     if len(name) != len(value):
-    #         mark('number of identifiers must equal number of expressions')
+        #     if len(name) != len(value):
+        #         mark('number of identifiers must equal number of expressions')
 
-    #     if len(name) == len(value) == 1:
-    #         val = AST.AssignNode(name[0],op,value[0])
-    #     else:
-    #         val = AST.SepNode(name,op,value)
+        #     if len(name) == len(value) == 1:
+        #         val = AST.AssignNode(name[0],op,value[0])
+        #     else:
+        #         val = AST.SepNode(name,op,value)
 
     elif SC.sym == IF:
         # if statement
@@ -216,7 +225,10 @@ def stmt():
     elif SC.sym == EXIT:
         # print stmt
         getSym()
-        val = AST.ExitNode()
+        if not in_func:
+            val = AST.ExitNode()
+        else:
+            mark('exit within func not implemented yet')
 
     elif SC.sym == LCURLY:
         # stmt block
@@ -232,6 +244,8 @@ def stmt():
             mark('expected closing curly brace')
 
         val = AST.BlockNode(lst)
+
+
 
     else:
         mark('invalid enum stmt')
@@ -339,6 +353,7 @@ def subatom():
     return val
 
 def atom():
+    global in_func
     if SC.sym not in FIRSTATOM:
         mark('expected valid atom start')
 
@@ -378,6 +393,92 @@ def atom():
         value = AST.Node(BLOCK,sub_val)
 
         if SC.sym == RPAREN:
+            getSym()
+        else:
+            mark('expected closing paren')
+
+    elif SC.sym == FUNC_DEF:
+        # function definition
+        getSym()
+
+        if in_func:
+            mark('nested functions not allowed')
+        else:
+            in_func = True
+
+        if SC.sym == IDENT:
+            output = AST.Node(IDENT,SC.val)
+            getSym()
+        else:
+            output = AST.Node(IDENT,'z')
+            mark('expected function name')
+
+        if SC.sym == COLON:
+            getSym()
+        else:
+            mark('expected colon')
+
+        parens = []
+        if SC.sym == IDENT:
+            parens.append(AST.Node(IDENT,SC.val))
+            getSym()
+
+            while SC.sym == IDENT or SC.sym == COMMA:
+                if SC.sym == COMMA:
+                    getSym()
+                
+                if SC.sym == IDENT:
+                    parens.append(AST.Node(IDENT,SC.val))
+                    getSym()
+                else:
+                    mark('expected expression')
+
+        if SC.sym == COLON:
+            getSym()
+        else:
+            mark('expected colon')
+
+        value = AST.FuncDefNode( output, AST.ParamNode(parens), AST.BlockNode(program()) )
+
+        if SC.sym == FUNC_END:
+            getSym()
+        else:
+            mark('expected closing bracket')
+
+        in_func = False
+
+    elif SC.sym == FUNC_CALL:
+        # function definition
+        getSym()
+
+        if SC.sym == IDENT:
+            callee = AST.Node(IDENT,SC.val)
+            getSym()
+        else:
+            callee = AST.Node(IDENT,'z')
+            mark('expected function name')
+
+        if SC.sym == COLON:
+            getSym()
+        else:
+            mark('expected colon')
+
+        parens = []
+        if SC.sym in FIRSTEXPR:
+            parens.append(expr())
+
+            while SC.sym in FIRSTEXPR or SC.sym == COMMA:
+                if SC.sym == COMMA:
+                    getSym()
+
+                if SC.sym in FIRSTEXPR:
+                    parens.append(expr())
+                else:
+                    mark('expected expression')
+
+        value = AST.FuncCallNode( callee, AST.ArgNode(parens) )
+
+        if SC.sym == FUNC_END:
             getSym()
         else:
             mark('expected closing bracket')

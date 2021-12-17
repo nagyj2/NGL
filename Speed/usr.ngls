@@ -1,3 +1,46 @@
-n42+4e#(100/2);?n<1\~??n>99\;!'begin';$~(g=n):ge:?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);}:{!g;?e=0e1;};!@g;!'end';
+// 1. Hello World
+//!'Hello World';
 
-#n,e42+4,#(100/2);?n<1\~??n>99\;!'begin';$~(g=n):ge:?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);}:{!g;?e=0e1;};!@g;!'end';
+// 2. Name Greeting
+//n'Jason'!'Hello, '+n;
+
+// 3. Alice + Bob Greeting
+//a'Alice'b'Bob'n'Jason'?n=a\/n=b !'Hello, '+n~?!'Go Away...';
+
+// 4. Sum to n
+//n50s0i0$i<n\/i=n:::s+i!s;
+
+// 5. Mod. FizzBuzz
+//n20i0$(i<n\/i=n):i1:i+1:{?i<>3=0!i?i<>5=0!i};
+
+// 6. Sum or Product 1..n?
+//n20p_?ps1~?s0;i1$i<n\/i=n::i+1:?ps*i~?s+i!@s;
+
+// 7. Mult Tables
+//n1t12$n<t\/n=t:i1:n+1:$i<t\/i=t::i+1:!@n+'*'+@i+'='+@(n*i);
+
+// 8. All Primes
+//t1000j0!1!2!3$j<t\/j=t:i4:j+1:{b_$i<j-1\/i=j-1::i+1:?j<>i=0b~bit+1?b!j};
+
+// 9. Func FizzBuzz
+
+//f![#:#n:i0f'Fizz'b'Buzz'$(i<n\/i=n):i1:i+1:{?i<>15=0!f+b~?{?~(i<>3)!f?~(i<>5)!b}};\0]
+
+//i0;
+//$i<10::i+1:{!i+5;?i=5\};
+//f![::a5;b'2'a=1?a=b!b~?!2\0];
+
+g0;n3e##(100/2);?n<0\~??n>100\;!'begin';$~(g=n):ge::{!g;?e=#0e2;?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);};};!g;!'end';
+
+//a#((b+6)*6+7-#(b\/6));
+
+//f![::\20]
+//!?[f:20]
+
+// A. Is Even Func
+//a5d+3
+//e![:#n:?n<>2=0\@_~?\@(~_)]
+//f?[e:a]
+
+// B. Number Guessing Game
+// !'Enter Number';n#.e#(100/2);?n<0\~??n>100\;!'begin';$~(g=n):ge::{!g;?e=#0e2;?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);};};!g;!'end';

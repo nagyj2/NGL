@@ -2,7 +2,7 @@
 # Holds nodes which can be used to construct the program
 
 from enum import Enum
-from ngl_s_sc import PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, EOF, mark
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PARAM, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, EOF, mark
 
 INT, FLOAT, STRING, BOOL, IDENT
 binop = { PLUS: [[INT, FLOAT, None ,None, INT],
@@ -410,6 +410,66 @@ class ExitNode:
         self.typ, self.indent = EXIT, 0
     def ast_print(self):
         return self.indent * '| ' + 'EXIT'
+
+class ParamNode:
+    '''A list of identifiers'''
+    def __init__(self,vars):
+        self.typ, self.indent = PARAM, 0
+        self.vars = vars
+
+    def ast_print(self):
+        toRet = '' #self.indent * '| ' #self.var.ast_print()
+        for var in self.vars:
+            toRet += var.ast_print() + ', '
+        return toRet[:-2]
+
+class FuncDefNode:
+    def __init__(self,out,params,body):
+        self.typ, self.indent = FUNC_DEF, 0
+        self.params = params # parameters of the function
+        self.out = out # return identifier of the function
+        self.body = body # body of the function
+
+    def ast_print(self):
+        toRet = self.indent * '| '
+        toRet += 'return ' + self.out.ast_print() + ' with ' + self.params.ast_print() + ' from '
+        if self.body != None:
+            if self.body.typ != BLOCK:
+                self.body.indent = self.indent + 1
+                toRet += '\n'
+            else:
+                self.body.indent = self.indent
+        toRet += self.body.ast_print()
+        return toRet
+
+    def eval(self):
+        return IDENT
+
+class ArgNode:
+    '''A list of expressions'''
+    def __init__(self,exprs):
+        self.typ, self.indent = PARAM, 0
+        self.exprs = exprs
+
+    def ast_print(self):
+        toRet = '' #self.indent * '| ' #self.var.ast_print()
+        for expr in self.exprs:
+            toRet += expr.ast_print() + ', '
+        return toRet[:-2]
+
+class FuncCallNode:
+    def __init__(self,name,args):
+        self.typ, self.indent = FUNC_DEF, 0
+        self.name = name # variable which stores the function
+        self.args = args # list of arguments
+
+    def ast_print(self):
+        toRet = self.indent * '| '
+        toRet += self.name.ast_print() + ' call with ' + self.args.ast_print()
+        return toRet
+    
+    def eval(self):
+        return IDENT
 
 class BlockNode:
     def __init__(self,block):

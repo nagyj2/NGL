@@ -1,8 +1,8 @@
 # NGL Speed Assembler
 
-from ngl_s_sc import PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, EOF, mark
-import ngl_s_ast as AST
-import ngl_s_t as TS
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, EOF, mark
+import ngl_s_ast2 as AST
+import ngl_s_g as TS
 
 # TODO: Preprocess AST for variables
 # TODO: Ability to secifiy how 'deep' to assemble
@@ -23,10 +23,18 @@ import ngl_s_t as TS
 # TODO: Optimizations
     # If statements without else branch
 
+class Func:
+    def __init__(self, output, args, collisions, body):
+        self.output = output
+        self.args = args
+        self.collisions = collisions
+        self.body = body
+
 def assemble_init(ast):
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
     vars = {} # Declared variables
     additional = {} # Jump labels as indexes and the ast to place at the jump
+    funcs = {}
     add_i = 0
 
     if type(ast) not in {list, tuple}:
@@ -38,7 +46,7 @@ def assemble_init(ast):
 
 def assemble(ast):
     # Takes in a list of commands or a BlockNode and converts all nodes to NGL code
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
     line = ''
     for t,node in enumerate(ast):
 
@@ -68,7 +76,6 @@ def assemble(ast):
         elif type(node) == AST.BlockNode:
             line += assemble(node.block)
 
-
         if not len(ast) == 1 and t != len(ast)-1:
             line += '\n'
 
@@ -78,7 +85,7 @@ def assemble(ast):
     return line # TODO: Always add newline at the end?
 
 def footer():
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
     if len(additional) == 0: return ''
     line = '\n' * 2
     for i in range(0,add_i):
@@ -95,13 +102,12 @@ def footer():
 
     return line
 
-
 def createDelLine(node):
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
     return 'del' +' '+ str(node.var) + ';\n'
 
 def createAssignLine(node):
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
 
     var = str(node.var) # Name of variable for code
     val = str(node.val) # Value to assign to variable
@@ -111,8 +117,23 @@ def createAssignLine(node):
     if n_typ == INPUT:
         raise Exception('not implemented')
     # if final type is a variable, find type of the variable
-    if n_typ == IDENT:
+    elif n_typ == IDENT:
         n_typ = vars[val]
+
+    elif n_typ == FUNC_DEF:
+        # Find output type, input args, body structure and 
+        addLine, function = createFuncDefLine(node.block)
+        funcs[var] = function
+        line += addLine
+        return line #. Just determine the function definition, no actual code produced
+
+    elif n_typ == FUNC_CALL:
+        n_typ = vars[val]
+        # Assign args to params, copy output var to current assignment var
+        line += createFuncCallLine(node.block, funcs[val])
+
+        #. Return JUST the translation
+        return line
 
     if var in vars:
         if vars[var] != n_typ: # type reassign
@@ -150,7 +171,7 @@ def createAssignLine(node):
     elif n_typ == BOOL:
         typ = 'bool'
     else:
-        mark('unknown token type 1'); print(n_typ)
+        mark(f'unknown token type: {n_typ}')
 
     if prefix and cmd =='var':
         if n_typ == INT:
@@ -168,7 +189,7 @@ def createAssignLine(node):
     return line
 
 def createIfLine(node):
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
     loc_i = add_i # Save in event of nested ifs
     add_i += 1
     line = ''
@@ -227,15 +248,15 @@ def createIfLine(node):
     return line
 
 def createPrintLine(node):
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
     return 'print ' + str(node.expr) + ';'
 
 def createExitLine(node):
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
     return 'quit;'
 
 def createLoopLine(node):
-    global vars, additional, add_i
+    global vars, additional, add_i, funcs
     loc_i = add_i # Save in event of nested ifs
     add_i += 1
 
@@ -294,6 +315,46 @@ def createLoopLine(node):
 
     line += 'finish'+str(loc_i)+':'
     return line
+
+def createFuncDefLine(node):
+    global vars, additional, add_i, funcs
+    loc_i = add_i # Save in event of nested ifs
+    add_i += 1
+    line = ''
+
+    output_typ = None # output type
+    input_typ = [None] * len(node.params) # unused : parameter types
+    coll_typ = {} # vars used which will collide
+
+    old_vars = dict(vars) # Need to detect new variables inside the loop to avoid multiple declarations
+    
+    # Assemble body. This will be placed inline for calls
+    # todo add input to modifiy the names in the assemble so there is no clashing
+    if node.body != None:
+        body = assemble([node.body]) + '\n'
+
+    new_vars = { k : vars[k] for k in set(vars) - set(old_vars) }   # Find all new vars
+    # Roll back
+    if len(new_vars) > 0:
+        for new_var in new_vars:
+            # Found the output node
+            if new_var.name == node.out.name:
+                output_typ = new_vars[new_var]
+                continue
+
+            for i in len(node.params): # unused
+                if new_var.name == node.params[i].name:
+                    input_typ[i] = new_vars[new_var]
+                    continue
+            
+            coll_typ[new_var] = new_vars[new_var]
+
+    # restore variables
+    vars = old_vars
+    return line, Func(output_typ, input_typ, coll_typ, body)
+
+def createFuncCallLine(node):
+    global vars, additional, add_i, funcs
 
 def convert(fname):
     lst = TS.translate(fname) # Get AST

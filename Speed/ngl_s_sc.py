@@ -4,8 +4,8 @@ PLUS = 1; # +
 MINUS = 2; # -
 MULT = 3; # *
 DIV = 4; # /
-AND = 5; # &
-OR = 6; # |
+AND = 5; # /\
+OR = 6; # \/
 EQ = 7; # =
 LT = 8; # <
 GT = 9; # >
@@ -20,27 +20,43 @@ RCURLY = 17; # }
 BOOL = 18; # _
 INPUT = 19 # .;  For parsing and AST nodes
 COMMA = 20 # ,
+MOD = 21 # %
+GE = 22 # |>
+LE = 23 # <|
+NE = 24 # ?????
 
 NUMBER = 30; # `val` holds corresponding number
 RAW_STRING = 31; # `val` holds string contents
 IDENT = 32; # `val` holds string identifier
 
 INT = 33 # #
-FLOAT = 34 # %
-STRING = 35 # %
-BOOLEAN = 36 # ^
-MOD = 37 # %
+IDENTITY_INT = 34 # ##
+FLOAT = 35 # %
+IDENTITY_FLOAT = 36 # %%
+STRING = 37 # @
+IDENTITY_STRING = 38 # @@
+BOOLEAN = 39 # ^
+IDENTITY_BOOLEAN = 40 # ^^
 
 IF = 50; # ?
 ELSE = 51; # ~?
 PRINT = 52; # !
 LOOP = 53; # $
 EXIT = 54; # \
+FUNC_DEF = 55; # ![
+FUNC_CALL = 56; # ?[
+FUNC_END = 57; # ]
 
-BLOCK = 80 # For AST nodes
-ASSIGN = 81 # For AST nodes
+BLOCK = 80 # For AST nodes - indicates a sequence of statements
+ASSIGN = 81 # For AST nodes - indicates a sequence of assignments
+PARAM = 82 # AST Nodes - indicates a sequence of identifiers
+RETURN = 83 # AST Nodes - / in a function definition
+FUNC = 84 # AST Function type
 
-EOF = 99;
+EOF = 99
+
+def dump_code():
+    print(f'{source[:index-1]}∆{source[index:]}')
 
 def init(file : str, src : str) -> None:
     # Initializes scanner for new source code
@@ -94,9 +110,19 @@ def raw_string(open : str):
     getChar()
     start = index - 1
     while chr(0) != ch != open: getChar()
-    if ch == chr(0): mark('string not terminated'); sym = None;
+    if ch == chr(0): mark('string not terminated'); sym = None
     else:
         sym = RAW_STRING; val = source[start:index-1]
+        getChar(); # Get rid of terminating '
+
+def multichar_var(open: str):
+    global sym, val
+    getChar()
+    start = index - 1
+    while chr(0) != ch != open: getChar()
+    if ch == chr(0): mark('variable not terminated'); sym = None
+    else:
+        sym = IDENT; val = source[start:index-1]
         getChar(); # Get rid of terminating '
 
 def ident():
@@ -114,21 +140,33 @@ def getSym():
     if 'A' <= ch <= 'Z' or 'a' <= ch <= 'z': ident()
     elif '0' <= ch <= '9': number()
     elif ch == "'" or ch == '"': raw_string(ch)
+    elif ch == '`': multichar_var('`')
 
     elif ch == '+': getChar(); sym = PLUS
     elif ch == '-': getChar(); sym = MINUS
     elif ch == '*': getChar(); sym = MULT
-    elif ch == '/': getChar(); sym = DIV
+    # elif ch == '/': getChar(); sym = DIV
+    elif ch == '/':
+        getChar()
+        if ch == '/': 
+            while ch != '\n':
+                getChar()
+            getSym()
+        elif ch == '\\': getChar(); sym == AND
+        else: sym = DIV
     elif ch == '~':
         getChar()
         if ch == '?': getChar(); sym = ELSE
         else: sym = NOT
-    elif ch == '|': getChar(); sym = OR
-    elif ch == '&': getChar(); sym = AND
-    # elif ch == '<': getChar(); sym = LT
+    elif ch == '|': 
+        getChar(); 
+        if ch == '>': getChar(); sym = GE
+        else: mark('invalid symbol'); sym = None
+    # elif ch == '&': getChar(); sym = AND
     elif ch == '<':
         getChar()
         if ch == '>': getChar(); sym = MOD
+        elif ch == '|': getChar(); sym = LE
         else: sym = LT
     elif ch == '>': getChar(); sym = GT
     elif ch == '=': getChar(); sym = EQ
@@ -136,15 +174,43 @@ def getSym():
     elif ch == '_': getChar(); sym = BOOL
     elif ch == '.': getChar(); sym = INPUT
 
+    # elif ch == '#': 
+    #     getChar(); 
+    #     if ch == '#': getChar(); sym == IDENTITY_INT
+    #     else: sym = INT
+    # elif ch == '%': 
+    #     getChar(); 
+    #     if ch == '%': getChar(); sym == IDENTITY_FLOAT
+    #     else: sym = FLOAT
+    # elif ch == '@': 
+    #     getChar(); 
+    #     if ch == '@': getChar(); sym == IDENTITY_STRING
+    #     else: sym = STRING
+    # elif ch == '^': 
+    #     getChar(); 
+    #     if ch == '^': getChar(); sym == IDENTITY_BOOLEAN
+    #     else: sym = BOOLEAN
     elif ch == '#': getChar(); sym = INT
     elif ch == '%': getChar(); sym = FLOAT
     elif ch == '@': getChar(); sym = STRING
     elif ch == '^': getChar(); sym = BOOLEAN
 
-    elif ch == '?': getChar(); sym = IF
-    elif ch == '!': getChar(); sym = PRINT
+    # elif ch == '!': getChar(); sym = PRINT
+    elif ch == '!':
+        getChar()
+        if ch == '[': getChar(); sym = FUNC_DEF
+        else: sym = PRINT
+    # elif ch == '?': getChar(); sym = IF
+    elif ch == '?':
+        getChar()
+        if ch == '[': getChar(); sym = FUNC_CALL
+        else: sym = IF
+    elif ch == ']': getChar(); sym = FUNC_END
     elif ch == '$': getChar(); sym = LOOP
-    elif ch == '\\': getChar(); sym = EXIT
+    elif ch == '\\': 
+        getChar(); 
+        if ch == '/': getChar(); sym = OR
+        else: sym = EXIT
 
     elif ch == ';': getChar(); sym = LINEEND
     elif ch == ':': getChar(); sym = COLON
@@ -191,3 +257,18 @@ def getSym():
 # n,e42+4,#(100/2);?n<1\~??n>99\;!'begin';$~(g=n):ge:?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);}:{!g;?e=0e1;};!@g;!'end';
 # t10;$_:::{n#(t/3);?n>0t-#n~?t-1;!n;!t;in;$i>3|i<0:::{?i>3i-1~??i<0i+1~?!'N';!'i'+@i+''+@((i<3&i>0));};?t<0{!'WIN';\;};};
 # a,b5,5;$i<a:i0:i+1:$j<b:j0:j+1:!i*' '+@j;
+# n20;i0;$(i<n|i=n):i1:i+1:{?i<>15=0!'FizzBuzz'~?{?i<>3=0!'Fizz';?i<>5=0!'Buzz';};};
+
+
+# t0;!t+10;$_:::{n#(t/3);?n>0t-#n~?t-1;!n;!t;in;$i>3|i<0:::{?i>3i-1~??i<0i+1~?!'N';!'i'+@i+''+@((i<3&i>0));};?t<0{!'WIN';\;};};
+
+# n42+4e#(100/2);?n<1\~??n>99\;!'begin';$~(g=n):ge::{!g;?e=0e1;?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);}};!@g;!'end';
+
+# n20;i0;$(i<n|i=n):i1:i+1:{?i<>15=0!'FizzBuzz'~?{?i<>3=0!'Fizz';?i<>5=0!'Buzz';};};
+# a5b5;$i<a:i0:i+1:$j<b:j0:j+1:!i*' '+@j;
+
+# a+1b5?a>b{!a;u=a;l=b;}~??b>a{!b;{ub;la;}}~?!'=';?l&u$l<u::l=l+1:;!l;
+
+#n42+4e#(100/2);?n<1\~??n>99\;!'begin';$~(g=n):ge:?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);}:{!g;?e=0e1;};!@g;!'end';
+#n,e42+4,#(100/2);?n<1\~??n>99\;!'begin';$~(g=n):ge:?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);}:{!g;?e=0e1;};!@g;!'end';
+#a='';?_f![#:#a%d%e:t=8;!a+d+e\a]~?f![@::\'yo']
