@@ -1,4 +1,5 @@
-# NGL Speed Abstract Syntax Tree
+# NGL Speed AST 1.0
+
 # Holds nodes which can be used to construct the program
 
 from enum import Enum

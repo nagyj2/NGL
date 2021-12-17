@@ -1,4 +1,4 @@
-# NGL Speed Scanner 1.0
+# NGL Speed Scanner
 
 PLUS = 1; # +
 MINUS = 2; # -
