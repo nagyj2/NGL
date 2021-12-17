@@ -585,7 +585,7 @@ def execute(stats = False):
         end = time()
 
         print("=RELEASE=")
-        print(end-start,end='s\n')
+        print(end-start, end='s\n')
         # print('Calls:',calls)
         if SC.error:
             print('error executing file')

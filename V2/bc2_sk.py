@@ -3,7 +3,6 @@
 import bc2_sc as SC
 from bc2_sc import PLUS, MINUS, MULT, DIV, MOD, EXP, AND, OR, NOT, E_NOT, EQ, NE, LT, GT, GOARROW1, GOARROW2, RETARROW1, RETARROW2, ARROW_SHAFT, NOJUMP, COMMA, COLON, CAST, SEMICOLON, PARAM, LPAREN, RPAREN, LBRAK, RBRAK, LCURLY, RCURLY, INT, FLOAT, BOOL, STRING, ARRAY, LIST, NULL, NUMBER, RAW_STRING, BOOLEAN, IDENT, VAR, SET, GOTO, IF, COMPARE, PRINT, READ, DELETE, TRY, INCLUDE, RETURN, USRFUNC, TYPE, LABEL, LEN, EOF, getSym, mark
 import bc2_st as ST
-from bc2_st import newDecl, newJump, findDecl, findJump, delDecl, assignDecl, Variable, Collection
 
 calls = 0
 def call(production):

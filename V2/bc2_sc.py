@@ -88,10 +88,10 @@ KEYWORDS = {'int': INT, 'float': FLOAT, 'bool': BOOL, 'str': STRING,
 # - if `sym` is `RAW_STRING`, `val` is captured string
 # - `source` is the string with the source program
 # - `index` is the current location inside the source
-# - `error` is if an error has occured error
+# - `error` is if an error has occured
 # - `jump` indicates whether the function getSym() needs to reset its position
 # - `newline` indicates where to jump to
-# - `suppress` will hide any screen errors which occur
+# - `suppress` will hide any errors from terminal output
 #
 # The source is specified as a parameter to the procedure `init`:
 
