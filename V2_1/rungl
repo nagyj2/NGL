@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+
+import sys
+
+# sys.path.insert(1, './V2_1/')
+import bc2_1_i as I
+
+
+fname = sys.argv[1] # File which has NGL code
+
+I.execute_init(fname) # Execute NGL Assembly code
