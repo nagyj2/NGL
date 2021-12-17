@@ -14,9 +14,9 @@ STMT           := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | 
                 | '?' EXPR STMT ['~?' STMT]
                 | '!' EXPR
                 | '$' EXPR ':' STMT ':' STMT ':' STMT
+                | ('#' | '%' | '@' | '^') IDENT {[','] IDENT}
                 | '\' ('\' | EXPR)
                 | '{' {LINES} '}'
-                | ('#' | '%' | '@' | '^') IDENT {[','] IDENT}
 
 EXPR           := '![' ('#' | '%' | '@' | '^') ':' [IDENT {IDENT}] ':' PROGRAM ']'
                 | EXPR_L0
@@ -39,3 +39,6 @@ ATOM           := IDENT
                 | '(' EXPR ')'
                 | '.'
                 | '?[' IDENT ':' [EXPR  {[','] EXPR }] ']'
+
+IDENT          := '`' [A-Za-z_] [A-Za-z0-9_]* '`'
+                | [A-Za-z]
