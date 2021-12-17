@@ -28,7 +28,7 @@ FOLLOWEXPR_L0 = FOLLOWEXPR_L1
 FIRSTEXPR  = {FUNC_DEF} | FIRSTEXPR_L0
 FOLLOWEXPR = FOLLOWEXPR_L0
 
-FIRSTSTMT  = {IDENT, IF, PRINT, LOOP, EXIT, LCURLY}
+FIRSTSTMT  = {IDENT, IF, PRINT, LOOP, EXIT, LCURLY, INT, FLOAT, STRING, BOOLEAN}
 FOLLOWSTMT = {INPUT, RCURLY} | FOLLOWEXPR
 
 FIRSTLINES  = FIRSTSTMT
@@ -37,7 +37,7 @@ FOLLOWLINES = {LINEEND}
 FIRSTPROGRAM  = FIRSTLINES
 FOLLOWPROGRAM = FOLLOWLINES
 
-STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, FUNC_END}
+STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, FUNC_END, INT, FLOAT, STRING, BOOLEAN}
 
 # Tracks whether the parser is in a function
 in_func = False
@@ -115,7 +115,6 @@ def stmt():
     if SC.sym not in FIRSTSTMT:
         mark('expected valid stmt start')
 
-    #. V3
     if SC.sym == IDENT:
         
         first = True
@@ -180,6 +179,16 @@ def stmt():
             else:
                 var_type = value_expr.typeEval()
 
+                if first:
+                    first = False
+                    val = AST.Block(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
+                else:
+                    val.then(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
+
+                # Fill out the variable table
+                variables[var_const.value] = var_type
+
+
             # If a function definition, do some trickery
             if isinstance(value_expr, AST.FunctionDef):
                 functions[var_const.value] = value_expr.retn
@@ -190,9 +199,10 @@ def stmt():
                     mark('cannot use shorthand assignment operators on a function')
                     assign_op = AST.OpType.EQ
             
-            else:
-                # Fill out the variable table
-                variables[var_const.value] = var_type
+            # else:
+            #     # Fill out the variable table
+            #     variables[var_const.value] = var_type
+
 
             # Add assignment to the block
             if first:
@@ -300,6 +310,48 @@ def stmt():
             getSym()
         else:
             mark('expected closing curly brace')
+
+    elif SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
+
+        # Find type for declaration
+        vartyp =   AST.DataType.INT if SC.sym == INT else \
+                AST.DataType.FLOAT if SC.sym == FLOAT else \
+                AST.DataType.STR if SC.sym == STRING else \
+                AST.DataType.BOOL #if SC.sym == BOOLEAN else \
+                # mark('invalid type')
+        getSym()
+
+        # Find first variable
+        if SC.sym == IDENT:
+            varname = AST.Const(AST.DataType.STR, SC.val)
+            getSym()
+        else:
+            varname = AST.Const(AST.DataType.STR, '_')
+            mark('expected variable')
+
+        # Create type mapping
+        variables[varname.value] = vartyp
+        # Create variable sequence
+        params = AST.Parameter(AST.Variable(vartyp, varname))
+
+        while SC.sym in {IDENT, COMMA}:
+            if SC.sym == COMMA:
+                getSym()
+
+            # Find next variable
+            if SC.sym == IDENT:
+                varname = AST.Const(AST.DataType.STR, SC.val)
+                getSym()
+            else:
+                varname = AST.Const(AST.DataType.STR, '_')
+                mark('expected variable')
+
+            # Create type mapping
+            variables[varname.value] = vartyp
+            # Create variable sequence
+            params.then(AST.Variable(vartyp, varname))
+
+        val = AST.Block(AST.Declaration(params))
 
     else:
         mark(f'unknown enum stmt: {SC.sym}')

@@ -7,7 +7,7 @@ import ngl_s_g as TS
 
 def _writefile(fname,src):
     with open(fname,'w') as writer:
-        writer.write(src)
+        writer.write(src.replace('\n\n','\n'))
 
 if len(sys.argv) > 1:
     fname = sys.argv[1] # File which has NGL Speed code

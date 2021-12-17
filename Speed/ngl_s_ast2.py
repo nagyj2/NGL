@@ -381,6 +381,7 @@ class Input(Const):
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		return f'input()'
 
+
 class Block(Sequence):
 	@property
 	def statement(self):
@@ -694,6 +695,22 @@ class Assignment(Statement):
 			if self.op == OpType.EQ:	return f'\t'*indent + f'{self.var.as_python()} = {self.expr.as_python(prec = 10)}'
 			else:											return f'\t'*indent + f'{self.var.as_python()} {self.op.as_python()}= {self.expr.as_python(prec = 10)}'
 
+class Declaration(Statement):
+	def __init__(self, params: Parameter):
+		super().__init__()
+
+		assert type(params) == Parameter
+
+		self.params = params
+
+	def __repr__(self):
+		return f'Declaration({self.params} {self.body} {self.retn})'
+	def pprint(self, indent: int = 0, prec: int = 0) -> str:
+		return f'declare {self.params.pprint()}'
+
+	def as_python(self, indent: int = 0, prec: int = 0) -> str:
+		return f''
+
 class IfElse(Statement):
 	def __init__(self, expr: Expression, ifBlock: Statement, elseBlock: Union[Statement, None] = None):
 		super().__init__()
@@ -720,7 +737,6 @@ class IfElse(Statement):
 			mark(f'if-else block without if block')
 			self.ifBlock = Pass()
 		return f'\t'*indent + f'if {self.expr.as_python()}:\n{self.ifBlock.as_python(indent+1) if self.ifBlock != None else ""}' + ('\n' + f'\t'*indent + f'else:\n{self.elseBlock.as_python(indent+1)}' if self.elseBlock != None else '')
-
 
 class ForLoop(Statement):
 	def __init__(self, condition: Expression, body: Union[Statement, None] = None, init: Union[Statement, None] = None, step: Union[Statement, None] = None):

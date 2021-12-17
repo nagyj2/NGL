@@ -16,6 +16,7 @@ STMT           := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | 
                 | '$' EXPR ':' STMT ':' STMT ':' STMT
                 | '\' ('\' | EXPR)
                 | '{' {LINES} '}'
+                | ('#' | '%' | '@' | '^') IDENT {[','] IDENT}
 
 EXPR           := '![' ('#' | '%' | '@' | '^') ':' [IDENT {IDENT}] ':' PROGRAM ']'
                 | EXPR_L0
