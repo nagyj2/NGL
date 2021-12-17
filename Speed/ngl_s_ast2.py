@@ -405,7 +405,11 @@ class Block(Sequence):
 		return f'{self.statement.pprint(indent)}' + (f'\n{self.next.pprint(indent)}' if self.next != None else '')
 
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
-			return f'{self.statement.as_python(indent, prec)}' + (f'\n{self.next.as_python(indent, prec)}' if self.next != None else '')
+		# Need to do some gymnastics to prevent empty lines
+		txt = self.statement.as_python(indent, prec)
+		if txt != "":
+			txt += "\n"
+		return txt + (f'{self.next.as_python(indent, prec)}' if self.next != None else '')
 
 class Parameter(Sequence):
 	@property
@@ -831,10 +835,13 @@ class Return(Statement):
 
 
 if __name__ == '__main__':
+
 	_n = Variable(DataType.INT, Const(DataType.STR, 'n'))
 	_i = Variable(DataType.INT, Const(DataType.STR, 'i'))
 	_f = Variable(DataType.STR, Const(DataType.STR, 'f'))
 	_b = Variable(DataType.STR, Const(DataType.STR, 'b'))
+
+	_decl = Declaration(Parameter(_n).then(_i).then(_f).then(_b))
 
 	_Fizz = Const(DataType.STR, 'Fizz')
 	_Buzz = Const(DataType.STR, 'Buzz')
@@ -873,7 +880,7 @@ if __name__ == '__main__':
 
 	_foriton = ForLoop(_iltnorieqn, _iffizzbuzz, _seti, _inci)
 
-	_program = 	Block(_setn).then(_setfizz).then(_setbuzz).then(_foriton).then(Exit())
+	_program = 	Block(_decl).then(_setn).then(_setfizz).then(_setbuzz).then(_foriton).then(Exit())
 
 	# print(_program)
 	print(_program.pprint())
