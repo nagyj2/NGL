@@ -784,7 +784,10 @@ class IfElse(Statement):
 		if self.ifBlock == None:
 			mark(f'if-else block without if block')
 			self.ifBlock = Pass()
-		return f'\t'*indent + f'if {self.expr.as_python()}:\n{self.ifBlock.as_python(indent+1) if self.ifBlock != None else ""}' + ('\n' + f'\t'*indent + f'else:\n{self.elseBlock.as_python(indent+1)}' if self.elseBlock != None else '')
+		isElif = isinstance(self.elseBlock, Block) and type(self.elseBlock.statement) is IfElse
+		return f'\t'*indent + f'if {self.expr.as_python()}:\n{self.ifBlock.as_python(indent+1) if self.ifBlock != None else ""}' + \
+			(('\n' + f'\t'*indent + f'else:\n{self.elseBlock.as_python(indent+1)}' if self.elseBlock != None else '') if not isElif else \
+			('\n' + f'\t'*indent + f'elif {self.elseBlock.as_python(indent)[indent+3:]}'))
 
 class ForLoop(Statement):
 	def __init__(self, condition: Expression, body: Union[Statement, None] = None, init: Union[Statement, None] = None, step: Union[Statement, None] = None):
