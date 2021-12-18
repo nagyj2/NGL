@@ -503,13 +503,13 @@ def expr_l1():
     if SC.sym not in FIRSTEXPR_L1:
         mark('expected valid expr_l1 start')
 
-    fst = expr_l3()
+    fst = expr_l2()
 
     if SC.sym in {EQ}:
         op =    AST.OpType.EQ if SC.sym == EQ else \
                 mark('expected comparison operator')
         getSym()
-        snd = expr_l3()
+        snd = expr_l2()
 
         fst = AST.BinOp(op,fst,snd)
 
