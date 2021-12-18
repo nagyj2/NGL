@@ -7,22 +7,6 @@
 
 TOFIX = Compound statements
 
-TOADD = 'a = [| x y z |]' : a = x and a = y and a = z -> Doesn't make sense
-	| 'a = {| x y z |}' : a = x or  a = y or  a = z -> Less compact
-	| 'a = x | y | z' : a = x or  a = y or  a = z -> Works well!
-
-ex.
-n = 20
-i = 0
-$ i<|n : i1 : i + 1 : {
-|======================|
-?i<>3=0!i?i<>5=0!i
-|==========||==========|
-?i<>3|5=0!i
-|======================|
-}; 
-
-
 PROGRAM     := {LINES}
 
 LINES		:= STMT ';'
