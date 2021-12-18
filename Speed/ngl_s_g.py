@@ -1,7 +1,7 @@
 # NGL Speed AST Generator 2.0
 
 import ngl_s_sc as SC
-from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, CMP_OR, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast2 as AST
 from copy import deepcopy # todo: offer better copying
 
@@ -11,8 +11,11 @@ FOLLOWATOM = {IDENT, NUMBER, BOOL, RAW_STRING, RPAREN, INPUT}
 FIRSTSUBATOM  = {INT, FLOAT, STRING, BOOLEAN} | FIRSTATOM
 FOLLOWSUBATOM =  FOLLOWATOM
 
-FIRSTEXPR_L5  = {NOT, PLUS, MINUS} | FIRSTSUBATOM
-FOLLOWEXPR_L5 = FOLLOWSUBATOM
+FIRSTEXPR_L6  = {NOT, PLUS, MINUS} | FIRSTSUBATOM
+FOLLOWEXPR_L6 = FOLLOWSUBATOM
+
+FIRSTEXPR_L5  = FIRSTEXPR_L6
+FOLLOWEXPR_L5 = FOLLOWEXPR_L6
 
 FIRSTEXPR_L4  = FIRSTEXPR_L5
 FOLLOWEXPR_L4 = FOLLOWEXPR_L5
@@ -484,31 +487,42 @@ def expr_l0():
 
 		val = AST.BinOp(op,val,mod)
 
+	if type(val) == AST.Alternative:
+		orig = deepcopy(val)
+
+		val = AST.BinOp(AST.OpType.OR, val.alternate, val.next.alternate)
+
+		if orig.next.next:
+			for alt in orig.next.next:
+				val = AST.BinOp(AST.OpType.OR, val, alt.alternate)
+
 	return val
 
 def expr_l1():
 	if SC.sym not in FIRSTEXPR_L1:
 		mark('expected valid expr_l1 start')
 
-	fst = expr_l2()
+	val = expr_l2()
 
 	if SC.sym in {EQ}:
 		op =    AST.OpType.EQ if SC.sym == EQ else \
-				mark('expected comparison operator')
+						mark('expected comparison operator')
 		getSym()
-		snd = expr_l2()
 
-		fst = AST.BinOp(op,fst,snd)
+		mod = expr_l2()
 
-	return fst
+		# Perform special logic to bubble up alternatives
+		val = _resolve_alternatives(op,val,mod)
+
+	return val
 
 def expr_l2():
 	if SC.sym not in FIRSTEXPR_L2:
 		mark('expected valid expr_l2 start')
 
 	fst = expr_l3()
-	chain = False
 
+	chain = False
 	while SC.sym in {LT, GT, LE, GE}:
 		op =    AST.OpType.LT  if SC.sym == LT  else \
 				AST.OpType.GT  if SC.sym == GT  else \
@@ -518,13 +532,16 @@ def expr_l2():
 		getSym()
 		snd = expr_l3()
 
+		#todo: add Alternate support
 		if chain:
-			fst = AST.BinOp(AST.OpType.AND, fst, AST.BinOp(op,last,snd))
+			fst = AST.BinOp(AST.OpType.AND, fst, _resolve_alternatives(op, last, snd)) #AST.BinOp(op,last,snd))
 			last = deepcopy(snd)
 
 		else:
 			chain = True
-			fst = AST.BinOp(op,fst,snd)
+			# Perform special logic to bubble up alternatives
+			fst = _resolve_alternatives(op, fst, snd)
+			# fst = AST.BinOp(op,fst,snd)
 			last = deepcopy(snd)
 
 	return fst
@@ -533,28 +550,18 @@ def expr_l3():
 	if SC.sym not in FIRSTEXPR_L3:
 		mark('expected valid expr_l3 start')
 
-	# unary = False
-	# if SC.sym == PLUS or SC.sym == MINUS:
-	#     unary = True
-	#     op = SC.sym
-	#     getSym()
-
 	val = expr_l4()
-
-	# if unary:
-	#     op =    AST.OpType.POS if SC.sym == PLUS else \
-	#             AST.OpType.NEG  if SC.sym == MINUS  else \
-	#             mark('expected POS or NEG')
-	#     val = AST.UnOp(op,val)
 
 	while SC.sym in {PLUS, MINUS}:
 		op =    AST.OpType.PLUS if SC.sym == PLUS else \
 				AST.OpType.MINUS  if SC.sym == MINUS  else \
 				mark('expected PLUS or MINUS')
 		getSym()
+
 		mod = expr_l4()
 
-		val = AST.BinOp(op,val,mod)
+		# Perform special logic to bubble up alternatives
+		val = _resolve_alternatives(op,val,mod)
 
 	return val
 
@@ -570,15 +577,33 @@ def expr_l4():
 				AST.OpType.MOD  if SC.sym == MOD  else \
 				mark('expected MULT, DIV or MOD')
 		getSym()
-		mod = expr_l5()
 
-		val = AST.BinOp(op,val,mod)
+		mod = expr_l5()
+		
+		# Perform special logic to bubble up alternatives
+		val = _resolve_alternatives(op,val,mod)
 
 	return val
 
 def expr_l5():
 	if SC.sym not in FIRSTEXPR_L5:
 		mark('expected valid expr_l5 start')
+
+	val = expr_l6() # A single atom
+
+	first = True
+	while SC.sym in {CMP_OR}:
+		getSym()
+		mod = expr_l6() # A second atom
+
+		if first:	val = AST.Alternative(val).then(mod); first = False
+		else:			val.then(mod)
+
+	return val
+
+def expr_l6():
+	if SC.sym not in FIRSTEXPR_L6:
+		mark('expected valid expr_l6 start')
 
 	if SC.sym in {NOT, PLUS, MINUS}:
 		op =    AST.OpType.NOT if SC.sym == NOT else \
@@ -724,6 +749,58 @@ def atom():
 		value = None
 
 	return value
+
+def _resolve_alternatives(op, val, mod):
+	# If an alternative is returned, it should be bubbled up to OR precidence level
+	if type(mod) is AST.Alternative or type(val) is AST.Alternative:
+
+		# Determine which is the alternative
+		if type(val) == type(mod): 
+			mark('two alternatives are not allowed'); 
+			orig, other = val, mod.alternate
+		elif type(val) is AST.Alternative:	orig, other, inv = mod, val, False
+		elif type(mod) is AST.Alternative:	orig, other, inv = val, mod, True
+
+		if inv:	val = AST.Alternative(AST.BinOp(op, deepcopy(orig), other.alternate))
+		else:		val = AST.Alternative(AST.BinOp(op, other.alternate, deepcopy(orig)))
+
+		for alt in other.next:
+			if inv:	val.then(AST.BinOp(op, deepcopy(orig), alt.alternate))
+			else:		val.then(AST.BinOp(op, alt.alternate, deepcopy(orig)))
+
+	else:
+		val = AST.BinOp(op,val,mod)
+
+	return val
+
+# def _resolve_alternatives(op, val, mod):
+# 	# If an alternative is returned, it should be bubbled up to OR precidence level
+# 	if type(mod) is AST.Alternative or type(val) is AST.Alternative:
+
+# 		# Determine which is the alternative
+# 		if type(val) == type(mod): 
+# 			mark('two alternatives are not allowed'); 
+
+# 			val = AST.Alternative(AST.BinOp(op, deepcopy(val.alternate), mod.alternate))
+# 			for alt in val:
+# 				val.then(alt)
+
+# 			gen = _resolve_alternatives(op, val.alternate, mod)
+# 			print('||',val.pprint(), mod.pprint(), gen.pprint())
+# 			orig, other = val, mod
+
+# 		else:
+# 			if type(val) is AST.Alternative:	orig, other = mod, val
+# 			else:															orig, other = val, mod # type(mod) is AST.Alternative:
+
+# 			val = AST.Alternative(AST.BinOp(op, deepcopy(orig.alternate if type(orig) == AST.Alternative else orig), other.alternate))
+# 			for alt in other.next:
+# 				val.then(AST.BinOp(op, deepcopy(orig.alternate if type(orig) == AST.Alternative else orig), alt.alternate))
+
+# 	else:
+# 		val = AST.BinOp(op,val,mod)
+
+# 	return val
 
 def _readsource(fname):
 	src = ''

@@ -70,7 +70,10 @@ EXPR_L3     := EXPR_L4 {('+' | '-') EXPR_L4}
 EXPR_L4     := EXPR_L5 {('*' | '/' | '<>') EXPR_L5}
 			<< * : Multiplication, / : Division, <> : Modulo >>
 
-EXPR_L5     := ['~' | '+' | '-'] SUBATOM
+EXPR_L5		  := EXPR_L6 {('|' EXPR_L6}
+			<< | : Alternative >>
+
+EXPR_L6     := ['~' | '+' | '-'] SUBATOM
 			<< ~ : NOT, + : Positive, - : Negative >>
 
 SUBATOM     := ['#' | '%' | '@' | '^'] ATOM

@@ -200,6 +200,64 @@ class Node():
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		return f'{self.__class__.__name__}'
 
+class Sequence():
+	class Iterator():
+		def __init__(self, seq: 'Sequence'):
+			self.seq = seq
+			self.index = 0
+
+		def __next__(self):
+			i = 0
+			node = self.seq
+			while i < self.index:
+				node = node.next
+				i += 1 
+			self.index += 1
+			if node is None:
+				raise StopIteration
+			return node
+		
+	def __init__(self, selftype, current, next = None):
+		self.selftype = selftype
+		self.current = current
+		self.next = next
+
+		self._refreshSearchable()
+	
+	def _refreshSearchable(self):
+		self.searchable = [self.current, self.next]
+	
+	def __iter__(self):
+		return Sequence.Iterator(self)
+
+	def then(self, other: Node) -> 'Sequence':
+		'''Sets the next element in the sequence. Adds to last element in sequence.'''
+		
+		if not self.next:
+			# print(type(other), self.selftype)
+			assert not isinstance(other, self.selftype)
+			assert type(other) != None
+			# assert other.nodeEval() in {NodeType.EXPRESSION, NodeType.STATEMENT}
+			# assert type(self) == type(other)
+
+			self.next = self.selftype(other)
+
+		else:
+			self.next.then(other)
+
+		return self
+
+	def find(self, typ: Type) -> Union['Sequence', None]:
+		'''Finds the first element in the sequence that matches the type.'''
+		if self.current.__class__ == typ:	return self
+		elif self.next:										return self.next.find(typ)
+		else:															return None
+
+	def back(self):
+		'''Returns the last element in a sequence.'''
+		if self.next:	return self.next.back()
+		else:					return self
+
 
 class Expression(Node):
 	def __init__(self):
@@ -234,79 +292,7 @@ class Statement(Node):
 				node.findall(typ, found)
 
 		return found
-
-class Sequence(Statement):
-	class Iterator():
-		def __init__(self, seq: 'Sequence'):
-			self. seq = seq
-			self.index = 0
-
-		def __next__(self):
-			i = 0
-			node = self.seq
-			while i < self.index:
-				node = node.next
-				i += 1 
-			self.index += 1
-			if node is None:
-				raise StopIteration
-			return node
-
-	def __init__(self, selftype, current, next = None):
-		super().__init__()
-
-		self.selftype = selftype
-		self.current = current
-		self.next = next
-
-		self._refreshSearchable()
-
-	def _refreshSearchable(self):
-		self.searchable = [self.current, self.next]
 	
-	def __iter__(self):
-		return Sequence.Iterator(self)
-
-	def then(self, other: Node) -> 'Sequence':
-		'''Sets the next element in the sequence. Adds to last element in sequence.'''
-		
-		if not self.next:
-			# print(type(other), self.selftype)
-			assert not isinstance(other, self.selftype)
-			assert type(other) != None
-			# assert other.nodeEval() in {NodeType.EXPRESSION, NodeType.STATEMENT}
-			# assert type(self) == type(other)
-
-			self.next = self.selftype(other)
-
-		else:
-			self.next.then(other)
-
-		return self
-
-	def after(self, other: Union['Sequence', None]) -> 'Sequence':
-		'''Sets the previous element in the sequence.'''
-		if other.next:
-			print('Warning: Overwriting next element in sequence.')
-		other.next = self
-
-		if other != None:
-			assert other.nodeEval() in {NodeType.STATEMENT}
-			assert type(self) == type(other)
-
-		return other
-
-	def find(self, typ: Type) -> Union['Sequence', None]:
-		'''Finds the first element in the sequence that matches the type.'''
-		if self.current.__class__ == typ:	return self
-		elif self.next:										return self.next.find(typ)
-		else:															return None
-
-	def back(self):
-		'''Returns the last element in a sequence.'''
-		if self.next:	return self.next.back()
-		else:					return self
-
 
 class Const(Expression):
 	def __init__(self, typ: DataType, value: Union[int, float, str, bool]):
@@ -340,7 +326,7 @@ class Const(Expression):
 			raise NotImplementedError('Cannot asmprint function') # return f'{self.value.asmprint(indent)}'
 		return f'{self.value}'
 
-	def as_python(self, indent: int = 0, prec: int = 10) -> str:
+	def as_python(self, indent: int = 0, prec: int = 100) -> str:
 		if self.dataType == DataType.STR:
 			return f"'{self.value}'"
 		elif self.dataType == DataType.FUNC:
@@ -384,7 +370,7 @@ class Input(Const):
 		return f'input()'
 
 
-class Block(Sequence):
+class Block(Statement, Sequence):
 	@property
 	def statement(self):
 		return self.current
@@ -394,12 +380,11 @@ class Block(Sequence):
 			self.current = value
 
 	def __init__(self, statement: Statement, next: Union[Statement, None] = None):
-		super().__init__(Block, statement, next)
+		Statement.__init__(self)
+		Sequence.__init__(self, selftype=Block, current=statement, next=next)
+
 		assert statement.nodeEval() in {NodeType.STATEMENT}
 		assert statement == None or statement.nodeEval() in {NodeType.STATEMENT}
-
-		# self.statement = statement
-		# self.next = next
 
 	def __repr__(self):
 		return f'Block({self.statement}' + (f'\n{self.next})' if self.next != None else ')')
@@ -413,7 +398,7 @@ class Block(Sequence):
 			txt += "\n"
 		return txt + (f'{self.next.as_python(indent, prec)}' if self.next != None else '')
 
-class Parameter(Sequence):
+class Parameter(Statement, Sequence):
 	@property
 	def var(self):
 		return self.current
@@ -423,14 +408,14 @@ class Parameter(Sequence):
 			self.current = value
 
 	def __init__(self, var: Variable, next: Union[Variable, None] = None):
-		super().__init__(Parameter, var, next)
-		# assert var.nodeEval() in {NodeType.EXPRESSION} and var.typeEval() == DataType.VAR
+		# super().__init__(selftype=Parameter, current=var, next=next)
+		Statement.__init__(self)
+		Sequence.__init__(self, selftype=Parameter, current=var, next=next)
+		
 		assert isinstance(var, Variable)
-		# assert var == None or var.nodeEval() in {NodeType.EXPRESSION} and var.typeEval() == DataType.VAR
 		assert next == None or isinstance(next, Variable)
-
-		# self.var = var
-		# self.next = next
+		# assert var.nodeEval() in {NodeType.EXPRESSION} and var.typeEval() == DataType.VAR
+		# assert var == None or var.nodeEval() in {NodeType.EXPRESSION} and var.typeEval() == DataType.VAR
 
 	def __repr__(self):
 		return f'Param({self.var}' + (f'\n{self.next})' if self.next != None else ')')
@@ -440,7 +425,7 @@ class Parameter(Sequence):
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		return f'{self.var.as_python()}' + (f', {self.next.as_python()}' if self.next != None else '')
 
-class Argument(Sequence):
+class Argument(Statement, Sequence):
 	@property
 	def expr(self):
 		return self.current
@@ -450,12 +435,11 @@ class Argument(Sequence):
 			self.current = value
 
 	def __init__(self, expr: Expression, next: Union[Expression, None] = None):
-		super().__init__(Argument, expr, next)
+		Statement.__init__(self)
+		Sequence.__init__(self, selftype=Argument, current=expr, next=next)
+
 		assert expr.nodeEval() in {NodeType.EXPRESSION}
 		assert next == None or next.nodeEval() in {NodeType.EXPRESSION}
-
-		# self.expr = expr
-		# self.next = next
 
 	def __repr__(self):
 		return f'Arg({self.expr}' + (f'\n{self.next})' if self.next != None else ')')
@@ -464,6 +448,57 @@ class Argument(Sequence):
 
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		return f'{self.expr.as_python()}' + (f', {self.next.as_python()}' if self.next != None else '')
+
+class Alternative(Expression, Sequence):
+	@property
+	def alternate(self):
+		return self.current
+	
+	@alternate.setter
+	def alternate(self, value):
+			self.current = value
+	
+	def __init__(self, expr: Expression, next: Union[Expression, None] = None):
+		# super(Expression, self).__init__()
+		Expression.__init__(self)
+		Sequence.__init__(self, selftype=Alternative, current=expr, next=next)
+		
+		assert expr.nodeEval() in {NodeType.EXPRESSION}
+		assert next == None or next.nodeEval() in {NodeType.EXPRESSION}
+		if next:
+			assert expr.typeEval() == next.typeEval() # ensure alternative matches type
+
+		self.dataType = expr.typeEval()
+		# self.nodeType = NodeType.EXPRESSIONassert expr.typeEval() == next.typeEval()
+
+
+	def then(self, other: Node) -> 'Alternative':
+		'''Sets the next element in the sequence. Adds to last element in sequence.'''
+		assert self.typeEval() == other.typeEval() # Ensure alternative has same type
+
+		if not self.next:
+			# print(type(other), self.selftype)
+			assert not isinstance(other, self.selftype)
+			assert type(other) != None
+			# assert other.nodeEval() in {NodeType.EXPRESSION, NodeType.STATEMENT}
+			# assert type(self) == type(other)
+
+			self.next = self.selftype(other)
+
+		else:
+			self.next.then(other)
+
+		return self
+
+	def __repr__(self):
+		return f'Alternate({self.alternate}' + (f'\n{self.next})' if self.next != None else ')')
+	def pprint(self, indent: int = 0, prec: int = 0, spec = True) -> str:
+		if spec:
+			return f'({self.alternate.pprint()}' + (f'|{self.next.pprint(spec=False)}' if self.next != None else ')')	
+		return f'{self.alternate.pprint()}' + (f'|{self.next.pprint(spec=False)}' if self.next != None else ')')
+
+	def as_python(self, indent: int = 0, prec: int = 0) -> str:
+		return f'{self.alternate.as_python()}' + (f' | {self.next.as_python()}' if self.next != None else '')
 
 
 class FunctionDef(Expression):
@@ -531,8 +566,8 @@ class UnOp(Expression):
 			self.dataType = typ
 
 
-		self.prec = 1 if self.op in {OpType.CAST_INT, OpType.CAST_FLOAT, OpType.CAST_STR, OpType.CAST_BOOL} else \
-								2 #if self.op in {OpType.NOT, OpType.POS, OpType.NEG} else \
+		self.prec = 10 if self.op in {OpType.CAST_INT, OpType.CAST_FLOAT, OpType.CAST_STR, OpType.CAST_BOOL} else \
+								20 #if self.op in {OpType.NOT, OpType.POS, OpType.NEG} else \
 
 	@staticmethod
 	def checkType(operation: OpType, arg1: Expression) -> DataType:
@@ -560,11 +595,11 @@ class UnOp(Expression):
 
 	def __repr__(self):
 		return f"UnOp({self.op} {self.arg1})"
-	def pprint(self, indent: int = 0, prec: int = 10) -> str:
+	def pprint(self, indent: int = 0, prec: int = 100) -> str:
 		if self.op in {OpType.POS, OpType.NEG, OpType.NOT}:
 			return (f'(' if self.prec >= prec else '') + f'{repr(self.op)}{self.arg1.pprint(prec = self.prec)}' + (f')' if self.prec >= prec else '')
 		return (f'(' if self.prec >= prec else '') + f'{self.arg1.pprint(prec = self.prec)}{repr(self.op)}' + (f')' if self.prec >= prec else '')
-	def asmprint(self, indent: int = 0, prec: int = 10) -> str:
+	def asmprint(self, indent: int = 0, prec: int = 100) -> str:
 		if self.op in {OpType.POS, OpType.NEG, OpType.NOT}:
 			return (f'(' if self.prec >= prec else '') + f'{self.op.asmprint()}{self.arg1.asmprint(prec = self.prec)}' + (f')' if self.prec >= prec else '')
 		return (f'(' if self.prec >= prec else '') + f'{self.arg1.asmprint(prec = self.prec)}{self.op.asmprint()}' + (f')' if self.prec >= prec else '')
@@ -602,11 +637,12 @@ class BinOp(Expression):
 		else:
 			self.dataType = typ
 			 
-		self.prec = 3 if self.op in {OpType.MULT, OpType.DIV, OpType.MOD} else \
-								4 if self.op in {OpType.PLUS, OpType.MINUS} else \
-								5 if self.op in {OpType.EQ, OpType.NE, OpType.LT, OpType.GT, OpType.LE, OpType.GE} else \
-								6 if self.op in {OpType.AND} else \
-								7 # OpType.OR
+		self.prec = 30 if self.op in {OpType.MULT, OpType.DIV, OpType.MOD} else \
+								40 if self.op in {OpType.PLUS, OpType.MINUS} else \
+								50 if self.op in {OpType.EQ, OpType.NE, OpType.LT, OpType.GT, OpType.LE, OpType.GE} else \
+								60 if self.op in {OpType.AND} else \
+								70 if self.op in {OpType.OR} else \
+								80 # OpType.ALTERNATIVE
 
 
 	@staticmethod
@@ -653,12 +689,18 @@ class BinOp(Expression):
 
 	def __repr__(self):
 		return f'BinOp({self.op} {self.arg1} {self.arg2})'
-	def pprint(self, indent: int = 0, prec: int = 10) -> str:
+	def pprint(self, indent: int = 0, prec: int = 100) -> str:
 		return (f'(' if self.prec >= prec else '') + f'{self.arg1.pprint(prec = self.prec)}{repr(self.op)}{self.arg2.pprint(prec = self.prec)}' + (f')' if self.prec >= prec else '')
-	def asmprint(self, indent: int = 0, prec: int = 10) -> str:
+	def asmprint(self, indent: int = 0, prec: int = 100) -> str:
 		return (f'(' if self.prec >= prec else '') + f'{self.arg1.asmprint(prec = self.prec)}{self.op.asmprint()}{self.arg2.asmprint(prec = self.prec)}' + (f')' if self.prec >= prec else '')
 
-	def as_python(self, indent: int = 0, prec: int = 10) -> str:
+	def as_python(self, indent: int = 0, prec: int = 100) -> str:
+		# print(self.op.as_python(), type(self.arg1), type(self.arg2))
+		# if type(self.arg2) is Alternative:
+		# 	string = '(' + (f'(' if self.prec >= prec else '') + f'{self.arg1.as_python(prec = self.prec)} {self.op.as_python()} {self.arg2.alternate.as_python(prec = self.prec)}' + (f')' if self.prec >= prec else '')
+		# 	for arg in self.arg2.next:
+		# 		string += ' or ' + (f'(' if self.prec >= prec else '') + f'{self.arg1.as_python(prec = self.prec)} {self.op.as_python()} {arg.alternate.as_python(prec = self.prec)}' + (f')' if self.prec >= prec else '')
+		# 	return string + ')'
 		return (f'(' if self.prec >= prec else '') + f'{self.arg1.as_python(prec = self.prec)} {self.op.as_python()} {self.arg2.as_python(prec = self.prec)}' + (f')' if self.prec >= prec else '')
 	
 
@@ -698,8 +740,8 @@ class Assignment(Statement):
 
 			return f'def {self.var.as_python()}{self.expr.as_python()}'
 		else:
-			if self.op == OpType.EQ:	return f'\t'*indent + f'{self.var.as_python()} = {self.expr.as_python(prec = 10)}'
-			else:											return f'\t'*indent + f'{self.var.as_python()} {self.op.as_python()}= {self.expr.as_python(prec = 10)}'
+			if self.op == OpType.EQ:	return f'\t'*indent + f'{self.var.as_python()} = {self.expr.as_python(prec = 100)}'
+			else:											return f'\t'*indent + f'{self.var.as_python()} {self.op.as_python()}= {self.expr.as_python(prec = 100)}'
 
 class Declaration(Statement):
 	def __init__(self, params: Parameter):
@@ -774,7 +816,7 @@ class ForLoop(Statement):
 		if self.body == None and self.step == None:
 			mark('empty loop body')
 			self.body = Pass()
-		return (f'{self.init.as_python(indent)}\n' if self.init != None else '') + f'\t'*indent + f'while {self.condition.as_python(prec = 10)}:' + (f'\n{self.body.as_python(indent+1)}' if self.body != None else '') + (f'\n{self.step.as_python(indent+1)}' if self.step != None else '')
+		return (f'{self.init.as_python(indent)}\n' if self.init != None else '') + f'\t'*indent + f'while {self.condition.as_python(prec = 100)}:' + (f'\n{self.body.as_python(indent+1)}' if self.body != None else '') + (f'\n{self.step.as_python(indent+1)}' if self.step != None else '')
 
 class Print(Statement):
 	def __init__(self, expr: Expression):
@@ -833,7 +875,6 @@ class Return(Statement):
 
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		return f'\t'*indent + f'return {self.expr.as_python()}'
-
 
 
 if __name__ == '__main__':
