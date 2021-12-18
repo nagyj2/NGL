@@ -752,9 +752,8 @@ def atom():
 
 
 def _resolve_alternatives(op, val, mod):
-	'''Takes in two ASTs with at least one being an AST.Alternative and enumerates all possible combinations of the two.'''
+	'''Takes in two ASTs with zero or more being AST.Alternatives and enumerates all possible combinations of the two.'''
 	# If an alternative is returned, it should be bubbled up to OR precidence level
-	assert type(val) == AST.Alternative or type(mod) == AST.Alternative
 	if type(mod) is AST.Alternative or type(val) is AST.Alternative:
 
 		# Determine which is the alternative
