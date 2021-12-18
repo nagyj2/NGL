@@ -533,15 +533,18 @@ def expr_l2():
 		snd = expr_l3()
 
 		#todo: add Alternate support
+		if type(fst) is AST.Alternative or type(snd) is AST.Alternative:
+			mark('alternatives nor supported in comparison ranges')
+			if type(fst) is AST.Alternative: fst = fst.alternate
+			if type(snd) is AST.Alternative: snd = snd.alternate
+
 		if chain:
-			fst = AST.BinOp(AST.OpType.AND, fst, _resolve_alternatives(op, last, snd)) #AST.BinOp(op,last,snd))
+			fst = AST.BinOp(AST.OpType.AND, fst, AST.BinOp(op,last,snd))
 			last = deepcopy(snd)
 
 		else:
 			chain = True
-			# Perform special logic to bubble up alternatives
-			fst = _resolve_alternatives(op, fst, snd)
-			# fst = AST.BinOp(op,fst,snd)
+			fst = AST.BinOp(op,fst,snd)
 			last = deepcopy(snd)
 
 	return fst
@@ -594,10 +597,15 @@ def expr_l5():
 	first = True
 	while SC.sym in {CMP_OR}:
 		getSym()
-		mod = expr_l6() # A second atom
+		
+		if SC.sym in FIRSTEXPR_L6:
+			mod = expr_l6() # A second atom
 
-		if first:	val = AST.Alternative(val).then(mod); first = False
-		else:			val.then(mod)
+			if first:	val = AST.Alternative(val).then(mod); first = False
+			else:			val.then(mod)
+		
+		else:
+			mark('expected expression')
 
 	return val
 
