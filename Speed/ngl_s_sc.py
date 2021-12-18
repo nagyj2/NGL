@@ -23,7 +23,7 @@ COMMA = 20 # ,
 MOD = 21 # %
 GE = 22 # |>
 LE = 23 # <|
-NE = 24 # ?????
+CMP_OR = 24 # |
 
 NUMBER = 30; # `val` holds corresponding number
 RAW_STRING = 31; # `val` holds string contents
@@ -53,6 +53,7 @@ PARAM = 82 # AST Nodes - indicates a sequence of identifiers
 RETURN = 83 # AST Nodes - / in a function definition
 FUNC = 84 # AST Function type
 
+NE = 98 # NOT USED
 EOF = 99
 
 def dump_code():
@@ -158,10 +159,11 @@ def getSym():
         getChar()
         if ch == '?': getChar(); sym = ELSE
         else: sym = NOT
+    elif ch == '&': getChar(); mark("AND is now '/\\'"); sym = AND
     elif ch == '|': 
         getChar(); 
         if ch == '>': getChar(); sym = GE
-        else: mark('invalid symbol'); sym = None
+        else: sym = CMP_OR #mark("OR is now '\\/'"); sym = OR
     # elif ch == '&': getChar(); sym = AND
     elif ch == '<':
         getChar()
@@ -174,22 +176,6 @@ def getSym():
     elif ch == '_': getChar(); sym = BOOL
     elif ch == '.': getChar(); sym = INPUT
 
-    # elif ch == '#': 
-    #     getChar(); 
-    #     if ch == '#': getChar(); sym == IDENTITY_INT
-    #     else: sym = INT
-    # elif ch == '%': 
-    #     getChar(); 
-    #     if ch == '%': getChar(); sym == IDENTITY_FLOAT
-    #     else: sym = FLOAT
-    # elif ch == '@': 
-    #     getChar(); 
-    #     if ch == '@': getChar(); sym == IDENTITY_STRING
-    #     else: sym = STRING
-    # elif ch == '^': 
-    #     getChar(); 
-    #     if ch == '^': getChar(); sym == IDENTITY_BOOLEAN
-    #     else: sym = BOOLEAN
     elif ch == '#': getChar(); sym = INT
     elif ch == '%': getChar(); sym = FLOAT
     elif ch == '@': getChar(); sym = STRING

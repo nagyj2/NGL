@@ -7,6 +7,22 @@
 
 TOFIX = Compound statements
 
+TOADD = 'a = [| x y z |]' : a = x and a = y and a = z -> Doesn't make sense
+      | 'a = {| x y z |}' : a = x or  a = y or  a = z -> Less compact
+      | 'a = x | y | z' : a = x or  a = y or  a = z -> Works well!
+
+ex.
+n = 20
+i = 0
+$ i<|n : i1 : i + 1 : {
+==========================
+?i<>3=0!i?i<>5=0!i
+============||============
+?i<>3|5=0!i
+==========================
+}; 
+
+
 PROGRAM        := {LINES}
 
 LINES          := STMT ';'
@@ -24,13 +40,15 @@ EXPR           := '![' ['#' | '%' | '@' | '^'] ':' {('#' | '%' | '@' | '^') IDEN
                 
 EXPR_L0        := EXPR_L1 {('&' | '|') EXPR_L1}
 
-EXPR_L1        := EXPR_L2 {('=' | '>' | '<' | '<|' | '|>') EXPR_L2}
+EXPR_L1        := EXPR_L2 [('=') EXPR_L2]
 
-EXPR_L2        := EXPR_L3 {('+' | '-') EXPR_L3}
+EXPR_L2        := EXPR_L3 {'<' | '>' | '<|' | '|>') EXPR_L3}
 
-EXPR_L3        := EXPR_L4 {('*' | '/' | '<>') EXPR_L4}
+EXPR_L3        := EXPR_L4 {('+' | '-') EXPR_L4}
 
-EXPR_L4        := ['~' | '+' | '-'] SUBATOM
+EXPR_L4        := EXPR_L5 {('*' | '/' | '<>') EXPR_L5}
+
+EXPR_L5        := ['~' | '+' | '-'] SUBATOM
 
 SUBATOM        := ['#' | '%' | '@' | '^'] ATOM
 

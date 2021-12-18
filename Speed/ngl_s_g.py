@@ -3,6 +3,7 @@
 import ngl_s_sc as SC
 from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast2 as AST
+from copy import deepcopy # todo: offer better copying
 
 FIRSTATOM  = {IDENT, NUMBER, BOOL, RAW_STRING, LPAREN, INPUT, FUNC_CALL}
 FOLLOWATOM = {IDENT, NUMBER, BOOL, RAW_STRING, RPAREN, INPUT}
@@ -10,13 +11,16 @@ FOLLOWATOM = {IDENT, NUMBER, BOOL, RAW_STRING, RPAREN, INPUT}
 FIRSTSUBATOM  = {INT, FLOAT, STRING, BOOLEAN} | FIRSTATOM
 FOLLOWSUBATOM =  FOLLOWATOM
 
-FIRSTEXPR_L4  = {NOT, PLUS, MINUS} | FIRSTSUBATOM
-FOLLOWEXPR_L4 = FOLLOWSUBATOM
+FIRSTEXPR_L5  = {NOT, PLUS, MINUS} | FIRSTSUBATOM
+FOLLOWEXPR_L5 = FOLLOWSUBATOM
 
-FIRSTEXPR_L3  = FIRSTEXPR_L4
+FIRSTEXPR_L4  = FIRSTEXPR_L5
+FOLLOWEXPR_L4 = FOLLOWEXPR_L5
+
+FIRSTEXPR_L3  = FIRSTEXPR_L4 #{PLUS, MINUS} | FIRSTEXPR_L3
 FOLLOWEXPR_L3 = FOLLOWEXPR_L4
 
-FIRSTEXPR_L2  = FIRSTEXPR_L3 #{PLUS, MINUS} | FIRSTEXPR_L3
+FIRSTEXPR_L2  = FIRSTEXPR_L3
 FOLLOWEXPR_L2 = FOLLOWEXPR_L3
 
 FIRSTEXPR_L1  = FIRSTEXPR_L2
@@ -499,25 +503,48 @@ def expr_l1():
     if SC.sym not in FIRSTEXPR_L1:
         mark('expected valid expr_l1 start')
 
-    val = expr_l2()
+    fst = expr_l3()
 
-    while SC.sym in {EQ, LT, GT, LE, GE}:
+    if SC.sym in {EQ}:
         op =    AST.OpType.EQ if SC.sym == EQ else \
-                AST.OpType.LT  if SC.sym == LT  else \
+                mark('expected comparison operator')
+        getSym()
+        snd = expr_l3()
+
+        fst = AST.BinOp(op,fst,snd)
+
+    return fst
+
+def expr_l2():
+    if SC.sym not in FIRSTEXPR_L2:
+        mark('expected valid expr_l2 start')
+
+    fst = expr_l3()
+    chain = False
+
+    while SC.sym in {LT, GT, LE, GE}:
+        op =    AST.OpType.LT  if SC.sym == LT  else \
                 AST.OpType.GT  if SC.sym == GT  else \
                 AST.OpType.LE  if SC.sym == LE  else \
                 AST.OpType.GE  if SC.sym == GE  else \
                 mark('expected comparison operator')
         getSym()
-        mod = expr_l2()
+        snd = expr_l3()
 
-        val = AST.BinOp(op,val,mod)
+        if chain:
+            fst = AST.BinOp(AST.OpType.AND, fst, AST.BinOp(op,last,snd))
+            last = deepcopy(snd)
 
-    return val
+        else:
+            chain = True
+            fst = AST.BinOp(op,fst,snd)
+            last = deepcopy(snd)
 
-def expr_l2():
-    if SC.sym not in FIRSTEXPR_L2:
-        mark('expected valid expr_l2 start')
+    return fst
+
+def expr_l3():
+    if SC.sym not in FIRSTEXPR_L3:
+        mark('expected valid expr_l3 start')
 
     # unary = False
     # if SC.sym == PLUS or SC.sym == MINUS:
@@ -525,7 +552,7 @@ def expr_l2():
     #     op = SC.sym
     #     getSym()
 
-    val = expr_l3()
+    val = expr_l4()
 
     # if unary:
     #     op =    AST.OpType.POS if SC.sym == PLUS else \
@@ -538,24 +565,6 @@ def expr_l2():
                 AST.OpType.MINUS  if SC.sym == MINUS  else \
                 mark('expected PLUS or MINUS')
         getSym()
-        mod = expr_l3()
-
-        val = AST.BinOp(op,val,mod)
-
-    return val
-
-def expr_l3():
-    if SC.sym not in FIRSTEXPR_L3:
-        mark('expected valid expr_l3 start')
-
-    val = expr_l4()
-
-    while SC.sym in {MULT, DIV, MOD}:
-        op =    AST.OpType.MULT if SC.sym == MULT else \
-                AST.OpType.DIV  if SC.sym == DIV  else \
-                AST.OpType.MOD  if SC.sym == MOD  else \
-                mark('expected MULT, DIV or MOD')
-        getSym()
         mod = expr_l4()
 
         val = AST.BinOp(op,val,mod)
@@ -563,8 +572,26 @@ def expr_l3():
     return val
 
 def expr_l4():
-    if SC.sym not in FIRSTEXPR_L3:
-        mark('expected valid expr_l3 start')
+    if SC.sym not in FIRSTEXPR_L4:
+        mark('expected valid expr_l4 start')
+
+    val = expr_l5()
+
+    while SC.sym in {MULT, DIV, MOD}:
+        op =    AST.OpType.MULT if SC.sym == MULT else \
+                AST.OpType.DIV  if SC.sym == DIV  else \
+                AST.OpType.MOD  if SC.sym == MOD  else \
+                mark('expected MULT, DIV or MOD')
+        getSym()
+        mod = expr_l5()
+
+        val = AST.BinOp(op,val,mod)
+
+    return val
+
+def expr_l5():
+    if SC.sym not in FIRSTEXPR_L5:
+        mark('expected valid expr_l5 start')
 
     if SC.sym in {NOT, PLUS, MINUS}:
         op =    AST.OpType.NOT if SC.sym == NOT else \
