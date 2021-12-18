@@ -54,732 +54,719 @@ functions = {}
 to_find = []
 
 def program():
-    global in_func
-    if SC.sym not in FIRSTPROGRAM:
-        mark('expected valid program start')
+	global in_func
+	if SC.sym not in FIRSTPROGRAM:
+		mark('expected valid program start')
 
-    prog = None
+	prog = None
 
-    if SC.sym in FIRSTPROGRAM:
-        prog = lines()
-    else:
-        mark('expected NGLS code')
+	if SC.sym in FIRSTPROGRAM:
+		prog = lines()
+	else:
+		mark('expected NGLS code')
 
-    itr = prog.back()
-    while SC.sym in FIRSTPROGRAM:
-        itr.next = lines()
-        itr = itr.back()
+	itr = prog.back()
+	while SC.sym in FIRSTPROGRAM:
+		itr.next = lines()
+		itr = itr.back()
 
-        # exit func modes if end is found
-        if in_func and SC.sym == FUNC_END:
-            break
+		# exit func modes if end is found
+		if in_func and SC.sym == FUNC_END:
+			break
 
-    if len(to_find) > 0:
-        mark(f'undeclared variables: {[var for var in to_find]}')
+	if len(to_find) > 0:
+		mark(f'undeclared variables: {[var for var in to_find]}')
 
-    return prog
+	return prog
 
 def lines():
-    global variables, functions
-    if SC.sym not in FIRSTLINES:
-        mark('expected valid lines start')
+	global variables, functions
+	if SC.sym not in FIRSTLINES:
+		mark('expected valid lines start')
 
-    if SC.sym in FIRSTSTMT:
-        val = stmt()
+	if SC.sym in FIRSTSTMT:
+		val = stmt()
 
-        # Possible to assume that the next symbol is a new statement
-        # If a lineend, consume. If not, dont worry!
-        if SC.sym in STRONGSYMS:
-            # Probably not a good idea to allow a poorly formatted program...
-            if SC.sym == LINEEND:
-                getSym()
+		# Possible to assume that the next symbol is a new statement
+		# If a lineend, consume. If not, dont worry!
+		if SC.sym in STRONGSYMS:
+			# Probably not a good idea to allow a poorly formatted program...
+			if SC.sym == LINEEND:
+				getSym()
 
-        # Cannot assume next symbol represents a new statement
-        # If a lineend, consume. If not, PANIC!
-        else:
-            if SC.sym == LINEEND:
-                getSym()
-            else:
-                mark('expected semicolon')
+		# Cannot assume next symbol represents a new statement
+		# If a lineend, consume. If not, PANIC!
+		else:
+			if SC.sym == LINEEND:
+				getSym()
+			else:
+				mark('expected semicolon')
 
-        if SC.sym in FOLLOWLINES:
-            mark('warning: empty line')
-            while SC.sym in FOLLOWLINES:
-                getSym()
+		if SC.sym in FOLLOWLINES:
+			mark('warning: empty line')
+			while SC.sym in FOLLOWLINES:
+				getSym()
 
-    else:
-        mark(f'unknown enum lines: {SC.sym}')
+	else:
+		mark(f'unknown enum lines: {SC.sym}')
 
-    for var in functions:
-        assert var in variables
+	for var in functions:
+		assert var in variables
 
-    return val
+	return val
 
 def stmt():
-    if SC.sym not in FIRSTSTMT:
-        mark('expected valid stmt start')
+	if SC.sym not in FIRSTSTMT:
+		mark('expected valid stmt start')
 
-    if SC.sym == IDENT:
-        
-        first = True
-        while SC.sym == IDENT:
-            # Get variable name const
-            var_const = AST.Const(AST.DataType.STR, SC.val)
-            getSym()
+	if SC.sym == IDENT:
+		
+		first = True
+		while SC.sym == IDENT:
+			# Get variable name const
+			var_const = AST.Const(AST.DataType.STR, SC.val)
+			getSym()
 
-            # Determine type of assignment
-            if SC.sym in {EQ, PLUS, MINUS, MULT, DIV, MOD}:
-                assign_op = AST.OpType.PLUS if SC.sym == PLUS else \
-                            AST.OpType.MINUS if SC.sym == MINUS else \
-                            AST.OpType.MULT if SC.sym == MULT else \
-                            AST.OpType.DIV if SC.sym == DIV else \
-                            AST.OpType.MOD if SC.sym == MOD else \
-                            AST.OpType.EQ
-                getSym()
+			# Determine type of assignment
+			if SC.sym in {EQ, PLUS, MINUS, MULT, DIV, MOD}:
+				assign_op = AST.OpType.PLUS if SC.sym == PLUS else \
+							AST.OpType.MINUS if SC.sym == MINUS else \
+							AST.OpType.MULT if SC.sym == MULT else \
+							AST.OpType.DIV if SC.sym == DIV else \
+							AST.OpType.MOD if SC.sym == MOD else \
+							AST.OpType.EQ
+				getSym()
 
-            # Assume regular assignment
-            else:
-                assign_op = AST.OpType.EQ 
-            
-            # Get expression
-            if SC.sym in FIRSTEXPR:
-                value_expr = expr()
-            else:
-                mark('expected expression')
-                value_expr = AST.Const(AST.DataType.INT, 0)
+			# Assume regular assignment
+			else:
+				assign_op = AST.OpType.EQ 
+			
+			# Get expression
+			if SC.sym in FIRSTEXPR:
+				value_expr = expr()
+			else:
+				mark('expected expression')
+				value_expr = AST.Const(AST.DataType.INT, 0)
 
-            # Confirm type agreement if variable has been used already
-            if var_const.value in variables:
+			# Confirm type agreement if variable has been used already
+			if var_const.value in variables:
 
-                # If value is a function, grab the return type
-                if isinstance(value_expr, AST.FunctionCall):
-                    if value_expr.function.getName() in functions:
-                        var_type = functions[value_expr.function.getName()]
-                    else:
-                        mark(f'call on non-function type')
-                        var_type = AST.DataType.VAR
+				# If value is a function, grab the return type
+				if isinstance(value_expr, AST.FunctionCall):
+					if value_expr.function.getName() in functions:
+						var_type = functions[value_expr.function.getName()]
+					else:
+						mark(f'call on non-function type')
+						var_type = AST.DataType.VAR
 
-                # Otherwise, grab the variable type
-                else:
-                    # Always assume the previous type is correct
-                    var_type = variables[var_const.value]
-                
-                # Check if type is correct
-                if var_type != value_expr.typeEval():
-                    # If not, mark and insert a cast
-                    mark(f'assigmnent type mismatch: {var_type}!={value_expr}')
-                    # Non-functions can be simply casted
-                    if var_type != AST.DataType.FUNC:
-                        value_expr = AST.UnOp(  AST.OpType.CAST_INT if value_expr.typeEval() == AST.DataType.INT else \
-                                                AST.OpType.CAST_FLOAT if value_expr.typeEval() == AST.DataType.FLOAT else \
-                                                AST.OpType.CAST_STR if value_expr.typeEval() == AST.DataType.STR else \
-                                                AST.OpType.CAST_BOOL, #if value_expr.typeEval() == AST.DataType.INT else \
-                                                value_expr)
-                    else:
-                        print('Not implemented!! Cannot cast function easily!!')
-                        quit()
+				# Otherwise, grab the variable type
+				else:
+					# Always assume the previous type is correct
+					var_type = variables[var_const.value]
+				
+				# Check if type is correct
+				if var_type != value_expr.typeEval():
+					# If not, mark and insert a cast
+					mark(f'assigmnent type mismatch: {var_type}!={value_expr}')
+					# Non-functions can be simply casted
+					if var_type != AST.DataType.FUNC:
+						value_expr = AST.UnOp(  AST.OpType.CAST_INT if value_expr.typeEval() == AST.DataType.INT else \
+												AST.OpType.CAST_FLOAT if value_expr.typeEval() == AST.DataType.FLOAT else \
+												AST.OpType.CAST_STR if value_expr.typeEval() == AST.DataType.STR else \
+												AST.OpType.CAST_BOOL, #if value_expr.typeEval() == AST.DataType.INT else \
+												value_expr)
+					else:
+						print('Not implemented!! Cannot cast function easily!!')
+						quit()
 
-            # Otherwise, take the type of the expression
-            else:
-                var_type = value_expr.typeEval()
+			# Otherwise, take the type of the expression
+			else:
+				var_type = value_expr.typeEval()
 
-                if first:
-                    first = False
-                    val = AST.Block(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
-                else:
-                    val.then(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
+				if first:
+					first = False
+					val = AST.Block(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
+				else:
+					val.then(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
 
-                # Fill out the variable table
-                variables[var_const.value] = var_type
-
-
-            # If a function definition, do some trickery
-            if isinstance(value_expr, AST.FunctionDef):
-                functions[var_const.value] = value_expr.retn
-                variables[var_const.value] = var_type
-
-                # `+=` and equivalent operators do not work with functions
-                if assign_op != AST.OpType.EQ:
-                    mark('cannot use shorthand assignment operators on a function')
-                    assign_op = AST.OpType.EQ
-            
-            # else:
-            #     # Fill out the variable table
-            #     variables[var_const.value] = var_type
+				# Fill out the variable table
+				variables[var_const.value] = var_type
 
 
-            # Add assignment to the block
-            if first:
-                val = AST.Block(AST.Assignment(AST.Variable(var_type, var_const), assign_op, value_expr))
-                first = False
-            else:
-                val.then(AST.Assignment(AST.Variable(var_type, var_const), assign_op, value_expr))
+			# If a function definition, do some trickery
+			if isinstance(value_expr, AST.FunctionDef):
+				functions[var_const.value] = value_expr.retn
+				variables[var_const.value] = var_type
 
-            # If undeclared var is found, fill it out
-            if var_const.value in to_find:
-                variables[var_const.value] = var_type
-                to_find.remove(var_const.value)
+				# `+=` and equivalent operators do not work with functions
+				if assign_op != AST.OpType.EQ:
+					mark('cannot use shorthand assignment operators on a function')
+					assign_op = AST.OpType.EQ
+			
+			# else:
+			#     # Fill out the variable table
+			#     variables[var_const.value] = var_type
 
-    elif SC.sym == IF:
-        # if statement
-        getSym()
-        cond = expr()
-        true = stmt()
 
-        # if SC.sym == LINEEND:
-        #     getSym()
-        # else:
-        #     mark('expected semicolon after true branch')
+			# Add assignment to the block
+			if first:
+				val = AST.Block(AST.Assignment(AST.Variable(var_type, var_const), assign_op, value_expr))
+				first = False
+			else:
+				val.then(AST.Assignment(AST.Variable(var_type, var_const), assign_op, value_expr))
 
-        if SC.sym == ELSE:
-            getSym()
-            false = stmt()
-        else:
-            false = None
+			# If undeclared var is found, fill it out
+			if var_const.value in to_find:
+				variables[var_const.value] = var_type
+				to_find.remove(var_const.value)
 
-        val = AST.Block(AST.IfElse(cond,true,false))
+	elif SC.sym == IF:
+		# if statement
+		getSym()
+		cond = expr()
+		true = stmt()
 
-    elif SC.sym == PRINT:
-        # print stmt
-        getSym()
-        display = expr()
-        val = AST.Block(AST.Print(display))
+		# if SC.sym == LINEEND:
+		#     getSym()
+		# else:
+		#     mark('expected semicolon after true branch')
 
-    elif SC.sym == LOOP:
-        # loop stmt
-        getSym()
-        cond = expr()
-        if SC.sym == COLON:
-            getSym()
-        else:
-            mark('expected colon')
+		if SC.sym == ELSE:
+			getSym()
+			false = stmt()
+		else:
+			false = None
 
-        if SC.sym in FIRSTSTMT:
-            init = stmt()
-        else:
-            init = None
+		val = AST.Block(AST.IfElse(cond,true,false))
 
-        if SC.sym == COLON:
-            getSym()
-        else:
-            mark('expected colon')
+	elif SC.sym == PRINT:
+		# print stmt
+		getSym()
+		display = expr()
+		val = AST.Block(AST.Print(display))
 
-        if SC.sym in FIRSTSTMT:
-            step = stmt()
-        else:
-            step = None
+	elif SC.sym == LOOP:
+		# loop stmt
+		getSym()
+		cond = expr()
+		if SC.sym == COLON:
+			getSym()
+		else:
+			mark('expected colon')
 
-        if SC.sym == COLON:
-            getSym()
-        else:
-            mark('expected colon')
+		if SC.sym in FIRSTSTMT:
+			init = stmt()
+		else:
+			init = None
 
-        if SC.sym in FIRSTSTMT:
-            body = stmt()
-        else:
-            body = None
+		if SC.sym == COLON:
+			getSym()
+		else:
+			mark('expected colon')
 
-        val = AST.Block(AST.ForLoop(cond, body, init, step))
+		if SC.sym in FIRSTSTMT:
+			step = stmt()
+		else:
+			step = None
 
-    elif SC.sym == EXIT:
-        # print stmt
-        getSym()
-        if not in_func:
-            val = AST.Block(AST.Exit())
+		if SC.sym == COLON:
+			getSym()
+		else:
+			mark('expected colon')
 
-        else:
-            if SC.sym in FIRSTEXPR:
-                retn = expr()
-            else:
-                mark('missing return value')
-            val = AST.Block(AST.Return(retn))
+		if SC.sym in FIRSTSTMT:
+			body = stmt()
+		else:
+			body = None
 
-    elif SC.sym == LCURLY:
-        # stmt block
-        getSym()
+		val = AST.Block(AST.ForLoop(cond, body, init, step))
 
-        if SC.sym in FIRSTLINES:
-            val = lines()
-        else:
-            val = None
-            mark('blocks require at least one line')
-            # val = AST.Block(AST.Assignment(AST.Variable(AST.DataType.INT,'_'),AST.DataType.EQ,AST.Const(AST.DataType,0)))
-        
-        itr = val.back()
-        while SC.sym in FIRSTLINES:
-            itr.next = lines()
-            itr = itr.back()
+	elif SC.sym == EXIT:
+		# print stmt
+		getSym()
+		if not in_func:
+			val = AST.Block(AST.Exit())
 
-        if SC.sym == RCURLY:
-            getSym()
-        else:
-            mark('expected closing curly brace')
+		else:
+			if SC.sym in FIRSTEXPR:
+				retn = expr()
+			else:
+				mark('missing return value')
+			val = AST.Block(AST.Return(retn))
 
-    elif SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
+	elif SC.sym == LCURLY:
+		# stmt block
+		getSym()
 
-        # Find type for declaration
-        vartyp =   AST.DataType.INT if SC.sym == INT else \
-                AST.DataType.FLOAT if SC.sym == FLOAT else \
-                AST.DataType.STR if SC.sym == STRING else \
-                AST.DataType.BOOL #if SC.sym == BOOLEAN else \
-                # mark('invalid type')
-        getSym()
+		if SC.sym in FIRSTLINES:
+			val = lines()
+		else:
+			val = None
+			mark('blocks require at least one line')
+			# val = AST.Block(AST.Assignment(AST.Variable(AST.DataType.INT,'_'),AST.DataType.EQ,AST.Const(AST.DataType,0)))
+		
+		itr = val.back()
+		while SC.sym in FIRSTLINES:
+			itr.next = lines()
+			itr = itr.back()
 
-        # Find first variable
-        if SC.sym == IDENT:
-            varname = AST.Const(AST.DataType.STR, SC.val)
-            getSym()
-        else:
-            varname = AST.Const(AST.DataType.STR, '_')
-            mark('expected variable')
+		if SC.sym == RCURLY:
+			getSym()
+		else:
+			mark('expected closing curly brace')
 
-        # Create type mapping
-        variables[varname.value] = vartyp
-        # Create variable sequence
-        params = AST.Parameter(AST.Variable(vartyp, varname))
+	elif SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
 
-        while SC.sym in {IDENT, COMMA}:
-            if SC.sym == COMMA:
-                getSym()
+		# Find type for declaration
+		vartyp =   AST.DataType.INT if SC.sym == INT else \
+				AST.DataType.FLOAT if SC.sym == FLOAT else \
+				AST.DataType.STR if SC.sym == STRING else \
+				AST.DataType.BOOL #if SC.sym == BOOLEAN else \
+				# mark('invalid type')
+		getSym()
 
-            # Find next variable
-            if SC.sym == IDENT:
-                varname = AST.Const(AST.DataType.STR, SC.val)
-                getSym()
-            else:
-                varname = AST.Const(AST.DataType.STR, '_')
-                mark('expected variable')
+		# Find first variable
+		if SC.sym == IDENT:
+			varname = AST.Const(AST.DataType.STR, SC.val)
+			getSym()
+		else:
+			varname = AST.Const(AST.DataType.STR, '_')
+			mark('expected variable')
 
-            # Create type mapping
-            variables[varname.value] = vartyp
-            # Create variable sequence
-            params.then(AST.Variable(vartyp, varname))
+		# Create type mapping
+		variables[varname.value] = vartyp
+		# Create variable sequence
+		params = AST.Parameter(AST.Variable(vartyp, varname))
 
-        val = AST.Block(AST.Declaration(params))
+		while SC.sym in {IDENT, COMMA}:
+			if SC.sym == COMMA:
+				getSym()
 
-    else:
-        mark(f'unknown enum stmt: {SC.sym}')
+			# Find next variable
+			if SC.sym == IDENT:
+				varname = AST.Const(AST.DataType.STR, SC.val)
+				getSym()
+			else:
+				varname = AST.Const(AST.DataType.STR, '_')
+				mark('expected variable')
 
-    return val
+			# Create type mapping
+			variables[varname.value] = vartyp
+			# Create variable sequence
+			params.then(AST.Variable(vartyp, varname))
+
+		val = AST.Block(AST.Declaration(params))
+
+	else:
+		mark(f'unknown enum stmt: {SC.sym}')
+
+	return val
 
 def expr():
-    global in_func, variables, functions
-    if SC.sym not in FIRSTEXPR:
-        mark('expected valid expr start')
-    
-    if SC.sym == FUNC_DEF:
-        getSym()
+	global in_func, variables, functions, to_find
+	if SC.sym not in FIRSTEXPR:
+		mark('expected valid expr start')
+	
+	if SC.sym == FUNC_DEF:
+		getSym()
 
-        # If a return type is specified, take it
-        if SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
-            if SC.sym == INT:       retntyp = AST.DataType.INT; getSym()
-            elif SC.sym == FLOAT:   retntyp = AST.DataType.FLOAT; getSym()
-            elif SC.sym == STRING:  retntyp = AST.DataType.STR; getSym()
-            elif SC.sym == BOOLEAN: retntyp = AST.DataType.BOOL; getSym()
-            else:
-                retntyp = AST.DataType.VAR
-                mark('expected return type')
+		# If a return type is specified, take it
+		if SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
+			if SC.sym == INT:       retntyp = AST.DataType.INT; getSym()
+			elif SC.sym == FLOAT:   retntyp = AST.DataType.FLOAT; getSym()
+			elif SC.sym == STRING:  retntyp = AST.DataType.STR; getSym()
+			elif SC.sym == BOOLEAN: retntyp = AST.DataType.BOOL; getSym()
+			else:
+				retntyp = AST.DataType.VAR
+				mark('expected return type')
 
-        # Otherwise, find it from the function body
-        else:
-            retntyp = None
+		# Otherwise, find it from the function body
+		else:
+			retntyp = None
 
-        # todo change formatting to not need this
-        if SC.sym == COLON:
-            getSym()
-        else:
-            mark('expected colon')
+		# todo change formatting to not need this
+		if SC.sym == COLON:
+			getSym()
+		else:
+			mark('expected colon')
 
-        if SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
-            if SC.sym == INT:       vartyp = AST.DataType.INT; getSym()
-            elif SC.sym == FLOAT:   vartyp = AST.DataType.FLOAT; getSym()
-            elif SC.sym == STRING:  vartyp = AST.DataType.STR; getSym()
-            elif SC.sym == BOOLEAN: vartyp = AST.DataType.BOOL; getSym()
-            else:                   vartyp = AST.DataType.VAR; mark('expected variable type')
+		if SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
+			first = True
+			while SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
+				if SC.sym == INT:       vartyp = AST.DataType.INT; getSym()
+				elif SC.sym == FLOAT:   vartyp = AST.DataType.FLOAT; getSym()
+				elif SC.sym == STRING:  vartyp = AST.DataType.STR; getSym()
+				elif SC.sym == BOOLEAN: vartyp = AST.DataType.BOOL; getSym()
+				else:                   vartyp = AST.DataType.VAR; mark('expected variable type')
 
-            if SC.sym == IDENT:
-                varname = AST.Const(AST.DataType.STR, SC.val)
-                getSym()
-            else:
-                varname = AST.Const(AST.DataType.STR, '_')
-                mark('expected variable')
+				while SC.sym == IDENT:
+					varname = AST.Const(AST.DataType.STR, SC.val)
+					getSym()
 
-            params = AST.Parameter(AST.Variable(vartyp, varname))
+					if first:   params = AST.Parameter(AST.Variable(vartyp, varname)); first = False
+					else:       params.then(AST.Variable(vartyp, varname))
 
-            while SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
-                if SC.sym == INT:       vartyp = AST.DataType.INT; getSym()
-                elif SC.sym == FLOAT:   vartyp = AST.DataType.FLOAT; getSym()
-                elif SC.sym == STRING:  vartyp = AST.DataType.STR; getSym()
-                elif SC.sym == BOOLEAN: vartyp = AST.DataType.BOOL; getSym()
-                
-                if SC.sym == IDENT:
-                    varname = AST.Const(AST.DataType.STR, SC.val)
-                    getSym()
-                else:
-                    varname = AST.Const(AST.DataType.STR, '_')
-                    mark('expected variable')
+		else:
+			params = None
 
-                params.then(AST.Variable(vartyp, varname))
+		if SC.sym == COLON:
+			getSym()
+		else:
+			mark('expected colon')
 
-        else:
-            params = None
+		in_func = True
+		old_vars = dict(variables) # Need to detect new variables inside the loop to avoid multiple declarations
+		old_decl = to_find[:]
 
-        if SC.sym == COLON:
-            getSym()
-        else:
-            mark('expected colon')
+		# Insert params to allow parsing of function body
+		if params:
+			for param in params:
+				var = param.current
+				variables[var.name.value] = var.dataType
 
-        in_func = True
-        old_vars = dict(variables) # Need to detect new variables inside the loop to avoid multiple declarations
+		body = program()
 
-        # Insert params to allow parsing of function body
-        if params:
-            for param in params:
-                var = param.current
-                variables[var.name.value] = var.dataType
+		# todo ensure each path has a return statement
+		# todo : allow function return inference by finding all return path types
 
-        body = program()
+		returns = body.findall(AST.Return, [])
 
-        # todo ensure each path has a return statement
-        # todo : allow function return inference by finding all return path types
+		# Tf there was returns
+		if len(returns) >= 1:
+			if retntyp == None:
+				retntyp = returns[0].expr.typeEval()
+			# elif retntyp != None:
+			#     retntyp = returns[0].expr.typeEval()
 
-        returns = body.findall(AST.Return, [])
+		# No returns
+		else:
+			mark('functions must return a type')
+			returns = [AST.Return(AST.Const(AST.DataType.VAR, '_'))]
+			if retntyp == None:
+				retntyp = AST.DataType.VAR
+				
 
-        # Tf there was returns
-        if len(returns) >= 1:
-            if retntyp == None:
-                retntyp = returns[0].expr.typeEval()
-            # elif retntyp != None:
-            #     retntyp = returns[0].expr.typeEval()
+		for typ in returns:
+			if typ.expr.typeEval() != retntyp:
+				mark(f'return type mismatch: {typ}!={retntyp}')
+				retntyp = typ
 
-        # No returns
-        else:
-            mark('functions must return a type')
-            returns = [AST.Return(AST.Const(AST.DataType.VAR, '_'))]
-            if retntyp == None:
-                retntyp = AST.DataType.VAR
-                
+		# restore state
+		in_func = False
+		variables = old_vars
+		to_find = old_decl
 
-        for typ in returns:
-            if typ.expr.typeEval() != retntyp:
-                mark(f'return type mismatch: {typ}!={retntyp}')
-                retntyp = typ
+		# Create node
+		val = AST.FunctionDef(body, retntyp, params)
 
-        # restore state
-        in_func = False
-        variables = old_vars
+		if SC.sym == FUNC_END:
+			getSym()
+		else:
+			mark('expected function closing brace')
 
-        # Create node
-        val = AST.FunctionDef(body, retntyp, params)
+	else:
+		val = expr_l0()
 
-        if SC.sym == FUNC_END:
-            getSym()
-        else:
-            mark('expected function closing brace')
-
-    else:
-        val = expr_l0()
-
-    return val
+	return val
 
 def expr_l0():
-    if SC.sym not in FIRSTEXPR_L0:
-        mark('expected valid expr_l0 start')
+	if SC.sym not in FIRSTEXPR_L0:
+		mark('expected valid expr_l0 start')
 
-    val = expr_l1()
+	val = expr_l1()
 
-    while SC.sym in {AND, OR}:
-        op =    AST.OpType.AND if SC.sym == AND else \
-                AST.OpType.OR  if SC.sym == OR  else \
-                mark('expected AND or OR')
-        getSym()
-        mod = expr_l1()
+	while SC.sym in {AND, OR}:
+		op =    AST.OpType.AND if SC.sym == AND else \
+				AST.OpType.OR  if SC.sym == OR  else \
+				mark('expected AND or OR')
+		getSym()
+		mod = expr_l1()
 
-        val = AST.BinOp(op,val,mod)
+		val = AST.BinOp(op,val,mod)
 
-    return val
+	return val
 
 def expr_l1():
-    if SC.sym not in FIRSTEXPR_L1:
-        mark('expected valid expr_l1 start')
+	if SC.sym not in FIRSTEXPR_L1:
+		mark('expected valid expr_l1 start')
 
-    fst = expr_l2()
+	fst = expr_l2()
 
-    if SC.sym in {EQ}:
-        op =    AST.OpType.EQ if SC.sym == EQ else \
-                mark('expected comparison operator')
-        getSym()
-        snd = expr_l2()
+	if SC.sym in {EQ}:
+		op =    AST.OpType.EQ if SC.sym == EQ else \
+				mark('expected comparison operator')
+		getSym()
+		snd = expr_l2()
 
-        fst = AST.BinOp(op,fst,snd)
+		fst = AST.BinOp(op,fst,snd)
 
-    return fst
+	return fst
 
 def expr_l2():
-    if SC.sym not in FIRSTEXPR_L2:
-        mark('expected valid expr_l2 start')
+	if SC.sym not in FIRSTEXPR_L2:
+		mark('expected valid expr_l2 start')
 
-    fst = expr_l3()
-    chain = False
+	fst = expr_l3()
+	chain = False
 
-    while SC.sym in {LT, GT, LE, GE}:
-        op =    AST.OpType.LT  if SC.sym == LT  else \
-                AST.OpType.GT  if SC.sym == GT  else \
-                AST.OpType.LE  if SC.sym == LE  else \
-                AST.OpType.GE  if SC.sym == GE  else \
-                mark('expected comparison operator')
-        getSym()
-        snd = expr_l3()
+	while SC.sym in {LT, GT, LE, GE}:
+		op =    AST.OpType.LT  if SC.sym == LT  else \
+				AST.OpType.GT  if SC.sym == GT  else \
+				AST.OpType.LE  if SC.sym == LE  else \
+				AST.OpType.GE  if SC.sym == GE  else \
+				mark('expected comparison operator')
+		getSym()
+		snd = expr_l3()
 
-        if chain:
-            fst = AST.BinOp(AST.OpType.AND, fst, AST.BinOp(op,last,snd))
-            last = deepcopy(snd)
+		if chain:
+			fst = AST.BinOp(AST.OpType.AND, fst, AST.BinOp(op,last,snd))
+			last = deepcopy(snd)
 
-        else:
-            chain = True
-            fst = AST.BinOp(op,fst,snd)
-            last = deepcopy(snd)
+		else:
+			chain = True
+			fst = AST.BinOp(op,fst,snd)
+			last = deepcopy(snd)
 
-    return fst
+	return fst
 
 def expr_l3():
-    if SC.sym not in FIRSTEXPR_L3:
-        mark('expected valid expr_l3 start')
+	if SC.sym not in FIRSTEXPR_L3:
+		mark('expected valid expr_l3 start')
 
-    # unary = False
-    # if SC.sym == PLUS or SC.sym == MINUS:
-    #     unary = True
-    #     op = SC.sym
-    #     getSym()
+	# unary = False
+	# if SC.sym == PLUS or SC.sym == MINUS:
+	#     unary = True
+	#     op = SC.sym
+	#     getSym()
 
-    val = expr_l4()
+	val = expr_l4()
 
-    # if unary:
-    #     op =    AST.OpType.POS if SC.sym == PLUS else \
-    #             AST.OpType.NEG  if SC.sym == MINUS  else \
-    #             mark('expected POS or NEG')
-    #     val = AST.UnOp(op,val)
+	# if unary:
+	#     op =    AST.OpType.POS if SC.sym == PLUS else \
+	#             AST.OpType.NEG  if SC.sym == MINUS  else \
+	#             mark('expected POS or NEG')
+	#     val = AST.UnOp(op,val)
 
-    while SC.sym in {PLUS, MINUS}:
-        op =    AST.OpType.PLUS if SC.sym == PLUS else \
-                AST.OpType.MINUS  if SC.sym == MINUS  else \
-                mark('expected PLUS or MINUS')
-        getSym()
-        mod = expr_l4()
+	while SC.sym in {PLUS, MINUS}:
+		op =    AST.OpType.PLUS if SC.sym == PLUS else \
+				AST.OpType.MINUS  if SC.sym == MINUS  else \
+				mark('expected PLUS or MINUS')
+		getSym()
+		mod = expr_l4()
 
-        val = AST.BinOp(op,val,mod)
+		val = AST.BinOp(op,val,mod)
 
-    return val
+	return val
 
 def expr_l4():
-    if SC.sym not in FIRSTEXPR_L4:
-        mark('expected valid expr_l4 start')
+	if SC.sym not in FIRSTEXPR_L4:
+		mark('expected valid expr_l4 start')
 
-    val = expr_l5()
+	val = expr_l5()
 
-    while SC.sym in {MULT, DIV, MOD}:
-        op =    AST.OpType.MULT if SC.sym == MULT else \
-                AST.OpType.DIV  if SC.sym == DIV  else \
-                AST.OpType.MOD  if SC.sym == MOD  else \
-                mark('expected MULT, DIV or MOD')
-        getSym()
-        mod = expr_l5()
+	while SC.sym in {MULT, DIV, MOD}:
+		op =    AST.OpType.MULT if SC.sym == MULT else \
+				AST.OpType.DIV  if SC.sym == DIV  else \
+				AST.OpType.MOD  if SC.sym == MOD  else \
+				mark('expected MULT, DIV or MOD')
+		getSym()
+		mod = expr_l5()
 
-        val = AST.BinOp(op,val,mod)
+		val = AST.BinOp(op,val,mod)
 
-    return val
+	return val
 
 def expr_l5():
-    if SC.sym not in FIRSTEXPR_L5:
-        mark('expected valid expr_l5 start')
+	if SC.sym not in FIRSTEXPR_L5:
+		mark('expected valid expr_l5 start')
 
-    if SC.sym in {NOT, PLUS, MINUS}:
-        op =    AST.OpType.NOT if SC.sym == NOT else \
-                AST.OpType.POS  if SC.sym == PLUS  else \
-                AST.OpType.NEG #  if SC.sym == MINUS  else \
-        getSym()
-        val = AST.UnOp(op,subatom())
-    else:
-        val = subatom()
+	if SC.sym in {NOT, PLUS, MINUS}:
+		op =    AST.OpType.NOT if SC.sym == NOT else \
+				AST.OpType.POS  if SC.sym == PLUS  else \
+				AST.OpType.NEG #  if SC.sym == MINUS  else \
+		getSym()
+		val = AST.UnOp(op,subatom())
+	else:
+		val = subatom()
 
-    return val
+	return val
 
 def subatom():
-    if SC.sym not in FIRSTSUBATOM:
-        mark('expected valid subatom start')
+	if SC.sym not in FIRSTSUBATOM:
+		mark('expected valid subatom start')
 
-    if SC.sym == INT:
-        getSym(); val = AST.UnOp(AST.OpType.CAST_INT, subatom())
-    elif SC.sym == FLOAT:
-        getSym(); val = AST.UnOp(AST.OpType.CAST_FLOAT, subatom())
-    elif SC.sym == STRING:
-        getSym(); val = AST.UnOp(AST.OpType.CAST_STR, subatom())
-    elif SC.sym == BOOLEAN:
-        getSym(); val = AST.UnOp(AST.OpType.CAST_BOOL, subatom())
-    else:
-        val = atom()
+	if SC.sym == INT:
+		getSym(); val = AST.UnOp(AST.OpType.CAST_INT, subatom())
+	elif SC.sym == FLOAT:
+		getSym(); val = AST.UnOp(AST.OpType.CAST_FLOAT, subatom())
+	elif SC.sym == STRING:
+		getSym(); val = AST.UnOp(AST.OpType.CAST_STR, subatom())
+	elif SC.sym == BOOLEAN:
+		getSym(); val = AST.UnOp(AST.OpType.CAST_BOOL, subatom())
+	else:
+		val = atom()
 
-    if SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
-        mark('cast goes before expression')
-        getSym()
+	if SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
+		mark('cast goes before expression')
+		getSym()
 
-    return val
+	return val
 
 def atom():
-    global in_func, variables
-    if SC.sym not in FIRSTATOM:
-        mark('expected valid atom start')
+	global in_func, variables
+	if SC.sym not in FIRSTATOM:
+		mark('expected valid atom start')
 
-    if SC.sym == IDENT:
-        # identifier
+	if SC.sym == IDENT:
+		# identifier
 
-        # check to see if the variable is already defined
-        if SC.val in variables:
-            # 
-            if SC.val in functions:
-                typ = functions[SC.val]
-            else:
-                typ = variables[SC.val]
+		# check to see if the variable is already defined
+		if SC.val in variables:
+			# 
+			if SC.val in functions:
+				typ = functions[SC.val]
+			else:
+				typ = variables[SC.val]
 
-            # todo : how to deal with types?
-            value = AST.Variable(typ, AST.Const(AST.DataType.STR, SC.val))
-        else:
-            # todo : get rid of this if possible
-            typ = AST.DataType.VAR
-            value = AST.Const(typ, SC.val)
-            to_find.append(SC.val)
-            # mark('undefined variable')
-        
-        getSym()
+			# todo : how to deal with types?
+			value = AST.Variable(typ, AST.Const(AST.DataType.STR, SC.val))
+		else:
+			# todo : get rid of this if possible
+			typ = AST.DataType.VAR
+			value = AST.Const(typ, SC.val)
+			to_find.append(SC.val)
+			# mark('undefined variable')
+		
+		getSym()
 
-    elif SC.sym == NUMBER:
-        # int or float
-        if isinstance(SC.val, int):
-            value = AST.Const(AST.DataType.INT, SC.val)
-        elif isinstance(SC.val, float):
-            value = AST.Const(AST.DataType.FLOAT, SC.val)
-        getSym()
+	elif SC.sym == NUMBER:
+		# int or float
+		if isinstance(SC.val, int):
+			value = AST.Const(AST.DataType.INT, SC.val)
+		elif isinstance(SC.val, float):
+			value = AST.Const(AST.DataType.FLOAT, SC.val)
+		getSym()
 
-    elif SC.sym == BOOL:
-        # true token
-        value = AST.Const(AST.DataType.BOOL, True)
-        getSym()
+	elif SC.sym == BOOL:
+		# true token
+		value = AST.Const(AST.DataType.BOOL, True)
+		getSym()
 
-    elif SC.sym == RAW_STRING:
-        # string
-        value = AST.Const(AST.DataType.STR, SC.val)
-        getSym()
+	elif SC.sym == RAW_STRING:
+		# string
+		value = AST.Const(AST.DataType.STR, SC.val)
+		getSym()
 
-    elif SC.sym == INPUT:
-        # string
-        value = AST.Input()
-        getSym()
+	elif SC.sym == INPUT:
+		# string
+		value = AST.Input()
+		getSym()
 
-    elif SC.sym == LPAREN:
-        # nested expression
-        getSym()
+	elif SC.sym == LPAREN:
+		# nested expression
+		getSym()
 
-        # sub_val = expr()
-        # value = AST.Node(BLOCK,sub_val)
-        value = expr()
+		# sub_val = expr()
+		# value = AST.Node(BLOCK,sub_val)
+		value = expr()
 
-        if SC.sym == RPAREN:
-            getSym()
-        else:
-            mark('expected closing paren')
+		if SC.sym == RPAREN:
+			getSym()
+		else:
+			mark('expected closing paren')
 
-    elif SC.sym == FUNC_CALL:
-        # function call
-        getSym()
+	elif SC.sym == FUNC_CALL:
+		# function call
+		getSym()
 
-        if SC.sym == IDENT:
-            # If identifier is callable
-            if SC.val in functions:
-                # todo : differentiate functions and variables in `variables`
-                callee = AST.Variable(functions[SC.val], AST.Const(AST.DataType.STR, SC.val))
-            else:
-                mark('function call on non-function')
-                callee = AST.Variable(AST.DataType.FUNC, AST.Const(AST.DataType.STR, SC.val))
-            
-            getSym()
+		if SC.sym == IDENT:
+			# If identifier is callable
+			if SC.val in functions:
+				# todo : differentiate functions and variables in `variables`
+				callee = AST.Variable(functions[SC.val], AST.Const(AST.DataType.STR, SC.val))
+			else:
+				mark('function call on non-function')
+				callee = AST.Variable(AST.DataType.FUNC, AST.Const(AST.DataType.STR, SC.val))
+			
+			getSym()
 
-        else:
-            mark('expected function name')
-            callee = AST.Const(AST.DataType.STR, '_')
+		else:
+			mark('expected function name')
+			callee = AST.Const(AST.DataType.STR, '_')
 
-        if SC.sym == COLON:
-            getSym()
-        else:
-            mark('expected colon')
+		if SC.sym == COLON:
+			getSym()
+		else:
+			mark('expected colon')
 
-        # Take in arguments
-        if SC.sym in FIRSTEXPR:
-            # todo : check argument type
-            args = AST.Argument(expr())
+		# Take in arguments
+		if SC.sym in FIRSTEXPR:
+			# todo : check argument type
+			args = AST.Argument(expr())
 
-            while SC.sym in FIRSTEXPR | {COMMA}:
-                if SC.sym == COMMA:
-                    getSym()
+			while SC.sym in FIRSTEXPR | {COMMA}:
+				if SC.sym == COMMA:
+					getSym()
 
-                args.then(expr())
-        else:
-            args = None
+				args.then(expr())
+		else:
+			args = None
 
-        value = AST.FunctionCall(callee, args)
+		value = AST.FunctionCall(callee, args)
 
-        if SC.sym == FUNC_END:
-            getSym()
-        else:
-            mark('expected function closing brace')
+		if SC.sym == FUNC_END:
+			getSym()
+		else:
+			mark('expected function closing brace')
 
-    else:
-        mark('invalid enum atom')
-        value = None
+	else:
+		mark('invalid enum atom')
+		value = None
 
-    return value
+	return value
 
 def _readsource(fname):
-    src = ''
-    with open(fname,'r') as reader:
-        for line in reader.readlines():
-            src += line
-    return src
+	src = ''
+	with open(fname,'r') as reader:
+		for line in reader.readlines():
+			src += line
+	return src
 
 def translate(fname) -> AST.Block:
-    src = _readsource(fname)
-    SC.init(fname, src)
-    prog = program()
+	src = _readsource(fname)
+	SC.init(fname, src)
+	prog = program()
 
-    # Add exit if not there
-    if not isinstance(prog.back(), AST.Exit):
-        prog.then(AST.Exit())
+	# Add exit if not there
+	if not isinstance(prog.back(), AST.Exit):
+		prog.then(AST.Exit())
 
-    return prog
+	return prog
 
 if __name__ == '__main__':
-    import sys
+	import sys
 
-    if len(sys.argv) < 2:
-        fnames = ['./Speed/usr.ngls']
-    else:
-        fnames = sys.argv[1:]
+	if len(sys.argv) < 2:
+		fnames = ['./Speed/usr.ngls']
+	else:
+		fnames = sys.argv[1:]
 
-    for fname in fnames:
-        ast = translate(fname)
-        print(ast.pprint())
+	for fname in fnames:
+		ast = translate(fname)
+		print(ast.pprint())
 
 '''
 While (True)
-     N = remainder from Total divided by 3
-     If N > 0 Then
-          Subtract N From Total
-     Else
-          Subtract 1 From Total
-     Inform user of the results
-     If Total is 0 Then print "I win" and exit
-     Prompt user for input: Enter 1 or 2
-     While (Input < 1 Or Input > 2)
-           Print error message
-           Re-prompt user for input
-      If Total = 0 Then print "You win" and exit
+	 N = remainder from Total divided by 3
+	 If N > 0 Then
+		  Subtract N From Total
+	 Else
+		  Subtract 1 From Total
+	 Inform user of the results
+	 If Total is 0 Then print "I win" and exit
+	 Prompt user for input: Enter 1 or 2
+	 While (Input < 1 Or Input > 2)
+		   Print error message
+		   Re-prompt user for input
+	  If Total = 0 Then print "You win" and exit
 '''
