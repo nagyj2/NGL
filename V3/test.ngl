@@ -1,8 +1,7 @@
 // compute some quadratic solutions
 
 var faketype::int int;
-glob incl crud;
-cmp @crud;
+glob incl crud quad;
 
 glob var positives::float::array {float:};
 var negatives::float::array {float:};

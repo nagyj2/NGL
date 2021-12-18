@@ -48,7 +48,7 @@ def execute_main_grammar(filename, log=True):
     # ST.load(state)
 
     # === Pass Two ===
-    pass
+    # ST.replace()
 
 def execute_function_grammar(filename, state, log=True):
     # Parse and execute a file
@@ -67,7 +67,7 @@ def execute_function_grammar(filename, state, log=True):
 
     # print('==={0}==='.format(filename))
     # for key,val in savedStates.items(): print(key)
-    ST.printTab(['sym'])
+    # ST.printTab(['sym'])
     ST.collapse('function') # TODO: Alter state for pass 2
     # state = ST.export()
     # ST.load(state)
@@ -80,5 +80,10 @@ if __name__ == '__main__':
     from sys import argv
     savedStates = {} # store the loopup tables for called functions
 
+    try:
+        fl = argv[1]
+    except IndexError:
+        fl = "test.ngl"
 
-    execute_main_grammar(argv[1])
+    execute_main_grammar(fl)
+    print('=====')

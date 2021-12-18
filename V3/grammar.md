@@ -88,7 +88,7 @@ Function calls are the next lowest. They are so low because the EXPR children sh
 FIRST  = { ><, +, -, ~, NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }
 LAST   = { NUMBER, DECIMAL, STRING, IDENT, \\, ), }, ], ` }
 FOLLOW = (LINEEND) | (LABEL) | (EXPR)
-EXPR      ::= ['><'] CJN_EXPR]
+EXPR      ::= ['><'] CJN_EXPR
 
 Logical OR for booleans and union for collections.
 FIRST  = { +, -, ~, NUMBER, DECIMAL, STRING, IDENT, @, (, {, ` }

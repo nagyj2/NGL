@@ -281,3 +281,11 @@ def _collapseTab(type, table):
                 table[-2][name] = elem
         else: # add element to previous table
             table[-2][name] = elem
+
+def replace():
+    for namespace in symTab:
+        for name,typ in namespace.items():
+            if type(typ) in set({Int,Float,Str,Bool,Lab,Func}):
+                namespace[name] = Variable(Int)
+
+            print(name,type)
