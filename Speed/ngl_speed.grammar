@@ -8,8 +8,8 @@
 TOFIX = Compound statements
 
 TOADD = 'a = [| x y z |]' : a = x and a = y and a = z -> Doesn't make sense
-      | 'a = {| x y z |}' : a = x or  a = y or  a = z -> Less compact
-      | 'a = x | y | z' : a = x or  a = y or  a = z -> Works well!
+	| 'a = {| x y z |}' : a = x or  a = y or  a = z -> Less compact
+	| 'a = x | y | z' : a = x or  a = y or  a = z -> Works well!
 
 ex.
 n = 20
@@ -23,42 +23,71 @@ $ i<|n : i1 : i + 1 : {
 }; 
 
 
-PROGRAM        := {LINES}
+PROGRAM     := {LINES}
 
-LINES          := STMT ';'
+LINES		:= STMT ';'
 
-STMT           := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR}
-                | '?' EXPR STMT ['~?' STMT]
-                | '!' EXPR
-                | '$' EXPR ':' STMT ':' STMT ':' STMT
-                | ('#' | '%' | '@' | '^') IDENT {[','] IDENT}
-                | '\' ('\' | EXPR)
-                | '{' {LINES} '}'
+STMT        := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR}
+			<< Assign EXPR to IDENT by default. If a special operator is used, use shorthand assignment operator. >>
+		 
+		 | '?' EXPR STMT ['~?' STMT]
+			<< If statement with optional else. >>
+		 
+		 | '!' EXPR
+			<< Print statement. >>
+		 
+		 | '$' EXPR ':' STMT ':' STMT ':' STMT
+			<< For-style loop. EXPR is loop condition, 1st STMT is init code, 2nd is step code and 3rd is loop body. >>
+		 
+		 | ('#' | '%' | '@' | '^') IDENT {[','] IDENT}
+			<< Declare a variable in advance of it being used. Not required. >>
+		 
+		 | '\\'
+			<< Quit program. >>
+		 
+		 | '\' EXPR
+			<< Return statement. Only usable inside a function. >>
+		 
+		 | '{' {LINES} '}'
+			<< Compound statement. >>
 
-EXPR           := '![' ['#' | '%' | '@' | '^'] ':' {('#' | '%' | '@' | '^') IDENT {IDENT}}] ':' PROGRAM ']'
-                | EXPR_L0
-                
-EXPR_L0        := EXPR_L1 {('/\' | '\/') EXPR_L1}
+EXPR        := '![' ['#' | '%' | '@' | '^'] ':' {('#' | '%' | '@' | '^') IDENT {IDENT}}] ':' PROGRAM ']'
+			<< Function declaration. First type is return type. Must be agree with all return branches in code, optional. Types and IDENTs are inputs and their types. PROGRAM is the function body. >>
+		 | EXPR_L0
+		    
+EXPR_L0     := EXPR_L1 {('/\' | '\/') EXPR_L1}
+			<< /\ : AND, \/ : OR >>
 
-EXPR_L1        := EXPR_L2 [('=') EXPR_L2]
+EXPR_L1     := EXPR_L2 [('=') EXPR_L2]
+			<< = : Equality >>
 
-EXPR_L2        := EXPR_L3 {'<' | '>' | '<|' | '|>') EXPR_L3}
+EXPR_L2     := EXPR_L3 {'<' | '>' | '<|' | '|>') EXPR_L3}
+			<< < : Less than, > : Greater than, <| : Less than/ equal to, |> : Greater than/ equal to >>
 
-EXPR_L3        := EXPR_L4 {('+' | '-') EXPR_L4}
+EXPR_L3     := EXPR_L4 {('+' | '-') EXPR_L4}
+			<< + : Addition, - : Subtraction >>
 
-EXPR_L4        := EXPR_L5 {('*' | '/' | '<>') EXPR_L5}
+EXPR_L4     := EXPR_L5 {('*' | '/' | '<>') EXPR_L5}
+			<< * : Multiplication, / : Division, <> : Modulo >>
 
-EXPR_L5        := ['~' | '+' | '-'] SUBATOM
+EXPR_L5     := ['~' | '+' | '-'] SUBATOM
+			<< ~ : NOT, + : Positive, - : Negative >>
 
-SUBATOM        := ['#' | '%' | '@' | '^'] ATOM
+SUBATOM     := ['#' | '%' | '@' | '^'] ATOM
+			<< # : Number, % : Float, @ : String, ^ : Boolean >>
 
-ATOM           := IDENT
-                | '_'
-                | RAW_STRING
-                | '(' EXPR ')'
-                | '.'
-                | '?[' IDENT ':' [EXPR  {[','] EXPR }] ']'
+ATOM        := IDENT
+		 | '_'
+		 | RAW_STRING
+		 | '(' EXPR ')'
+		 | '.'
+		 	<< Keyboard input. String type by default. >>
+		 
+		 | '?[' IDENT ':' [EXPR  {[','] EXPR }] ']'
+		 	<< Function call. IDENT is function name and EXPRs are arguments. >>
 
-IDENT          := '`' [A-Za-z_] [A-Za-z0-9_]* '`'
-                | [A-Za-z]
- 
+IDENT       := [A-Za-z]
+			<< Identifiers should be single characters. >>
+	    	 
+		     | '`' [A-Za-z_] [A-Za-z0-9_]* '`'
+			<< If required, multichar variable names can be used with backquotes >>
