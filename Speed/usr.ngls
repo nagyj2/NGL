@@ -8,7 +8,7 @@
 //a'Alice'b'Bob'n'Jason'?n=a\/n=b !'Hello, '+n~?!'Go Away...';
 
 // 4. Sum to n
-//n50s0i0$i<n\/i=n:::s+i!s;
+//n#.s0i0$i<|n::i+1:s+i!s
 
 // 5. Mod. FizzBuzz
 //n20i0$(i<n\/i=n):i1:i+1:{?i<>3=0!i?i<>5=0!i};
@@ -44,3 +44,6 @@ g0;n3e##(100/2);?n<0\~??n>100\;!'begin';$~(g=n):ge::{!g;?e=#0e2;?g>n{g-#(e/2);e#
 
 // B. Number Guessing Game
 // !'Enter Number';n#.e#(100/2);?n<0\~??n>100\;!'begin';$~(g=n):ge::{!g;?e=#0e2;?g>n{g-#(e/2);e#(e/2);}~?{g+#(e/2);e#(e/2);};};!g;!'end';
+
+// C. Prime Printer
+//#j;t#.i1$i<|t::{?b!i;i+1}:$j<|(i-1):b_j2:j+1:?i<>j=0b~_
