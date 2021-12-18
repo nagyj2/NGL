@@ -750,57 +750,37 @@ def atom():
 
 	return value
 
+
 def _resolve_alternatives(op, val, mod):
+	'''Takes in two ASTs with at least one being an AST.Alternative and enumerates all possible combinations of the two.'''
 	# If an alternative is returned, it should be bubbled up to OR precidence level
+	assert type(val) == AST.Alternative or type(mod) == AST.Alternative
 	if type(mod) is AST.Alternative or type(val) is AST.Alternative:
 
 		# Determine which is the alternative
-		if type(val) == type(mod): 
-			mark('two alternatives are not allowed'); 
-			orig, other = val, mod.alternate
-		elif type(val) is AST.Alternative:	orig, other, inv = mod, val, False
-		elif type(mod) is AST.Alternative:	orig, other, inv = val, mod, True
+		if type(val) == type(mod):
+			first = True
+			for curr_l in val:
+				for curr_r in mod:
+					if first: val = AST.Alternative(AST.BinOp(op, deepcopy(curr_l.alternate), deepcopy(curr_r.alternate))); first = False
+					else:			val.then(AST.BinOp(op, deepcopy(curr_l.alternate), deepcopy(curr_r.alternate)))
 
-		if inv:	val = AST.Alternative(AST.BinOp(op, deepcopy(orig), other.alternate))
-		else:		val = AST.Alternative(AST.BinOp(op, other.alternate, deepcopy(orig)))
+		else:
+			if type(val) is AST.Alternative:	orig, other, inv = mod, val, False
+			else:															orig, other, inv = val, mod, True # type(mod) is AST.Alternative
 
-		for alt in other.next:
-			if inv:	val.then(AST.BinOp(op, deepcopy(orig), alt.alternate))
-			else:		val.then(AST.BinOp(op, alt.alternate, deepcopy(orig)))
+			if inv:	val = AST.Alternative(AST.BinOp(op, deepcopy(orig), other.alternate))
+			else:		val = AST.Alternative(AST.BinOp(op, other.alternate, deepcopy(orig)))
+
+			for alt in other.next:
+				if inv:	val.then(AST.BinOp(op, deepcopy(orig), alt.alternate))
+				else:		val.then(AST.BinOp(op, alt.alternate, deepcopy(orig)))
 
 	else:
 		val = AST.BinOp(op,val,mod)
 
 	return val
 
-# def _resolve_alternatives(op, val, mod):
-# 	# If an alternative is returned, it should be bubbled up to OR precidence level
-# 	if type(mod) is AST.Alternative or type(val) is AST.Alternative:
-
-# 		# Determine which is the alternative
-# 		if type(val) == type(mod): 
-# 			mark('two alternatives are not allowed'); 
-
-# 			val = AST.Alternative(AST.BinOp(op, deepcopy(val.alternate), mod.alternate))
-# 			for alt in val:
-# 				val.then(alt)
-
-# 			gen = _resolve_alternatives(op, val.alternate, mod)
-# 			print('||',val.pprint(), mod.pprint(), gen.pprint())
-# 			orig, other = val, mod
-
-# 		else:
-# 			if type(val) is AST.Alternative:	orig, other = mod, val
-# 			else:															orig, other = val, mod # type(mod) is AST.Alternative:
-
-# 			val = AST.Alternative(AST.BinOp(op, deepcopy(orig.alternate if type(orig) == AST.Alternative else orig), other.alternate))
-# 			for alt in other.next:
-# 				val.then(AST.BinOp(op, deepcopy(orig.alternate if type(orig) == AST.Alternative else orig), alt.alternate))
-
-# 	else:
-# 		val = AST.BinOp(op,val,mod)
-
-# 	return val
 
 def _readsource(fname):
 	src = ''
