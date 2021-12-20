@@ -7,8 +7,15 @@
 
 TODO:
 	- Remove ':' in loops where unneeded
+	- *Added scopes for functions*
+		- Add scopes for if and loops
+		- Add ability to search for previous scopes
+	- Add deletions of vars when they leave scope
+		- In AST
+		- In code
+	- If undeclared vars are found, search for its decl and add 
 
-STRONGSYM	 := ? | ! | $ | \ | { | } | ] | # | % | @ | ^ | <<EOF>>
+STRONGSYM	 := '?' | '!' | '$' | '\' | '{' | '}' | '![' | '?[' | ']' | '|#' | '|%' | '|@' | '|^' | <<EOF>>
 
 PROGRAM  	 := {LINES}
 							<< A program is a series of lines. >>

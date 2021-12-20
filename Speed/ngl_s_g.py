@@ -105,7 +105,7 @@ def lines() -> AST.Block:
 			if SC.sym == LINEEND:
 				getSym()
 			else:
-				print(SC.sym, SC.val)
+				# print(SC.sym, SC.val)
 				mark('expected semicolon')
 
 		if SC.sym in FOLLOWLINES:
@@ -424,7 +424,6 @@ def expr() -> AST.Expression:
 			mark('expected colon')
 
 		in_func = True
-
 		# Add new scope
 		var_scope.append({})
 
@@ -435,15 +434,12 @@ def expr() -> AST.Expression:
 		body = program()
 
 		# todo ensure each path has a return statement
-		# todo : allow function return inference by finding all return path types
 
 		returns = body.findall(AST.Return, [])
-
 		# Tf there was returns
 		if len(returns) >= 1:
 			if retntyp == None:
 				retntyp = returns[0].expr.typeEval()
-
 		# No returns
 		else:
 			mark('functions must return a type')
@@ -451,7 +447,7 @@ def expr() -> AST.Expression:
 			if retntyp == None:
 				retntyp = AST.DataType.VAR
 				
-
+		# Ensure all returns are the proper type
 		for typ in returns:
 			if typ.expr.typeEval() != retntyp:
 				mark(f'return type mismatch: {typ}!={retntyp}')
@@ -459,12 +455,25 @@ def expr() -> AST.Expression:
 
 		# restore state
 		in_func = False
-		to_find = old_decl
 
-		var_scope.pop()
+		# Find all new variables so they can be removed
+		new_decls = body.findall(AST.Declaration, [])
+		if len(new_decls) >= 1:
+			params = deepcopy(new_decls[0].params)
+			for decl in new_decls[1:]:
+				for var in decl.params:
+					print('>>>',var.pprint())
+					params.then(deepcopy(var.current))
+			deletions = AST.Delete(params)
+		else:
+			deletions = None
 
 		# Create node
 		val = AST.FunctionDef(body, retntyp, params)
+		# Deletion statements are found, but cannot be inserted easily
+		# val = AST.Block(deletions).then(AST.FunctionDef(body, retntyp, params))
+
+		var_scope.pop()
 
 		if SC.sym == FUNC_END:
 			getSym()
