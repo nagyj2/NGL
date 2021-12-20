@@ -459,12 +459,12 @@ def expr() -> AST.Expression:
 		# Find all new variables so they can be removed
 		new_decls = body.findall(AST.Declaration, [])
 		if len(new_decls) >= 1:
-			params = deepcopy(new_decls[0].params)
+			todelete = deepcopy(new_decls[0].params)
 			for decl in new_decls[1:]:
 				for var in decl.params:
 					print('>>>',var.pprint())
-					params.then(deepcopy(var.current))
-			deletions = AST.Delete(params)
+					todelete.then(deepcopy(var.current))
+			deletions = AST.Delete(todelete)
 		else:
 			deletions = None
 
