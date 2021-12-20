@@ -754,7 +754,7 @@ class Declaration(Statement):
 	def __repr__(self):
 		return f'Declaration({self.params} {self.body} {self.retn})'
 	def pprint(self, indent: int = 0, prec: int = 0) -> str:
-		return f'declare {self.params.pprint()}'
+		return f'|  '*indent + f'declare {self.params.pprint()}'
 
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		return f''
