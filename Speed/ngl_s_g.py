@@ -52,9 +52,6 @@ in_func = False
 var_scope = []
 # Tracks return types of functions - just used to aid in AST creation! NOT RETURNED
 functions = {}
-# Variables which have been mentioned, but not declared yet. Used mainly for loops
-# On assignment, check to see if variable has been created. If so, remove it. If something remains at program end, raise error
-to_find = []
 
 def program() -> AST.Block:
 	global in_func, var_scope
@@ -78,8 +75,10 @@ def program() -> AST.Block:
 		if in_func and SC.sym == FUNC_END:
 			break
 
-	if len(to_find) > 0:
-		mark(f'undeclared variables: {[var for var in to_find]}')
+	# If any undeclared (VAR) variables, state they are undeclared
+	undeclareds = list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, var_scope[-1].items()))
+	if len(undeclareds) > 0:
+		mark(f'warning: variables not declared: {undeclareds}')
 
 	var_scope.pop()
 
@@ -217,9 +216,8 @@ def stmt() -> AST.Block:
 				val.then(AST.Assignment(AST.Variable(var_type, var_const), assign_op, value_expr))
 
 			# If undeclared var is found, fill it out
-			if var_const.value in to_find:
+			if var_scope[-1][var_const.value] == AST.DataType.VAR:
 				var_scope[-1][var_const.value] = var_type
-				to_find.remove(var_const.value)
 
 	elif SC.sym == IF:
 		# if statement
@@ -374,7 +372,7 @@ def stmt() -> AST.Block:
 	return val
 
 def expr() -> AST.Expression:
-	global in_func, var_scope, functions, to_find
+	global in_func, var_scope, functions
 	if SC.sym not in FIRSTEXPR:
 		mark('expected valid expr start')
 	
@@ -426,7 +424,6 @@ def expr() -> AST.Expression:
 			mark('expected colon')
 
 		in_func = True
-		old_decl = to_find[:]
 
 		# Add new scope
 		var_scope.append({})
@@ -446,8 +443,6 @@ def expr() -> AST.Expression:
 		if len(returns) >= 1:
 			if retntyp == None:
 				retntyp = returns[0].expr.typeEval()
-			# elif retntyp != None:
-			#     retntyp = returns[0].expr.typeEval()
 
 		# No returns
 		else:
@@ -674,7 +669,8 @@ def atom() -> AST.Expression:
 			# todo : get rid of this if possible
 			typ = AST.DataType.VAR
 			value = AST.Const(typ, SC.val)
-			to_find.append(SC.val)
+			# Add a 'VAR' type variable. This is a hack to allow for use of vars before they are mentioned in source, particularly for loops
+			var_scope[-1][SC.val] = typ
 			# mark('undefined variable')
 		
 		getSym()

@@ -161,6 +161,9 @@ class Node():
 		'''Returns the type of AST node.'''
 		return self.nodeType
 
+	def _refreshSearchable(self):
+		self.searchable = []
+
 	def __repr__(self):
 		return f'Node({self.__class__.__name__})'
 	def pprint(self, indent: int = 0, prec: int = 0) -> str:
@@ -246,9 +249,6 @@ class Statement(Node):
 		self.nodeType = NodeType.STATEMENT
 		self.searchable = []
 
-	def _refreshSearchable(self):
-		self.searchable = []
-	
 	def findall(self, typ: Type, found: List['Sequence']) -> List['Sequence']:
 		self._refreshSearchable()
 		for node in self.searchable:
@@ -355,6 +355,11 @@ class Block(Statement, Sequence):
 		assert statement.nodeEval() in {NodeType.STATEMENT}
 		assert statement == None or statement.nodeEval() in {NodeType.STATEMENT}
 
+		self._refreshSearchable
+		
+	def _refreshSearchable(self):
+		self.searchable = [self.statement, self.next]
+
 	def __repr__(self):
 		return f'Block({self.statement}' + (f'\n{self.next})' if self.next != None else ')')
 	def pprint(self, indent: int = 0, prec: int = 0) -> str:
@@ -386,6 +391,9 @@ class Parameter(Statement, Sequence):
 		# assert var.nodeEval() in {NodeType.EXPRESSION} and var.typeEval() == DataType.VAR
 		# assert var == None or var.nodeEval() in {NodeType.EXPRESSION} and var.typeEval() == DataType.VAR
 
+	def _refreshSearchable(self):
+		self.searchable = [self.var, self.next]
+
 	def __repr__(self):
 		return f'Param({self.var}' + (f'\n{self.next})' if self.next != None else ')')
 	def pprint(self, indent: int = 0, prec: int = 0) -> str:
@@ -409,6 +417,9 @@ class Argument(Statement, Sequence):
 
 		assert expr.nodeEval() in {NodeType.EXPRESSION}
 		assert next == None or next.nodeEval() in {NodeType.EXPRESSION}
+
+	def _refreshSearchable(self):
+		self.searchable = [self.expr, self.next]
 
 	def __repr__(self):
 		return f'Arg({self.expr}' + (f'\n{self.next})' if self.next != None else ')')
@@ -439,7 +450,6 @@ class Alternative(Expression, Sequence):
 
 		self.dataType = expr.typeEval()
 		# self.nodeType = NodeType.EXPRESSIONassert expr.typeEval() == next.typeEval()
-
 
 	def then(self, other: Node) -> 'Alternative':
 		'''Sets the next element in the sequence. Adds to last element in sequence.'''
@@ -719,9 +729,10 @@ class Declaration(Statement):
 		assert type(params) == Parameter
 
 		self.params = params
+		self._refreshSearchable()
 
 	def __repr__(self):
-		return f'Declaration({self.params} {self.body} {self.retn})'
+		return f'Declaration({self.params})'
 	def pprint(self, indent: int = 0, prec: int = 0) -> str:
 		return f'|  '*indent + f'declare {self.params.pprint()}'
 
