@@ -153,37 +153,6 @@ class OpType(Enum):
 	def asmprint(self):
 		return repr(self)
 
-class Translate(Enum):
-	class Assignment(Enum):
-		SATEMENT = 1
-		DEFINITION = 2
-		REDEFINITION = 3
-
-	class IfElse(Enum):
-		SATEMENT = 1
-		CONDITION = 2
-		IF = 3
-		ELSE = 4
-
-	class ForLoop(Enum):
-		SATEMENT = 1
-		CONDITION = 2
-		INIT = 3
-		INCREMENT = 4
-		BODY = 5
-
-	class Exit(Enum):
-		STATEMENT = 1
-	
-	class Print(Enum):
-		STATEMENT = 1
-		ARGUMENT = 2
-
-	class Return(Enum):
-		STATEMENT = 1
-		ARGUMENT = 2
-
-
 class Node():
 	def __init__(self):
 		self.nodeType = NodeType.NONE
