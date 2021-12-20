@@ -5,6 +5,13 @@
 # of what the old language was like. This grammar is an experiment to compile
 # the old grammar into the new NGL v2.1 language.
 
+TODO:
+	- Allow chaining of STMTs with '&'
+		- 'stmt1 & stmt2' would be treated as a single statement.
+		- Either replace '{}' or add another version.
+			- Is shorter than '{}'
+	- Remove ':' in loops where unneeded
+
 STRONGSYM	 := ? | ! | $ | \ | { | } | ] | # | % | @ | ^ | <<EOF>>
 
 PROGRAM  	 := {LINES}
@@ -36,6 +43,8 @@ STMT     	 := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | '-' 
 
 						| '{' {LINES} '}'
 							<< Compound statement. >>
+
+						| STMT '&' STMT
 
 EXPR		 	 := '![' ['#' | '%' | '@' | '^'] ':' {('#' | '%' | '@' | '^') IDENT {IDENT}}] ':' PROGRAM ']'
 							<< Function declaration. First type is return type. Must be agree with all return branches in code, optional. Types and IDENTs are inputs and their types. PROGRAM is the function body. >>

@@ -1,7 +1,7 @@
 # NGL Speed AST Generator 2.0
 
 import ngl_s_sc as SC
-from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, CMP_OR, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, CMP_OR, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast2 as AST
 from copy import deepcopy # todo: offer better copying
 
@@ -56,7 +56,7 @@ functions = {}
 # On assignment, check to see if variable has been created. If so, remove it. If something remains at program end, raise error
 to_find = []
 
-def program():
+def program() -> AST.Block:
 	global in_func
 	if SC.sym not in FIRSTPROGRAM:
 		mark('expected valid program start')
@@ -82,7 +82,7 @@ def program():
 
 	return prog
 
-def lines():
+def lines() -> AST.Block:
 	global variables, functions
 	if SC.sym not in FIRSTLINES:
 		mark('expected valid lines start')
@@ -103,6 +103,7 @@ def lines():
 			if SC.sym == LINEEND:
 				getSym()
 			else:
+				print(SC.sym, SC.val)
 				mark('expected semicolon')
 
 		if SC.sym in FOLLOWLINES:
@@ -118,7 +119,7 @@ def lines():
 
 	return val
 
-def stmt():
+def stmt() -> AST.Block:
 	if SC.sym not in FIRSTSTMT:
 		mark('expected valid stmt start')
 
@@ -226,13 +227,17 @@ def stmt():
 	elif SC.sym == IF:
 		# if statement
 		getSym()
-		cond = expr()
-		true = stmt()
 
-		# if SC.sym == LINEEND:
-		#     getSym()
-		# else:
-		#     mark('expected semicolon after true branch')
+		if SC.sym in FIRSTEXPR:
+			cond = expr()
+		else:
+			mark('empty if condition')
+			cond = AST.Const(AST.DataType.BOOL, False)
+
+		if SC.sym in FIRSTSTMT:
+			true = stmt()
+		else:
+			true = AST.Pass()
 
 		if SC.sym == ELSE:
 			getSym()
@@ -362,10 +367,15 @@ def stmt():
 
 	else:
 		mark(f'unknown enum stmt: {SC.sym}')
+		val = AST.Block(AST.Assignment(AST.Variable(AST.DataType.INT, '_'), AST.Const(AST.DataType.INT, 0)))
+
+	if SC.sym == STMT_AND:
+		getSym()
+		val.then(stmt().statement)
 
 	return val
 
-def expr():
+def expr() -> AST.Expression:
 	global in_func, variables, functions, to_find
 	if SC.sym not in FIRSTEXPR:
 		mark('expected valid expr start')
@@ -472,7 +482,7 @@ def expr():
 
 	return val
 
-def expr_l0():
+def expr_l0() -> AST.Expression:
 	if SC.sym not in FIRSTEXPR_L0:
 		mark('expected valid expr_l0 start')
 
@@ -498,7 +508,7 @@ def expr_l0():
 
 	return val
 
-def expr_l1():
+def expr_l1() -> AST.Expression:
 	if SC.sym not in FIRSTEXPR_L1:
 		mark('expected valid expr_l1 start')
 
@@ -516,7 +526,7 @@ def expr_l1():
 
 	return val
 
-def expr_l2():
+def expr_l2() -> AST.Expression:
 	if SC.sym not in FIRSTEXPR_L2:
 		mark('expected valid expr_l2 start')
 
@@ -549,7 +559,7 @@ def expr_l2():
 
 	return fst
 
-def expr_l3():
+def expr_l3() -> AST.Expression:
 	if SC.sym not in FIRSTEXPR_L3:
 		mark('expected valid expr_l3 start')
 
@@ -568,7 +578,7 @@ def expr_l3():
 
 	return val
 
-def expr_l4():
+def expr_l4() -> AST.Expression:
 	if SC.sym not in FIRSTEXPR_L4:
 		mark('expected valid expr_l4 start')
 
@@ -588,7 +598,7 @@ def expr_l4():
 
 	return val
 
-def expr_l5():
+def expr_l5() -> AST.Expression:
 	if SC.sym not in FIRSTEXPR_L5:
 		mark('expected valid expr_l5 start')
 
@@ -609,7 +619,7 @@ def expr_l5():
 
 	return val
 
-def expr_l6():
+def expr_l6() -> AST.Expression:
 	if SC.sym not in FIRSTEXPR_L6:
 		mark('expected valid expr_l6 start')
 
@@ -624,7 +634,7 @@ def expr_l6():
 
 	return val
 
-def subatom():
+def subatom() -> AST.Expression:
 	if SC.sym not in FIRSTSUBATOM:
 		mark('expected valid subatom start')
 
@@ -645,7 +655,7 @@ def subatom():
 
 	return val
 
-def atom():
+def atom() -> AST.Expression:
 	global in_func, variables
 	if SC.sym not in FIRSTATOM:
 		mark('expected valid atom start')
@@ -655,7 +665,6 @@ def atom():
 
 		# check to see if the variable is already defined
 		if SC.val in variables:
-			# 
 			if SC.val in functions:
 				typ = functions[SC.val]
 			else:
@@ -759,7 +768,7 @@ def atom():
 	return value
 
 
-def _resolve_alternatives(op, val, mod):
+def _resolve_alternatives(op, val, mod) -> AST.Alternative | AST.Expression:
 	'''Takes in two ASTs with zero or more being AST.Alternatives and enumerates all possible combinations of the two.'''
 	# If an alternative is returned, it should be bubbled up to OR precidence level
 	if type(mod) is AST.Alternative or type(val) is AST.Alternative:

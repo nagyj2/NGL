@@ -24,6 +24,7 @@ MOD = 21 # %
 GE = 22 # |>
 LE = 23 # <|
 CMP_OR = 24 # |
+STMT_AND = 25 # &
 
 NUMBER = 30; # `val` holds corresponding number
 RAW_STRING = 31; # `val` holds string contents
@@ -159,12 +160,11 @@ def getSym():
         getChar()
         if ch == '?': getChar(); sym = ELSE
         else: sym = NOT
-    elif ch == '&': getChar(); mark("AND is now '/\\'"); sym = AND
     elif ch == '|': 
         getChar(); 
         if ch == '>': getChar(); sym = GE
-        else: sym = CMP_OR #mark("OR is now '\\/'"); sym = OR
-    # elif ch == '&': getChar(); sym = AND
+        else: sym = CMP_OR
+    elif ch == '&': getChar(); sym = STMT_AND
     elif ch == '<':
         getChar()
         if ch == '>': getChar(); sym = MOD
