@@ -248,7 +248,7 @@ class Statement(Node):
 		super().__init__()
 		self.nodeType = NodeType.STATEMENT
 		self.searchable = []
-
+	
 	def findall(self, typ: Type, found: List['Sequence']) -> List['Sequence']:
 		self._refreshSearchable()
 		for node in self.searchable:
@@ -738,6 +738,26 @@ class Declaration(Statement):
 
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		return f''
+
+class Delete(Statement):
+	def __init__(self, params: Parameter):
+		super().__init__()
+
+		assert type(params) == Parameter
+
+		self.params = params
+		self._refreshSearchable()
+
+	def __repr__(self):
+		return f'Delete({self.params})'
+	def pprint(self, indent: int = 0, prec: int = 0) -> str:
+		return f'|  '*indent + f'delete {self.params.pprint()}'
+
+	def as_python(self, indent: int = 0, prec: int = 0) -> str:
+		string = 'del'
+		for var in self.params:
+			string += f' {var.as_python()},'
+		return string[:-1]
 
 class IfElse(Statement):
 	def __init__(self, expr: Expression, ifBlock: Statement, elseBlock: Union[Statement, None] = None):
