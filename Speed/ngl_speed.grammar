@@ -45,6 +45,7 @@ STMT     	 := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | '-' 
 							<< Compound statement. >>
 
 						| STMT '&' STMT
+							<< Chained statement. >>
 
 EXPR		 	 := '![' ['#' | '%' | '@' | '^'] ':' {('#' | '%' | '@' | '^') IDENT {IDENT}}] ':' PROGRAM ']'
 							<< Function declaration. First type is return type. Must be agree with all return branches in code, optional. Types and IDENTs are inputs and their types. PROGRAM is the function body. >>

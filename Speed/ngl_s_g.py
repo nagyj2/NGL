@@ -488,23 +488,21 @@ def expr_l0() -> AST.Expression:
 
 	val = expr_l1()
 
+	if type(val) == AST.Alternative:
+		val = _expand_alternatives(val)
+
 	while SC.sym in {AND, OR}:
-		op =    AST.OpType.AND if SC.sym == AND else \
+		op =	AST.OpType.AND if SC.sym == AND else \
 				AST.OpType.OR  if SC.sym == OR  else \
 				mark('expected AND or OR')
 		getSym()
 		mod = expr_l1()
 
-		val = AST.BinOp(op,val,mod)
+		val = _resolve_alternatives(op,val,mod)
+		# val = AST.BinOp(op,val,mod)
 
 	if type(val) == AST.Alternative:
-		orig = deepcopy(val)
-
-		val = AST.BinOp(AST.OpType.OR, val.alternate, val.next.alternate)
-
-		if orig.next.next:
-			for alt in orig.next.next:
-				val = AST.BinOp(AST.OpType.OR, val, alt.alternate)
+			val = _expand_alternatives(val)
 
 	return val
 
@@ -534,7 +532,7 @@ def expr_l2() -> AST.Expression:
 
 	chain = False
 	while SC.sym in {LT, GT, LE, GE}:
-		op =    AST.OpType.LT  if SC.sym == LT  else \
+		op =	AST.OpType.LT  if SC.sym == LT  else \
 				AST.OpType.GT  if SC.sym == GT  else \
 				AST.OpType.LE  if SC.sym == LE  else \
 				AST.OpType.GE  if SC.sym == GE  else \
@@ -566,7 +564,7 @@ def expr_l3() -> AST.Expression:
 	val = expr_l4()
 
 	while SC.sym in {PLUS, MINUS}:
-		op =    AST.OpType.PLUS if SC.sym == PLUS else \
+		op =	AST.OpType.PLUS if SC.sym == PLUS else \
 				AST.OpType.MINUS  if SC.sym == MINUS  else \
 				mark('expected PLUS or MINUS')
 		getSym()
@@ -585,7 +583,7 @@ def expr_l4() -> AST.Expression:
 	val = expr_l5()
 
 	while SC.sym in {MULT, DIV, MOD}:
-		op =    AST.OpType.MULT if SC.sym == MULT else \
+		op =	AST.OpType.MULT if SC.sym == MULT else \
 				AST.OpType.DIV  if SC.sym == DIV  else \
 				AST.OpType.MOD  if SC.sym == MOD  else \
 				mark('expected MULT, DIV or MOD')
@@ -624,9 +622,10 @@ def expr_l6() -> AST.Expression:
 		mark('expected valid expr_l6 start')
 
 	if SC.sym in {NOT, PLUS, MINUS}:
-		op =    AST.OpType.NOT if SC.sym == NOT else \
-				AST.OpType.POS  if SC.sym == PLUS  else \
-				AST.OpType.NEG #  if SC.sym == MINUS  else \
+		op =	AST.OpType.NOT if SC.sym == NOT   else \
+					AST.OpType.POS if SC.sym == PLUS  else \
+					AST.OpType.NEG if SC.sym == MINUS else \
+					mark('expected unary operator')
 		getSym()
 		val = AST.UnOp(op,subatom())
 	else:
@@ -687,6 +686,9 @@ def atom() -> AST.Expression:
 			value = AST.Const(AST.DataType.INT, SC.val)
 		elif isinstance(SC.val, float):
 			value = AST.Const(AST.DataType.FLOAT, SC.val)
+		else:
+			mark('expected number')
+			value = AST.Const(AST.DataType.INT, 0)
 		getSym()
 
 	elif SC.sym == BOOL:
@@ -768,7 +770,7 @@ def atom() -> AST.Expression:
 	return value
 
 
-def _resolve_alternatives(op, val, mod) -> AST.Alternative | AST.Expression:
+def _resolve_alternatives(op: AST.OpType, val: AST.Alternative | AST.Expression, mod: AST.Alternative | AST.Expression) -> AST.Alternative | AST.Expression:
 	'''Takes in two ASTs with zero or more being AST.Alternatives and enumerates all possible combinations of the two.'''
 	# If an alternative is returned, it should be bubbled up to OR precidence level
 	if type(mod) is AST.Alternative or type(val) is AST.Alternative:
@@ -797,6 +799,15 @@ def _resolve_alternatives(op, val, mod) -> AST.Alternative | AST.Expression:
 
 	return val
 
+def _expand_alternatives(val: AST.Alternative) -> AST.Expression:
+	orig = deepcopy(val)
+
+	val = AST.BinOp(AST.OpType.OR, val.alternate, val.next.alternate)
+
+	if orig.next.next:
+		for alt in orig.next.next:
+			val = AST.BinOp(AST.OpType.OR, val, alt.alternate)
+	return val
 
 def _readsource(fname):
 	src = ''
