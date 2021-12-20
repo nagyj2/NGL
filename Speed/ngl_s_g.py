@@ -49,7 +49,7 @@ STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, FUNC_END, DECL_INT, DE
 # Tracks whether the parser is in a function
 in_func = False
 # Tracts variable types - just used to aid in AST creation! NOT RETURNED
-variables = {}
+var_scope = []
 # Tracks return types of functions - just used to aid in AST creation! NOT RETURNED
 functions = {}
 # Variables which have been mentioned, but not declared yet. Used mainly for loops
@@ -57,11 +57,12 @@ functions = {}
 to_find = []
 
 def program() -> AST.Block:
-	global in_func
+	global in_func, var_scope
 	if SC.sym not in FIRSTPROGRAM:
 		mark('expected valid program start')
 
 	prog = None
+	var_scope.append({})
 
 	if SC.sym in FIRSTPROGRAM:
 		prog = lines()
@@ -80,10 +81,12 @@ def program() -> AST.Block:
 	if len(to_find) > 0:
 		mark(f'undeclared variables: {[var for var in to_find]}')
 
+	var_scope.pop()
+
 	return prog
 
 def lines() -> AST.Block:
-	global variables, functions
+	global functions, var_scope
 	if SC.sym not in FIRSTLINES:
 		mark('expected valid lines start')
 
@@ -115,7 +118,7 @@ def lines() -> AST.Block:
 		mark(f'unknown enum lines: {SC.sym}')
 
 	for var in functions:
-		assert var in variables
+		assert var in var_scope[-1]
 
 	return val
 
@@ -154,7 +157,7 @@ def stmt() -> AST.Block:
 				value_expr = AST.Const(AST.DataType.INT, 0)
 
 			# Confirm type agreement if variable has been used already
-			if var_const.value in variables:
+			if var_const.value in var_scope[-1]:
 
 				# If value is a function, grab the return type
 				if isinstance(value_expr, AST.FunctionCall):
@@ -167,7 +170,7 @@ def stmt() -> AST.Block:
 				# Otherwise, grab the variable type
 				else:
 					# Always assume the previous type is correct
-					var_type = variables[var_const.value]
+					var_type = var_scope[-1][var_const.value]
 				
 				# Check if type is correct
 				if var_type != value_expr.typeEval():
@@ -194,22 +197,18 @@ def stmt() -> AST.Block:
 					val.then(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
 
 				# Fill out the variable table
-				variables[var_const.value] = var_type
+				var_scope[-1][var_const.value] = var_type
 
 
 			# If a function definition, do some trickery
 			if isinstance(value_expr, AST.FunctionDef):
 				functions[var_const.value] = value_expr.retn
-				variables[var_const.value] = var_type
+				var_scope[-1][var_const.value] = var_type
 
 				# `+=` and equivalent operators do not work with functions
 				if assign_op != AST.OpType.EQ:
 					mark('cannot use shorthand assignment operators on a function')
 					assign_op = AST.OpType.EQ
-			
-			# else:
-			#     # Fill out the variable table
-			#     variables[var_const.value] = var_type
 
 			# Add assignment to the block
 			if type(val) != AST.Block:
@@ -219,7 +218,7 @@ def stmt() -> AST.Block:
 
 			# If undeclared var is found, fill it out
 			if var_const.value in to_find:
-				variables[var_const.value] = var_type
+				var_scope[-1][var_const.value] = var_type
 				to_find.remove(var_const.value)
 
 	elif SC.sym == IF:
@@ -340,7 +339,7 @@ def stmt() -> AST.Block:
 			mark('expected variable')
 
 		# Create type mapping
-		variables[varname.value] = vartyp
+		var_scope[-1][varname.value] = vartyp
 		# Create variable sequence
 		params = AST.Parameter(AST.Variable(vartyp, varname))
 
@@ -357,7 +356,7 @@ def stmt() -> AST.Block:
 				mark('expected variable')
 
 			# Create type mapping
-			variables[varname.value] = vartyp
+			var_scope[-1][varname.value] = vartyp
 			# Create variable sequence
 			params.then(AST.Variable(vartyp, varname))
 
@@ -375,7 +374,7 @@ def stmt() -> AST.Block:
 	return val
 
 def expr() -> AST.Expression:
-	global in_func, variables, functions, to_find
+	global in_func, var_scope, functions, to_find
 	if SC.sym not in FIRSTEXPR:
 		mark('expected valid expr start')
 	
@@ -419,7 +418,7 @@ def expr() -> AST.Expression:
 					else:       params.then(AST.Variable(vartyp, varname))
 
 		else:
-			params = None
+			params = []
 
 		if SC.sym == COLON:
 			getSym()
@@ -427,14 +426,14 @@ def expr() -> AST.Expression:
 			mark('expected colon')
 
 		in_func = True
-		old_vars = dict(variables) # Need to detect new variables inside the loop to avoid multiple declarations
 		old_decl = to_find[:]
 
+		# Add new scope
+		var_scope.append({})
+
 		# Insert params to allow parsing of function body
-		if params:
-			for param in params:
-				var = param.current
-				variables[var.name.value] = var.dataType
+		for param in params: # param.current = variable
+			var_scope[-1][param.current.name.value] = param.current.dataType
 
 		body = program()
 
@@ -465,8 +464,9 @@ def expr() -> AST.Expression:
 
 		# restore state
 		in_func = False
-		variables = old_vars
 		to_find = old_decl
+
+		var_scope.pop()
 
 		# Create node
 		val = AST.FunctionDef(body, retntyp, params)
@@ -654,7 +654,7 @@ def subatom() -> AST.Expression:
 	return val
 
 def atom() -> AST.Expression:
-	global in_func, variables
+	global in_func, var_scope
 	if SC.sym not in FIRSTATOM:
 		mark('expected valid atom start')
 
@@ -662,11 +662,11 @@ def atom() -> AST.Expression:
 		# identifier
 
 		# check to see if the variable is already defined
-		if SC.val in variables:
+		if SC.val in var_scope[-1]:
 			if SC.val in functions:
 				typ = functions[SC.val]
 			else:
-				typ = variables[SC.val]
+				typ = var_scope[-1][SC.val]
 
 			# todo : how to deal with types?
 			value = AST.Variable(typ, AST.Const(AST.DataType.STR, SC.val))
