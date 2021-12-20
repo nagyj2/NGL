@@ -1,7 +1,7 @@
 # NGL Speed AST Generator 2.0
 
 import ngl_s_sc as SC
-from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, CMP_OR, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, CMP_OR, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, DECL_INT, DECL_FLOAT, DECL_STRING, DECL_BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast2 as AST
 from copy import deepcopy # todo: offer better copying
 
@@ -35,7 +35,7 @@ FOLLOWEXPR_L0 = FOLLOWEXPR_L1
 FIRSTEXPR  = {FUNC_DEF} | FIRSTEXPR_L0
 FOLLOWEXPR = FOLLOWEXPR_L0
 
-FIRSTSTMT  = {IDENT, IF, PRINT, LOOP, EXIT, LCURLY, INT, FLOAT, STRING, BOOLEAN}
+FIRSTSTMT  = {IDENT, IF, PRINT, LOOP, EXIT, LCURLY, DECL_INT, DECL_FLOAT, DECL_STRING, DECL_BOOLEAN}
 FOLLOWSTMT = {INPUT, RCURLY} | FOLLOWEXPR
 
 FIRSTLINES  = FIRSTSTMT
@@ -44,7 +44,7 @@ FOLLOWLINES = {LINEEND}
 FIRSTPROGRAM  = FIRSTLINES
 FOLLOWPROGRAM = FOLLOWLINES
 
-STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, FUNC_END, INT, FLOAT, STRING, BOOLEAN}
+STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, FUNC_END, DECL_INT, DECL_FLOAT, DECL_STRING, DECL_BOOLEAN}
 
 # Tracks whether the parser is in a function
 in_func = False
@@ -122,6 +122,7 @@ def lines() -> AST.Block:
 def stmt() -> AST.Block:
 	if SC.sym not in FIRSTSTMT:
 		mark('expected valid stmt start')
+	val = None
 
 	if SC.sym == IDENT:
 		
@@ -187,8 +188,7 @@ def stmt() -> AST.Block:
 			else:
 				var_type = value_expr.typeEval()
 
-				if first:
-					first = False
+				if type(val) != AST.Block:
 					val = AST.Block(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
 				else:
 					val.then(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
@@ -211,11 +211,9 @@ def stmt() -> AST.Block:
 			#     # Fill out the variable table
 			#     variables[var_const.value] = var_type
 
-
 			# Add assignment to the block
-			if first:
+			if type(val) != AST.Block:
 				val = AST.Block(AST.Assignment(AST.Variable(var_type, var_const), assign_op, value_expr))
-				first = False
 			else:
 				val.then(AST.Assignment(AST.Variable(var_type, var_const), assign_op, value_expr))
 
@@ -323,14 +321,14 @@ def stmt() -> AST.Block:
 		else:
 			mark('expected closing curly brace')
 
-	elif SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
+	elif SC.sym in {DECL_INT, DECL_FLOAT, DECL_STRING, DECL_BOOLEAN}:
 
 		# Find type for declaration
-		vartyp =   AST.DataType.INT if SC.sym == INT else \
-				AST.DataType.FLOAT if SC.sym == FLOAT else \
-				AST.DataType.STR if SC.sym == STRING else \
-				AST.DataType.BOOL #if SC.sym == BOOLEAN else \
-				# mark('invalid type')
+		vartyp =	AST.DataType.INT   if SC.sym == DECL_INT     else \
+							AST.DataType.FLOAT if SC.sym == DECL_FLOAT   else \
+							AST.DataType.STR   if SC.sym == DECL_STRING  else \
+							AST.DataType.BOOL #if SC.sym == DECL_BOOLEAN else \
+							# mark('invalid type')
 		getSym()
 
 		# Find first variable
@@ -371,7 +369,8 @@ def stmt() -> AST.Block:
 
 	if SC.sym == STMT_AND:
 		getSym()
-		val.then(stmt().statement)
+		for extra in stmt():
+			val.then(extra.statement)
 
 	return val
 

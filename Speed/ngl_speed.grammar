@@ -6,10 +6,6 @@
 # the old grammar into the new NGL v2.1 language.
 
 TODO:
-	- Allow chaining of STMTs with '&'
-		- 'stmt1 & stmt2' would be treated as a single statement.
-		- Either replace '{}' or add another version.
-			- Is shorter than '{}'
 	- Remove ':' in loops where unneeded
 
 STRONGSYM	 := ? | ! | $ | \ | { | } | ] | # | % | @ | ^ | <<EOF>>
@@ -32,7 +28,7 @@ STMT     	 := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | '-' 
 						| '$' EXPR ':' STMT ':' STMT ':' STMT
 							<< For-style loop. EXPR is loop condition, 1st STMT is init code, 2nd is step code and 3rd is loop body. >>
 
-						| ('#' | '%' | '@' | '^') IDENT {[','] IDENT}
+						| '|' ('#' | '%' | '@' | '^') IDENT {[','] IDENT}
 							<< Declare a variable in advance of it being used. Not required. >>
 
 						| '\\'
@@ -82,6 +78,7 @@ ATOM			 := IDENT
 							<< Boolean true. >>
 
 		 				| ''' .* '''
+						| '"' .* '"'
 							<< String literal. >>
 
 		 				| '(' EXPR ')'

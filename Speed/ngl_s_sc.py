@@ -31,13 +31,13 @@ RAW_STRING = 31; # `val` holds string contents
 IDENT = 32; # `val` holds string identifier
 
 INT = 33 # #
-IDENTITY_INT = 34 # ##
+DECL_INT = 34 # |#
 FLOAT = 35 # %
-IDENTITY_FLOAT = 36 # %%
+DECL_FLOAT = 36 # |%
 STRING = 37 # @
-IDENTITY_STRING = 38 # @@
+DECL_STRING = 38 # |@
 BOOLEAN = 39 # ^
-IDENTITY_BOOLEAN = 40 # ^^
+DECL_BOOLEAN = 40 # |^
 
 IF = 50; # ?
 ELSE = 51; # ~?
@@ -163,6 +163,10 @@ def getSym():
     elif ch == '|': 
         getChar(); 
         if ch == '>': getChar(); sym = GE
+        elif ch == '#': getChar(); sym = DECL_INT
+        elif ch == '%': getChar(); sym = DECL_FLOAT
+        elif ch == '@': getChar(); sym = DECL_STRING
+        elif ch == '^': getChar(); sym = DECL_BOOLEAN
         else: sym = CMP_OR
     elif ch == '&': getChar(); sym = STMT_AND
     elif ch == '<':
