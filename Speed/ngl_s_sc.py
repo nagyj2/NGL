@@ -1,5 +1,7 @@
 # NGL Speed Scanner
 
+import re
+
 PLUS = 1; # +
 MINUS = 2; # -
 MULT = 3; # *
@@ -120,7 +122,12 @@ def multichar_var(open: str):
     while chr(0) != ch != open: getChar()
     if ch == chr(0): mark('variable not terminated'); sym = None
     else:
-        sym = IDENT; val = source[start:index-1]
+        val = source[start:index-1]
+        if not re.match(r'^[A-Za-z0-9_]+$', val):
+            # Contains invalid characters
+            mark('invalid variable name')
+            val = re.sub(r'\W+', '', val)
+        sym = IDENT
         getChar(); # Get rid of terminating '
 
 def ident():
