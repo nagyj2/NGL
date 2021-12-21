@@ -1,7 +1,7 @@
 # NGL Speed AST Generator 2.0
 
 import ngl_s_sc as SC
-from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, CMP_OR, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, DECL_INT, DECL_FLOAT, DECL_STRING, DECL_BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, RBRAK, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, PIPE, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast2 as AST
 from copy import deepcopy # todo: offer better copying
 
@@ -35,7 +35,7 @@ FOLLOWEXPR_L0 = FOLLOWEXPR_L1
 FIRSTEXPR  = {FUNC_DEF} | FIRSTEXPR_L0
 FOLLOWEXPR = FOLLOWEXPR_L0
 
-FIRSTSTMT  = {IDENT, IF, PRINT, LOOP, EXIT, LCURLY, DECL_INT, DECL_FLOAT, DECL_STRING, DECL_BOOLEAN}
+FIRSTSTMT  = {IDENT, IF, PRINT, LOOP, EXIT, LCURLY, PIPE}
 FOLLOWSTMT = {INPUT, RCURLY} | FOLLOWEXPR
 
 FIRSTLINES  = FIRSTSTMT
@@ -44,7 +44,7 @@ FOLLOWLINES = {LINEEND}
 FIRSTPROGRAM  = FIRSTLINES
 FOLLOWPROGRAM = FOLLOWLINES
 
-STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, FUNC_END, DECL_INT, DECL_FLOAT, DECL_STRING, DECL_BOOLEAN}
+STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, RBRAK, PIPE}
 
 # Tracks whether the parser is in a function
 in_func = False
@@ -72,7 +72,7 @@ def program() -> AST.Block:
 		itr = itr.back()
 
 		# exit func modes if end is found
-		if in_func and SC.sym == FUNC_END:
+		if in_func and SC.sym == RBRAK:
 			break
 
 	# If any undeclared (VAR) variables, state they are undeclared
@@ -318,15 +318,19 @@ def stmt() -> AST.Block:
 		else:
 			mark('expected closing curly brace')
 
-	elif SC.sym in {DECL_INT, DECL_FLOAT, DECL_STRING, DECL_BOOLEAN}:
-
-		# Find type for declaration
-		vartyp =	AST.DataType.INT   if SC.sym == DECL_INT     else \
-							AST.DataType.FLOAT if SC.sym == DECL_FLOAT   else \
-							AST.DataType.STR   if SC.sym == DECL_STRING  else \
-							AST.DataType.BOOL #if SC.sym == DECL_BOOLEAN else \
-							# mark('invalid type')
+	elif SC.sym == PIPE:
 		getSym()
+
+		if SC.sym in {INT, FLOAT, STRING, BOOLEAN}:
+			# Find type for declaration
+			vartyp =	AST.DataType.INT   if SC.sym == INT     else \
+								AST.DataType.FLOAT if SC.sym == FLOAT   else \
+								AST.DataType.STR   if SC.sym == STRING  else \
+								AST.DataType.BOOL #if SC.sym == BOOLEAN else \
+			getSym()
+		else:
+			vartyp = AST.DataType.STR
+			mark('invalid type')
 
 		# Find first variable
 		if SC.sym == IDENT:
@@ -475,7 +479,7 @@ def expr() -> AST.Expression:
 
 		var_scope.pop()
 
-		if SC.sym == FUNC_END:
+		if SC.sym == RBRAK:
 			getSym()
 		else:
 			mark('expected function closing brace')
@@ -606,7 +610,7 @@ def expr_l5() -> AST.Expression:
 	val = expr_l6() # A single atom
 
 	first = True
-	while SC.sym in {CMP_OR}:
+	while SC.sym in {PIPE}:
 		getSym()
 		
 		if SC.sym in FIRSTEXPR_L6:
@@ -762,7 +766,7 @@ def atom() -> AST.Expression:
 
 		value = AST.FunctionCall(callee, args)
 
-		if SC.sym == FUNC_END:
+		if SC.sym == RBRAK:
 			getSym()
 		else:
 			mark('expected function closing brace')

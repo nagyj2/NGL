@@ -23,7 +23,7 @@ COMMA = 20 # ,
 MOD = 21 # %
 GE = 22 # |>
 LE = 23 # <|
-CMP_OR = 24 # |
+PIPE = 24 # |
 STMT_AND = 25 # &
 
 NUMBER = 30; # `val` holds corresponding number
@@ -31,13 +31,9 @@ RAW_STRING = 31; # `val` holds string contents
 IDENT = 32; # `val` holds string identifier
 
 INT = 33 # #
-DECL_INT = 34 # |#
 FLOAT = 35 # %
-DECL_FLOAT = 36 # |%
 STRING = 37 # @
-DECL_STRING = 38 # |@
 BOOLEAN = 39 # ^
-DECL_BOOLEAN = 40 # |^
 
 IF = 50; # ?
 ELSE = 51; # ~?
@@ -46,7 +42,7 @@ LOOP = 53; # $
 EXIT = 54; # \
 FUNC_DEF = 55; # ![
 FUNC_CALL = 56; # ?[
-FUNC_END = 57; # ]
+RBRAK = 57; # ]
 
 BLOCK = 80 # For AST nodes - indicates a sequence of statements
 ASSIGN = 81 # For AST nodes - indicates a sequence of assignments
@@ -163,11 +159,7 @@ def getSym():
     elif ch == '|': 
         getChar(); 
         if ch == '>': getChar(); sym = GE
-        elif ch == '#': getChar(); sym = DECL_INT
-        elif ch == '%': getChar(); sym = DECL_FLOAT
-        elif ch == '@': getChar(); sym = DECL_STRING
-        elif ch == '^': getChar(); sym = DECL_BOOLEAN
-        else: sym = CMP_OR
+        else: sym = PIPE
     elif ch == '&': getChar(); sym = STMT_AND
     elif ch == '<':
         getChar()
@@ -195,7 +187,7 @@ def getSym():
         getChar()
         if ch == '[': getChar(); sym = FUNC_CALL
         else: sym = IF
-    elif ch == ']': getChar(); sym = FUNC_END
+    elif ch == ']': getChar(); sym = RBRAK
     elif ch == '$': getChar(); sym = LOOP
     elif ch == '\\': 
         getChar(); 
