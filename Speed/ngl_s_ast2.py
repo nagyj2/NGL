@@ -1,8 +1,8 @@
 # NGL Speed AST 2.0
 
 from enum import Enum
-from ngl_s_sc import FUNC_DEF, FUNC_CALL, FUNC_END, PARAM, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, LT, GT, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, RCURLY, BOOL, NUMBER, RAW_STRING, IDENT, IF, ELSE, PRINT, LOOP, EXIT, BLOCK, ASSIGN, INT, FLOAT, STRING, BOOLEAN, FUNC, EOF, mark
-from typing import Union, Type, List
+from ngl_s_sc import mark
+from typing import Type, List
 
 class NodeType(Enum):
 	NONE = 0
@@ -219,7 +219,7 @@ class Sequence():
 
 		return self
 
-	def find(self, typ: Type) -> Union['Sequence', None]:
+	def find(self, typ: Type) -> 'Sequence' | None:
 		'''Finds the first element in the sequence that matches the type.'''
 		if self.current.__class__ == typ:	return self
 		elif self.next:										return self.next.find(typ)
@@ -264,7 +264,7 @@ class Statement(Node):
 	
 
 class Const(Expression):
-	def __init__(self, typ: DataType, value: Union[int, float, str, bool]):
+	def __init__(self, typ: DataType, value: int | float | str | bool):
 		super().__init__()
 		assert typ in {DataType.INT, DataType.FLOAT, DataType.STR, DataType.BOOL, DataType.VAR, DataType.FUNC}
 		
@@ -348,7 +348,7 @@ class Block(Statement, Sequence):
 	def statement(self, value):
 			self.current = value
 
-	def __init__(self, statement: Statement, next: Union[Statement, None] = None):
+	def __init__(self, statement: Statement, next: Statement | None = None):
 		Statement.__init__(self)
 		Sequence.__init__(self, selftype=Block, current=statement, next=next)
 
@@ -381,7 +381,7 @@ class Parameter(Statement, Sequence):
 	def var(self, value):
 			self.current = value
 
-	def __init__(self, var: Variable, next: Union[Variable, None] = None):
+	def __init__(self, var: Variable, next: Variable | None = None):
 		# super().__init__(selftype=Parameter, current=var, next=next)
 		Statement.__init__(self)
 		Sequence.__init__(self, selftype=Parameter, current=var, next=next)
@@ -411,7 +411,7 @@ class Argument(Statement, Sequence):
 	def expr(self, value):
 			self.current = value
 
-	def __init__(self, expr: Expression, next: Union[Expression, None] = None):
+	def __init__(self, expr: Expression, next: Expression | None = None):
 		Statement.__init__(self)
 		Sequence.__init__(self, selftype=Argument, current=expr, next=next)
 
@@ -438,7 +438,7 @@ class Alternative(Expression, Sequence):
 	def alternate(self, value):
 			self.current = value
 	
-	def __init__(self, expr: Expression, next: Union[Expression, None] = None):
+	def __init__(self, expr: Expression, next: Expression | None = None):
 		# super(Expression, self).__init__()
 		Expression.__init__(self)
 		Sequence.__init__(self, selftype=Alternative, current=expr, next=next)
@@ -481,7 +481,7 @@ class Alternative(Expression, Sequence):
 
 
 class FunctionDef(Expression):
-	def __init__(self, body: Statement, retn: DataType, params: Union[Parameter, None] = None):
+	def __init__(self, body: Statement, retn: DataType, params: Parameter | None = None):
 		super().__init__()
 		assert body.nodeEval() == NodeType.STATEMENT
 		assert isinstance(retn, DataType)
@@ -509,7 +509,7 @@ class FunctionDef(Expression):
 		return f'({self.params.as_python() if self.params else ""}):\n{self.body.as_python(indent+1)}'
 
 class FunctionCall(Expression):
-	def __init__(self, function: Variable, args: Union[Argument, None] = None):
+	def __init__(self, function: Variable, args: Argument | None = None):
 		super().__init__()
 		assert args == None or isinstance(args, Argument)
 		assert isinstance(function, Variable)
@@ -760,10 +760,10 @@ class Delete(Statement):
 		return string[:-1]
 
 class IfElse(Statement):
-	def __init__(self, expr: Expression, ifBlock: Statement, elseBlock: Union[Statement, None] = None):
+	def __init__(self, expr: Expression, ifBlock: Statement | None, elseBlock: Statement | None = None):
 		super().__init__()
 		assert expr.nodeEval() in {NodeType.EXPRESSION}
-		assert ifBlock.nodeEval() in {NodeType.STATEMENT}
+		assert ifBlock == None or ifBlock.nodeEval() in {NodeType.STATEMENT}
 		assert elseBlock == None or elseBlock.nodeEval() in {NodeType.STATEMENT}
 
 		self.expr = expr
@@ -790,7 +790,7 @@ class IfElse(Statement):
 			('\n' + f'\t'*indent + f'elif {self.elseBlock.as_python(indent)[indent+3:]}'))
 
 class ForLoop(Statement):
-	def __init__(self, condition: Expression, body: Union[Statement, None] = None, init: Union[Statement, None] = None, step: Union[Statement, None] = None):
+	def __init__(self, condition: Expression, body: Statement | None = None, init: Statement | None = None, step: Statement | None = None):
 		super().__init__()
 		assert condition.nodeEval() in {NodeType.EXPRESSION}
 		assert body == None or body.nodeEval() in {NodeType.STATEMENT}
@@ -864,7 +864,7 @@ class Pass(Statement):
 		return f'\t'*indent + f'pass'
 
 class Return(Statement):
-	def __init__(self, expr: Union[Expression, None]):
+	def __init__(self, expr: Expression | None):
 		super().__init__()
 		assert expr.nodeEval() in {NodeType.EXPRESSION}
 
