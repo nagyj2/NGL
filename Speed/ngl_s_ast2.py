@@ -2,7 +2,7 @@
 
 from enum import Enum
 from ngl_s_sc import mark
-from typing import Type, List
+from typing import Type, List, Union
 
 class NodeType(Enum):
 	NONE = 0
@@ -65,6 +65,7 @@ class OpType(Enum):
 	AND = 18
 	OR = 19
 	NOT = 20
+	INDEX = 21
 
 	def __repr__(self):
 		if self == OpType.PLUS:
@@ -108,7 +109,7 @@ class OpType(Enum):
 		else: # self == OpType.NE:
 			return '!'
 
-	def as_python(self):
+	def as_python(self, arg = None):
 		if self == OpType.PLUS:
 			return '+'
 		elif self == OpType.MINUS:
@@ -147,11 +148,14 @@ class OpType(Enum):
 			return 'and'
 		elif self == OpType.OR:
 			return 'or'
-		else: # self == OpType.NE:
+		elif self == OpType.NE:
 			return 'not'
+		else: # self == OpType.INDEX:
+			return f'[{arg}]'
 
 	def asmprint(self):
 		return repr(self)
+
 
 class Node():
 	def __init__(self):
@@ -219,7 +223,7 @@ class Sequence():
 
 		return self
 
-	def find(self, typ: Type) -> 'Sequence' | None:
+	def find(self, typ: Type) -> Union['Sequence', None]:
 		'''Finds the first element in the sequence that matches the type.'''
 		if self.current.__class__ == typ:	return self
 		elif self.next:										return self.next.find(typ)
@@ -616,7 +620,8 @@ class BinOp(Expression):
 		else:
 			self.dataType = typ
 			 
-		self.prec = 30 if self.op in {OpType.MULT, OpType.DIV, OpType.MOD} else \
+		self.prec =  9 if self.op in {OpType.INDEX} else \
+								30 if self.op in {OpType.MULT, OpType.DIV, OpType.MOD} else \
 								40 if self.op in {OpType.PLUS, OpType.MINUS} else \
 								50 if self.op in {OpType.EQ, OpType.NE, OpType.LT, OpType.GT, OpType.LE, OpType.GE} else \
 								60 if self.op in {OpType.AND} else \
@@ -633,6 +638,10 @@ class BinOp(Expression):
 				return DataType.BOOL
 			case (OpType.OR, _, _): 
 				return DataType.BOOL
+
+			# List indexing
+			case (OpType.INDEX, _ as ListType, DataType.INT): 
+				return ListType
 
 			# Standard arithmetic
 			case ((OpType.PLUS | OpType.MINUS | OpType.MULT), DataType.INT, DataType.INT):
@@ -754,10 +763,7 @@ class Delete(Statement):
 		return f'|  '*indent + f'delete {self.params.pprint()}'
 
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
-		string = 'del'
-		for var in self.params:
-			string += f' {var.as_python()},'
-		return string[:-1]
+		return f'\t'*indent + f'del {self.params.as_python()}'
 
 class IfElse(Statement):
 	def __init__(self, expr: Expression, ifBlock: Statement | None, elseBlock: Statement | None = None):
