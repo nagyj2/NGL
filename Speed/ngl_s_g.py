@@ -3,6 +3,7 @@
 import ngl_s_sc as SC
 from ngl_s_sc import FUNC_DEF, FUNC_CALL, RBRAK, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, PIPE, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast2 as AST
+import ngl_s_scope as ST
 from copy import deepcopy # todo: offer better copying
 
 FIRSTATOM  = {IDENT, NUMBER, BOOL, RAW_STRING, LPAREN, INPUT, FUNC_CALL}
@@ -48,18 +49,17 @@ STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, RBRAK, PIPE}
 
 # Tracks whether the parser is in a function
 in_func = False
-# Tracts variable types - just used to aid in AST creation! NOT RETURNED
-var_scope = []
 # Tracks return types of functions - just used to aid in AST creation! NOT RETURNED
 functions = {}
+scopes = ST.SymbolTable()
 
 def program() -> AST.Block:
-	global in_func, var_scope
+	global in_func, scopes
 	if SC.sym not in FIRSTPROGRAM:
 		mark('expected valid program start')
 
 	prog = None
-	var_scope.append({})
+	scopes.newScope()
 
 	if SC.sym in FIRSTPROGRAM:
 		prog = lines()
@@ -76,16 +76,16 @@ def program() -> AST.Block:
 			break
 
 	# If any undeclared (VAR) variables, state they are undeclared
-	undeclareds = list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, var_scope[-1].items()))
+	undeclareds = list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))
 	if len(undeclareds) > 0:
 		mark(f'warning: variables not declared: {undeclareds}')
 
-	var_scope.pop()
+	scopes.popScope()
 
 	return prog
 
 def lines() -> AST.Block:
-	global functions, var_scope
+	global functions, scopes
 	if SC.sym not in FIRSTLINES:
 		mark('expected valid lines start')
 
@@ -117,7 +117,7 @@ def lines() -> AST.Block:
 		mark(f'unknown enum lines: {SC.sym}')
 
 	for var in functions:
-		assert var in var_scope[-1]
+		assert var in scopes[-1]
 
 	return val
 
@@ -156,7 +156,7 @@ def stmt() -> AST.Block:
 				value_expr = AST.Const(AST.DataType.INT, 0)
 
 			# Confirm type agreement if variable has been used already
-			if var_const.value in var_scope[-1]:
+			if var_const.value in scopes.top():
 
 				# If value is a function, grab the return type
 				if isinstance(value_expr, AST.FunctionCall):
@@ -169,7 +169,7 @@ def stmt() -> AST.Block:
 				# Otherwise, grab the variable type
 				else:
 					# Always assume the previous type is correct
-					var_type = var_scope[-1][var_const.value]
+					var_type = scopes.search(var_const.value)
 				
 				# Check if type is correct
 				if var_type != value_expr.typeEval():
@@ -196,13 +196,14 @@ def stmt() -> AST.Block:
 					val.then(AST.Declaration(AST.Parameter(AST.Variable(var_type, var_const))))
 
 				# Fill out the variable table
-				var_scope[-1][var_const.value] = var_type
+				# var_scope[-1][var_const.value] = var_type
+				scopes.assign(var_const.value, var_type)
 
 
 			# If a function definition, do some trickery
 			if isinstance(value_expr, AST.FunctionDef):
 				functions[var_const.value] = value_expr.retn
-				var_scope[-1][var_const.value] = var_type
+				scopes.assign(var_const.value, var_type)
 
 				# `+=` and equivalent operators do not work with functions
 				if assign_op != AST.OpType.EQ:
@@ -216,8 +217,8 @@ def stmt() -> AST.Block:
 				val.then(AST.Assignment(AST.Variable(var_type, var_const), assign_op, value_expr))
 
 			# If undeclared var is found, fill it out
-			if var_scope[-1][var_const.value] == AST.DataType.VAR:
-				var_scope[-1][var_const.value] = var_type
+			if scopes.search(var_const.value) == AST.DataType.VAR:
+				scopes.assign(var_const.value, var_type)
 
 	elif SC.sym == IF:
 		# if statement
@@ -229,16 +230,26 @@ def stmt() -> AST.Block:
 			mark('empty if condition')
 			cond = AST.Const(AST.DataType.BOOL, False)
 
+		scopes.newScope()
 		if SC.sym in FIRSTSTMT:
 			true = stmt()
 		else:
 			true = AST.Pass()
+		true.then(_generate_deletions(true))
+		if len(list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))) > 0:
+			mark(f'variables not declared')
+		scopes.popScope()
 
+		scopes.newScope()
 		if SC.sym == ELSE:
 			getSym()
 			false = stmt()
 		else:
 			false = None
+		false.then(_generate_deletions(false))
+		if len(list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))) > 0:
+			mark(f'variables not declared')
+		scopes.popScope()
 
 		val = AST.Block(AST.IfElse(cond,true,false))
 
@@ -250,6 +261,9 @@ def stmt() -> AST.Block:
 
 	elif SC.sym == LOOP:
 		# loop stmt
+
+		scopes.newScope()
+
 		getSym()
 		cond = expr()
 		if SC.sym == COLON:
@@ -283,6 +297,14 @@ def stmt() -> AST.Block:
 			body = None
 
 		val = AST.Block(AST.ForLoop(cond, body, init, step))
+		if init:	val.then(_generate_deletions(init))
+		if body:	val.then(_generate_deletions(body))
+		if step:	val.then(_generate_deletions(step))
+		
+
+		if len(list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))) > 0:
+			mark(f'variables not declared')
+		scopes.popScope()
 
 	elif SC.sym == EXIT:
 		# print stmt
@@ -304,7 +326,7 @@ def stmt() -> AST.Block:
 		if SC.sym in FIRSTLINES:
 			val = lines()
 		else:
-			val = None
+			val = AST.Block(AST.Pass())
 			mark('blocks require at least one line')
 			# val = AST.Block(AST.Assignment(AST.Variable(AST.DataType.INT,'_'),AST.DataType.EQ,AST.Const(AST.DataType,0)))
 		
@@ -341,7 +363,7 @@ def stmt() -> AST.Block:
 			mark('expected variable')
 
 		# Create type mapping
-		var_scope[-1][varname.value] = vartyp
+		scopes.assign(varname.value, vartyp)
 		# Create variable sequence
 		params = AST.Parameter(AST.Variable(vartyp, varname))
 
@@ -358,7 +380,7 @@ def stmt() -> AST.Block:
 				mark('expected variable')
 
 			# Create type mapping
-			var_scope[-1][varname.value] = vartyp
+			scopes.assign(varname.value, vartyp)
 			# Create variable sequence
 			params.then(AST.Variable(vartyp, varname))
 
@@ -376,7 +398,7 @@ def stmt() -> AST.Block:
 	return val
 
 def expr() -> AST.Expression:
-	global in_func, var_scope, functions
+	global in_func, scopes, functions
 	if SC.sym not in FIRSTEXPR:
 		mark('expected valid expr start')
 	
@@ -429,11 +451,11 @@ def expr() -> AST.Expression:
 
 		in_func = True
 		# Add new scope
-		var_scope.append({})
+		scopes.newScope()
 
 		# Insert params to allow parsing of function body
 		for param in params: # param.current = variable
-			var_scope[-1][param.current.name.value] = param.current.dataType
+			scopes.assign(param.current.name.value, param.current.dataType)
 
 		body = program()
 
@@ -477,7 +499,7 @@ def expr() -> AST.Expression:
 		# Deletion statements are found, but cannot be inserted easily
 		# val = AST.Block(deletions).then(AST.FunctionDef(body, retntyp, params))
 
-		var_scope.pop()
+		scopes.popScope()
 
 		if SC.sym == RBRAK:
 			getSym()
@@ -662,7 +684,7 @@ def subatom() -> AST.Expression:
 	return val
 
 def atom() -> AST.Expression:
-	global in_func, var_scope
+	global in_func, scopes
 	if SC.sym not in FIRSTATOM:
 		mark('expected valid atom start')
 
@@ -670,11 +692,11 @@ def atom() -> AST.Expression:
 		# identifier
 
 		# check to see if the variable is already defined
-		if SC.val in var_scope[-1]:
+		if scopes.search(SC.val):
 			if SC.val in functions:
 				typ = functions[SC.val]
 			else:
-				typ = var_scope[-1][SC.val]
+				typ = scopes.search(SC.val)
 
 			# todo : how to deal with types?
 			value = AST.Variable(typ, AST.Const(AST.DataType.STR, SC.val))
@@ -683,7 +705,7 @@ def atom() -> AST.Expression:
 			typ = AST.DataType.VAR
 			value = AST.Const(typ, SC.val)
 			# Add a 'VAR' type variable. This is a hack to allow for use of vars before they are mentioned in source, particularly for loops
-			var_scope[-1][SC.val] = typ
+			scopes.assign(SC.val, typ)
 			# mark('undefined variable')
 		
 		getSym()
@@ -816,6 +838,26 @@ def _expand_alternatives(val: AST.Alternative) -> AST.Expression:
 		for alt in orig.next.next:
 			val = AST.BinOp(AST.OpType.OR, val, alt.alternate)
 	return val
+
+def _generate_deletions(body: AST.Block) -> AST.Delete:
+	global scopes
+	assignments = body.findall(AST.Assignment, [])
+	assigned_vars = [assignment.var.getName() for assignment in assignments if assignment.var.getName() in scopes.top()]
+
+	decl_lst = body.findall(AST.Declaration, [])
+	to_delete = None # deepcopy(decl_lst[0].params)
+	for decl in decl_lst:
+		for params in decl.params:
+			for var in params:
+
+				if var.var.getName() in assigned_vars:
+					if to_delete is None:	to_delete = AST.Parameter(deepcopy(var.var))
+					else:									to_delete.then(deepcopy(var.var))
+					# scopes.delete(var.var.getName())
+		
+	if to_delete is None:
+		return AST.Pass()
+	return AST.Delete(to_delete)
 
 def _readsource(fname):
 	src = ''
