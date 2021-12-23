@@ -128,6 +128,7 @@ def multichar_var(open: str):
             # Contains invalid characters
             mark('invalid variable name')
             val = re.sub(r'\W+', '', val)
+            if len(val) == 0: val = '_'
         sym = IDENT
         getChar(); # Get rid of terminating '
 
