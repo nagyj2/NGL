@@ -233,7 +233,9 @@ def stmt() -> AST.Block:
 		scopes.newScope()
 		if SC.sym in FIRSTSTMT:
 			true = stmt()
-			true.then(_generate_deletions(true))
+			deletes = _generate_deletions(true)
+			if type(deletes) is not AST.Pass:
+				true.then(deletes)
 		else:
 			true = AST.Pass()
 		if len(list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))) > 0:
@@ -244,7 +246,9 @@ def stmt() -> AST.Block:
 		if SC.sym == ELSE:
 			getSym()
 			false = stmt()
-			false.then(_generate_deletions(false))
+			deletes = _generate_deletions(false)
+			if type(deletes) is not AST.Pass:
+				false.then(deletes)
 		else:
 			false = None
 		if len(list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))) > 0:
@@ -297,10 +301,11 @@ def stmt() -> AST.Block:
 			body = None
 
 		val = AST.Block(AST.ForLoop(cond, body, init, step))
-		if init:	val.then(_generate_deletions(init))
-		if body:	val.then(_generate_deletions(body))
-		if step:	val.then(_generate_deletions(step))
-		
+		nonnull_stmts = [stmts for stmts in [init, step, body] if stmts is not None]
+		for stmts in nonnull_stmts:
+			deletes = _generate_deletions(stmts)
+			if type(deletes) is not AST.Pass:
+				val.then(deletes)
 
 		if len(list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))) > 0:
 			mark(f'variables not declared')
@@ -488,7 +493,6 @@ def expr() -> AST.Expression:
 			todelete = deepcopy(new_decls[0].params)
 			for decl in new_decls[1:]:
 				for var in decl.params:
-					print('>>>',var.pprint())
 					todelete.then(deepcopy(var.current))
 			deletions = AST.Delete(todelete)
 		else:
