@@ -28,7 +28,7 @@ TODO:
 	- length
 		- a]#
 
-STRONGSYM	 := '?' | '!' | '$' | '\' | '{' | '}' | '![' | '?[' | ']' | '|#' | '|%' | '|@' | '|^' | <<EOF>>
+STRONGSYM	 := '?' | '!?' | '!' | '$' | '!$' | '\' | '{' | '}' | '![' | '?[' | ']' | '|#' | '|%' | '|@' | '|^' | <<EOF>>
 
 PROGRAM  	 := {LINES}
 							<< A program is a series of lines. >>
@@ -39,13 +39,13 @@ LINES		 	 := STMT ';'
 STMT     	 := IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR {IDENT ['+' | '-' | '*' | '/' | '<>' | '='] EXPR}
 							<< Assign EXPR to IDENT by default. If a special operator is used, use shorthand assignment operator. >>
 
-		 				| '?' EXPR STMT ['~?' STMT]
+		 				| ('?' | '!?) EXPR STMT ['~?' STMT]
 							<< If statement with optional else. >>
 
 						| '!' EXPR
 							<< Print statement. >>
 
-						| '$' EXPR ':' STMT ':' STMT ':' STMT
+						| ('$' | '!$') EXPR ':' STMT ':' STMT ':' STMT
 							<< For-style loop. EXPR is loop condition, 1st STMT is init code, 2nd is step code and 3rd is loop body. >>
 
 						| '|' ('#' | '%' | '@' | '^') IDENT {[','] IDENT}
@@ -85,7 +85,10 @@ EXPR_L4	 	 := EXPR_L5 {('*' | '/' | '<>') EXPR_L5}
 EXPR_L5	 	 := EXPR_L6 {'|' EXPR_L6}
 							<< | : Alternative >>
 
-EXPR_L6	 	 := ['~' | '+' | '-'] SUBATOM
+EXPR_L6	 	 := EXPR_L7 [',' EXPR_L7 [',' EXPR_L7]]
+							<< | : Alternative >>
+
+EXPR_L7	 	 := ['~' | '+' | '-'] SUBATOM
 							<< ~ : NOT, + : Positive, - : Negative >>
 
 SUBATOM		 := ['#' | '%' | '@' | '^'] ATOM

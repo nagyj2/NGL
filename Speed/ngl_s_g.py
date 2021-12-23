@@ -1,7 +1,7 @@
 # NGL Speed AST Generator 2.0
 
 import ngl_s_sc as SC
-from ngl_s_sc import FUNC_DEF, FUNC_CALL, RBRAK, PLUS, MINUS, MULT, DIV, MOD, ASSIGN_PLUS, ASSIGN_MINUS, ASSIGN_MULT, ASSIGN_DIV, ASSIGN_MOD, AND, OR, EQ, NE, LT, GT, GE, LE, PIPE, DECLARE, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, RBRAK, PLUS, MINUS, MULT, DIV, MOD, ASSIGN_PLUS, ASSIGN_MINUS, ASSIGN_MULT, ASSIGN_DIV, ASSIGN_MOD, AND, OR, EQ, LT, GT, GE, LE, PIPE, DECLARE, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, NEG_IF, ELSE, PRINT, LOOP, NEG_LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast2 as AST
 import ngl_s_scope as ST
 from copy import deepcopy # todo: offer better copying
@@ -36,7 +36,7 @@ FOLLOWEXPR_L0 = FOLLOWEXPR_L1
 FIRSTEXPR  = {FUNC_DEF} | FIRSTEXPR_L0
 FOLLOWEXPR = FOLLOWEXPR_L0
 
-FIRSTSTMT  = {IDENT, IF, PRINT, LOOP, EXIT, LCURLY, DECLARE}
+FIRSTSTMT  = {IDENT, IF, NEG_IF, PRINT, LOOP, NEG_LOOP, EXIT, LCURLY, DECLARE}
 FOLLOWSTMT = {INPUT, RCURLY} | FOLLOWEXPR
 
 FIRSTLINES  = FIRSTSTMT
@@ -45,7 +45,7 @@ FOLLOWLINES = {LINEEND}
 FIRSTPROGRAM  = FIRSTLINES
 FOLLOWPROGRAM = FOLLOWLINES
 
-STRONGSYMS = {IF, PRINT, LOOP, EXIT, LCURLY, RCURLY, EOF, RBRAK, DECLARE}
+STRONGSYMS = {IF, NEG_IF, PRINT, LOOP, NEG_LOOP, EXIT, LCURLY, RCURLY, EOF, RBRAK, DECLARE}
 
 # Tracks whether the parser is in a function
 in_func = False
@@ -228,15 +228,20 @@ def stmt() -> AST.Block:
 			if scopes.search(var_const.value) == AST.DataType.VAR:
 				scopes.assign(var_const.value, var_type)
 
-	elif SC.sym == IF:
+	elif SC.sym in {IF, NEG_IF}:
 		# if statement
+		if SC.sym == IF:	invert = False
+		else:							invert = True
 		getSym()
 
 		if SC.sym in FIRSTEXPR:
 			cond = expr()
+			if invert:
+				cond = AST.UnOp(AST.OpType.NOT, cond)
 		else:
 			mark('empty if condition')
 			cond = AST.Const(AST.DataType.BOOL, False)
+
 
 		scopes.newScope()
 		if SC.sym in FIRSTSTMT:
@@ -271,13 +276,23 @@ def stmt() -> AST.Block:
 		display = expr()
 		val = AST.Block(AST.Print(display))
 
-	elif SC.sym == LOOP:
+	elif SC.sym in {LOOP, NEG_LOOP}:
 		# loop stmt
 
 		scopes.newScope()
-
+		if SC.sym == NEG_LOOP:	invert = True
+		else:										invert = False
 		getSym()
-		cond = expr()
+		
+		if SC.sym in FIRSTEXPR:
+			cond = expr()
+			if invert:
+				cond = AST.UnOp(AST.OpType.NOT, cond)
+		else:
+			mark('empty loop condition')
+			cond = AST.Const(AST.DataType.BOOL, False)
+
+
 		if SC.sym == COLON:
 			getSym()
 		else:

@@ -44,14 +44,16 @@ ASSIGN_DIV = 43 # /=
 ASSIGN_MOD = 44 # %=
 
 IF = 50; # ?
-ELSE = 51; # ~?
-PRINT = 52; # !
-LOOP = 53; # $
-EXIT = 54; # \
-FUNC_DEF = 55; # ![
-FUNC_CALL = 56; # ?[
-RBRAK = 57; # ]
-DECLARE = 58 # |
+NEG_IF = 51 # !?
+ELSE = 52; # ~?
+PRINT = 53; # !
+LOOP = 54; # $
+NEG_LOOP = 55; # !$
+FUNC_DEF = 56; # ![
+FUNC_CALL = 57; # ?[
+RBRAK = 58; # ]
+DECLARE = 59 # |
+EXIT = 60; # \
 
 BLOCK = 80 # For AST nodes - indicates a sequence of statements
 ASSIGN = 81 # For AST nodes - indicates a sequence of assignments
@@ -209,6 +211,8 @@ def getSym():
     elif ch == '!':
         getChar()
         if ch == '[': getChar(); sym = FUNC_DEF
+        elif ch == '?': getChar(); sym = NEG_IF
+        elif ch == '$': getChar(); sym = NEG_LOOP
         else: sym = PRINT
     # elif ch == '?': getChar(); sym = IF
     elif ch == '?':
