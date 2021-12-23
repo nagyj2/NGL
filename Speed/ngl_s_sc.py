@@ -45,6 +45,7 @@ EXIT = 54; # \
 FUNC_DEF = 55; # ![
 FUNC_CALL = 56; # ?[
 RBRAK = 57; # ]
+DECLARE = 58 # |
 
 BLOCK = 80 # For AST nodes - indicates a sequence of statements
 ASSIGN = 81 # For AST nodes - indicates a sequence of assignments
@@ -166,6 +167,7 @@ def getSym():
     elif ch == '|': 
         getChar(); 
         if ch == '>': getChar(); sym = GE
+        elif ch in ['#', '%', '@', '^', '_']: sym = DECLARE
         else: sym = PIPE
     elif ch == '&': getChar(); sym = STMT_AND
     elif ch == '<':
