@@ -156,7 +156,7 @@ def stmt() -> AST.Block:
 				value_expr = AST.Const(AST.DataType.INT, 0)
 
 			# Confirm type agreement if variable has been used already
-			if var_const.value in scopes.top():
+			if scopes.search(var_const.value) != None:
 
 				# If value is a function, grab the return type
 				if isinstance(value_expr, AST.FunctionCall):
@@ -233,9 +233,9 @@ def stmt() -> AST.Block:
 		scopes.newScope()
 		if SC.sym in FIRSTSTMT:
 			true = stmt()
+			true.then(_generate_deletions(true))
 		else:
 			true = AST.Pass()
-		true.then(_generate_deletions(true))
 		if len(list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))) > 0:
 			mark(f'variables not declared')
 		scopes.popScope()
@@ -244,9 +244,9 @@ def stmt() -> AST.Block:
 		if SC.sym == ELSE:
 			getSym()
 			false = stmt()
+			false.then(_generate_deletions(false))
 		else:
 			false = None
-		false.then(_generate_deletions(false))
 		if len(list(filter(lambda key_val: key_val[1] == AST.DataType.VAR, scopes.top().items()))) > 0:
 			mark(f'variables not declared')
 		scopes.popScope()
