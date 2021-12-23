@@ -155,7 +155,7 @@ class OpType(Enum):
 			return 'and'
 		elif self == OpType.OR:
 			return 'or'
-		elif self == OpType.NE:
+		elif self == OpType.NOT:
 			return 'not'
 		elif self == OpType.ASSIGN_EQ:
 			return '='
