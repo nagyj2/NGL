@@ -791,7 +791,7 @@ class IfElse(Statement):
 			mark(f'if-else block without if block')
 			self.ifBlock = Pass()
 		isElif = isinstance(self.elseBlock, Block) and type(self.elseBlock.statement) is IfElse
-		return f'\t'*indent + f'if {self.expr.as_python()}:\n{self.ifBlock.as_python(indent+1) if self.ifBlock != None else ""}' + \
+		return f'\t'*indent + f'if {self.expr.as_python()}:\n{self.ifBlock.as_python(indent+1)}' + \
 			(('\n' + f'\t'*indent + f'else:\n{self.elseBlock.as_python(indent+1)}' if self.elseBlock != None else '') if not isElif else \
 			('\n' + f'\t'*indent + f'elif {self.elseBlock.as_python(indent)[indent+3:]}'))
 
