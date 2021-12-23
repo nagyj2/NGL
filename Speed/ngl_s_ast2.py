@@ -98,7 +98,7 @@ class OpType(Enum):
 		elif self == OpType.GE:
 			return '>='
 		elif self == OpType.EQ:
-			return '='
+			return '=='
 		elif self == OpType.NE:
 			return '!='
 		elif self == OpType.CAST_INT:
@@ -113,8 +113,22 @@ class OpType(Enum):
 			return '&'
 		elif self == OpType.OR:
 			return '|'
-		else: # self == OpType.NE:
+		elif self == OpType.NOT:
 			return '!'
+		elif self == OpType.ASSIGN_EQ:
+			return ':='
+		elif self == OpType.ASSIGN_PLUS:
+			return '+='
+		elif self == OpType.ASSIGN_MINUS:
+			return '-='
+		elif self == OpType.ASSIGN_MULT:
+			return '*='
+		elif self == OpType.ASSIGN_DIV:
+			return '/='
+		elif self == OpType.ASSIGN_MOD:
+			return '%='
+		else:
+			return '??'
 
 	def as_python(self, arg = None):
 		if self == OpType.PLUS:
@@ -740,7 +754,7 @@ class Assignment(Statement):
 	def __repr__(self):
 		return f'Assign({self.var} {self.op} {self.expr})'
 	def pprint(self, indent: int = 0, prec: int = 0) -> str:
-		return f'|  '*indent + f'{self.var.pprint()} {repr(self.op)}= {self.expr.pprint()}'
+		return f'|  '*indent + f'{self.var.pprint()} {repr(self.op)} {self.expr.pprint()}'
 
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		if self.var.typeEval() == DataType.FUNC:
