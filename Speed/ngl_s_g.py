@@ -136,17 +136,17 @@ def stmt() -> AST.Block:
 
 			# Determine type of assignment
 			if SC.sym in {EQ, PLUS, MINUS, MULT, DIV, MOD}:
-				assign_op = AST.OpType.PLUS if SC.sym == PLUS else \
-							AST.OpType.MINUS if SC.sym == MINUS else \
-							AST.OpType.MULT if SC.sym == MULT else \
-							AST.OpType.DIV if SC.sym == DIV else \
-							AST.OpType.MOD if SC.sym == MOD else \
-							AST.OpType.EQ
+				assign_op = AST.OpType.ASSIGN_PLUS if SC.sym == PLUS else \
+										AST.OpType.ASSIGN_MINUS if SC.sym == MINUS else \
+										AST.OpType.ASSIGN_MULT if SC.sym == MULT else \
+										AST.OpType.ASSIGN_DIV if SC.sym == DIV else \
+										AST.OpType.ASSIGN_MOD if SC.sym == MOD else \
+										AST.OpType.ASSIGN_EQ
 				getSym()
 
 			# Assume regular assignment
 			else:
-				assign_op = AST.OpType.EQ 
+				assign_op = AST.OpType.ASSIGN_EQ
 			
 			# Get expression
 			if SC.sym in FIRSTEXPR:

@@ -67,6 +67,13 @@ class OpType(Enum):
 	NOT = 20
 	INDEX = 21
 
+	ASSIGN_EQ = 22
+	ASSIGN_PLUS = 23
+	ASSIGN_MINUS = 24
+	ASSIGN_MULT = 25
+	ASSIGN_DIV = 26
+	ASSIGN_MOD = 27
+
 	def __repr__(self):
 		if self == OpType.PLUS:
 			return '+'
@@ -150,6 +157,18 @@ class OpType(Enum):
 			return 'or'
 		elif self == OpType.NE:
 			return 'not'
+		elif self == OpType.ASSIGN_EQ:
+			return '='
+		elif self == OpType.ASSIGN_PLUS:
+			return '+='
+		elif self == OpType.ASSIGN_MINUS:
+			return '-='
+		elif self == OpType.ASSIGN_MULT:
+			return '*='
+		elif self == OpType.ASSIGN_DIV:
+			return '/='
+		elif self == OpType.ASSIGN_MOD:
+			return '%='
 		else: # self == OpType.INDEX:
 			return f'[{arg}]'
 
@@ -697,7 +716,7 @@ class Assignment(Statement):
 		super().__init__()
 		# assert var.nodeEval() in {NodeType.EXPRESSION} and var.typeEval() == DataType.VAR
 		assert isinstance(var, Variable)
-		assert op in {OpType.EQ, OpType.PLUS, OpType.MINUS, OpType.MULT, OpType.DIV, OpType.MOD}
+		assert op in {OpType.ASSIGN_EQ, OpType.ASSIGN_PLUS, OpType.ASSIGN_MINUS, OpType.ASSIGN_MULT, OpType.ASSIGN_DIV, OpType.ASSIGN_MOD}
 		assert expr.nodeEval() in {NodeType.EXPRESSION}
 		# if type(expr) == FunctionDef:
 		# 	assert var.typeEval() == expr.dataType
@@ -725,11 +744,9 @@ class Assignment(Statement):
 
 	def as_python(self, indent: int = 0, prec: int = 0) -> str:
 		if self.var.typeEval() == DataType.FUNC:
-
 			return f'def {self.var.as_python()}{self.expr.as_python()}'
-		else:
-			if self.op == OpType.EQ:	return f'\t'*indent + f'{self.var.as_python()} = {self.expr.as_python(prec = 100)}'
-			else:											return f'\t'*indent + f'{self.var.as_python()} {self.op.as_python()}= {self.expr.as_python(prec = 100)}'
+		
+		return f'\t'*indent + f'{self.var.as_python()} {self.op.as_python()} {self.expr.as_python(prec = 100)}'
 
 class Declaration(Statement):
 	def __init__(self, params: Parameter):
