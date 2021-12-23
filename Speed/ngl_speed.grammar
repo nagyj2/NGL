@@ -7,13 +7,26 @@
 
 TODO:
 	- Remove ':' in loops where unneeded
-	- *Added scopes for functions*
-		- Add scopes for if and loops
-		- Add ability to search for previous scopes
-	- Add deletions of vars when they leave scope
-		- In AST
-		- In code
 	- If undeclared vars are found, search for its decl and add 
+	- Lists
+
+	- declare - Use declaration operator (|) along with a type and list operator (]) suffix
+		- |#] a
+	- assign - assign like a normal variable
+		- a = [|1:2:3]
+		- a = [|1 b 3]
+	- literal - start with [|, end with ]. List expressions inside, using : as separator if needed.
+		- [|1:2:3]
+	- index - use commas
+		- a,1,3
+	- insert
+		- a,4]^ 5
+	- lookup
+		- a,4]?
+	- delete
+		- a,4]!
+	- length
+		- a]#
 
 STRONGSYM	 := '?' | '!' | '$' | '\' | '{' | '}' | '![' | '?[' | ']' | '|#' | '|%' | '|@' | '|^' | <<EOF>>
 
@@ -69,7 +82,7 @@ EXPR_L3	 	 := EXPR_L4 {('+' | '-') EXPR_L4}
 EXPR_L4	 	 := EXPR_L5 {('*' | '/' | '<>') EXPR_L5}
 							<< * : Multiplication, / : Division, <> : Modulo >>
 
-EXPR_L5	 	 := EXPR_L6 {('|' EXPR_L6}
+EXPR_L5	 	 := EXPR_L6 {'|' EXPR_L6}
 							<< | : Alternative >>
 
 EXPR_L6	 	 := ['~' | '+' | '-'] SUBATOM
