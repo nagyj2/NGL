@@ -37,6 +37,12 @@ FLOAT = 35 # %
 STRING = 37 # @
 BOOLEAN = 39 # ^
 
+ASSIGN_PLUS = 40 # +=
+ASSIGN_MINUS = 41 # -=
+ASSIGN_MULT = 42 # *=
+ASSIGN_DIV = 43 # /=
+ASSIGN_MOD = 44 # %=
+
 IF = 50; # ?
 ELSE = 51; # ~?
 PRINT = 52; # !
@@ -149,16 +155,25 @@ def getSym():
     elif ch == "'" or ch == '"': raw_string(ch)
     elif ch == '`': multichar_var('`')
 
-    elif ch == '+': getChar(); sym = PLUS
-    elif ch == '-': getChar(); sym = MINUS
-    elif ch == '*': getChar(); sym = MULT
-    # elif ch == '/': getChar(); sym = DIV
+    elif ch == '+': 
+        getChar() 
+        if ch == '=': getChar(); sym = ASSIGN_PLUS
+        else: sym = PLUS
+    elif ch == '-': 
+        getChar()
+        if ch == '=': getChar(); sym = ASSIGN_MINUS
+        else: sym = MINUS
+    elif ch == '*': 
+        getChar()
+        if ch == '=': getChar(); sym = ASSIGN_MULT
+        else: sym = MULT
     elif ch == '/':
         getChar()
         if ch == '/': 
             while ch != '\n':
                 getChar()
             getSym()
+        elif ch == '=': getChar(); sym = ASSIGN_DIV
         elif ch == '\\': getChar(); sym == AND
         else: sym = DIV
     elif ch == '~':
@@ -173,7 +188,10 @@ def getSym():
     elif ch == '&': getChar(); sym = STMT_AND
     elif ch == '<':
         getChar()
-        if ch == '>': getChar(); sym = MOD
+        if ch == '>': 
+            getChar()
+            if ch == '=': getChar(); sym = ASSIGN_MOD
+            else: sym = MOD
         elif ch == '|': getChar(); sym = LE
         else: sym = LT
     elif ch == '>': getChar(); sym = GT

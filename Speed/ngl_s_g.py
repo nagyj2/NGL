@@ -1,7 +1,7 @@
 # NGL Speed AST Generator 2.0
 
 import ngl_s_sc as SC
-from ngl_s_sc import FUNC_DEF, FUNC_CALL, RBRAK, PLUS, MINUS, MULT, DIV, MOD, AND, OR, EQ, NE, LT, GT, GE, LE, PIPE, DECLARE, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
+from ngl_s_sc import FUNC_DEF, FUNC_CALL, RBRAK, PLUS, MINUS, MULT, DIV, MOD, ASSIGN_PLUS, ASSIGN_MINUS, ASSIGN_MULT, ASSIGN_DIV, ASSIGN_MOD, AND, OR, EQ, NE, LT, GT, GE, LE, PIPE, DECLARE, STMT_AND, NOT, INPUT, COLON, LINEEND, LPAREN, RPAREN, LCURLY, COMMA, RCURLY, BOOL, NUMBER, RAW_STRING, INT, FLOAT, STRING, BOOLEAN, IDENT, IF, ASSIGN, BLOCK, ELSE, PRINT, LOOP, EXIT, EOF, mark, getSym
 import ngl_s_ast2 as AST
 import ngl_s_scope as ST
 from copy import deepcopy # todo: offer better copying
@@ -142,6 +142,14 @@ def stmt() -> AST.Block:
 										AST.OpType.ASSIGN_DIV if SC.sym == DIV else \
 										AST.OpType.ASSIGN_MOD if SC.sym == MOD else \
 										AST.OpType.ASSIGN_EQ
+				getSym()
+
+			elif SC.sym in {ASSIGN_PLUS, ASSIGN_MINUS, ASSIGN_MULT, ASSIGN_DIV, ASSIGN_MOD}:
+				assign_op = AST.OpType.ASSIGN_PLUS if SC.sym == ASSIGN_PLUS else \
+										AST.OpType.ASSIGN_MINUS if SC.sym == ASSIGN_MINUS else \
+										AST.OpType.ASSIGN_MULT if SC.sym == ASSIGN_MULT else \
+										AST.OpType.ASSIGN_DIV if SC.sym == ASSIGN_DIV else \
+										AST.OpType.ASSIGN_MOD #if SC.sym == ASSIGN_MOD else \
 				getSym()
 
 			# Assume regular assignment
